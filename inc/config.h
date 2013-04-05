@@ -30,7 +30,6 @@ namespace eqMivt
 
         bool loadData( const eq::uint128_t& initDataID );
 
-        virtual bool handleEvent( const eq::ConfigEvent* event );
         virtual bool handleEvent( eq::EventICommand command );
 
         bool needRedraw();
