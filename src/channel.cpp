@@ -41,42 +41,81 @@ void Channel::frameDraw( const eq::uint128_t& frameID )
 {
     if( stopRendering( ))
         return;
-    eq::Channel::frameDraw( frameID ); // Setup OpenGL state
 
     const FrameData& frameData = _getFrameData();
-    const eq::Vector3f& position = frameData.getCameraPosition();
 
-    EQ_GL_CALL( glMultMatrixf( frameData.getCameraRotation().array ) );
-    EQ_GL_CALL( glTranslatef( position.x(), position.y(), position.z() ) );
+    // Compute cull matrix
+    const eq::Matrix4f& rotation = frameData.getCameraRotation();
+    eq::Matrix4f positionM = eq::Matrix4f::IDENTITY;
+    positionM.set_translation( frameData.getCameraPosition());
 
-    eq::PixelViewport  viewport = getPixelViewport();
-
-    std::cout<<getName()<<" "<<" .............>"<<viewport.x<<" "<<viewport.y<<" "<<viewport.h<<" "<<viewport.w<<std::endl;
-    float modelview[16];
-
-    std::cout<<position<<std::endl;
-
-    EQ_GL_CALL( glGetFloatv(GL_MODELVIEW_MATRIX , modelview) );
-    std::cout<<modelview[0]<<" "<<modelview[1]<<" "<<modelview[2]<<std::endl;
-    std::cout<<modelview[4]<<" "<<modelview[5]<<" "<<modelview[6]<<std::endl;
-    std::cout<<modelview[8]<<" "<<modelview[9]<<" "<<modelview[10]<<std::endl;
+    const eq::Matrix4f model = getHeadTransform() * (positionM * rotation);
+    std::cout<<model<<std::endl;
 
     const eq::Frustumf& frustum = getFrustum();
-    std::cout<<frustum.left()<<" "<<frustum.bottom()<<std::endl;
+    eq::Vector4f pos;
+    pos.set(0.0f, 0.0f, 0.0f, 1.0f);
+    std::cout<<"position camera "<< model * pos<<std::endl;
+    eq::Vector4f p1; p1.set(frustum.right(),frustum.bottom(),frustum.near_plane(),1.0f); p1 = model * p1; 
+    eq::Vector4f p2; p2.set(frustum.right(),frustum.top(),frustum.near_plane(),1.0f);  p2 = model * p2;
+    eq::Vector4f p3; p3.set(frustum.left(),frustum.top(),frustum.near_plane(),1.0f);  p3 = model * p3;
+    eq::Vector4f p4; p4.set(frustum.left(),frustum.bottom(),frustum.near_plane(),1.0f);  p4 = model * p4;
+    std::cout<<p1<<std::endl;
+    std::cout<<p2<<std::endl;
+    std::cout<<p3<<std::endl;
+    std::cout<<p4<<std::endl;
 
-#if 0
-//if (viewport.x== 0 && viewport.y == 0)
+    const eq::PixelViewport& pvp = getPixelViewport();
+if(pvp.x <= 256 && pvp.y<=256)
 {
+    glColor3f(1.0f,1.0f,1.0f);
     glLineWidth(1); 
-	glBegin(GL_LINES); 
-	glVertex2f(0.0f,0.0f); 
-	glVertex2f(64.0f,64.0f); 
-	//glVertex2f(frustum.left(),frustum.bottom() ); 
-	//glVertex2f(frustum.right(),frustum.top() ); 
-	glEnd(); 
-}
-#endif
+    glBegin(GL_QUADS);
+	glVertex2f(p1.x(),p1.y()); 
+	glVertex2f(p2.x(),p2.y()); 
+	glVertex2f(p3.x(),p3.y()); 
+	glVertex2f(p4.x(),p4.y()); 
+    glEnd();
+    glColor3f(1.0f,0.0f,0.0f);
+    glBegin(GL_LINES);
+	glVertex2f(pos.x(),pos.y()); 
+	glVertex2f(p1.x(),p1.y()); 
+    glEnd();
+    glBegin(GL_LINES);
+	glVertex2f(pos.x(),pos.y()); 
+	glVertex2f(p2.x(),p2.y()); 
+    glEnd();
+    glBegin(GL_LINES);
+	glVertex2f(pos.x(),pos.y()); 
+	glVertex2f(p3.x(),p3.y()); 
+    glEnd();
+    glBegin(GL_LINES);
+	glVertex2f(pos.x(),pos.y()); 
+	glVertex2f(p4.x(),p4.y()); 
+    glEnd();
 
+    #if 0
+    eq::Vector4f ray;
+    eq::Vector4f up = p3 - p4;
+    eq::Vector4f right = p1 - p4;
+    float h = frustum.get_width()/pvp.h;
+    float w = frustum.get_height()/pvp.w;
+
+    for(int i=0; i<pvp.w; i++)
+    {
+    	for(int j=0; j<pvp.h; j++)
+	{
+	    ray = j*h*up + w*i*right;
+	    glBegin(GL_LINES);
+		glVertex2f(pos.x(),pos.y()); 
+		glVertex2f(pos.x() + 10.0f*ray.x(),pos.y() + 10.0f*ray.y()); 
+	    glEnd();
+	    break;
+	}
+    }
+    #endif
+
+}
 }
 
 const FrameData& Channel::_getFrameData() const
