@@ -80,6 +80,89 @@ uint32_t Config::startFrame()
     return eq::Config::startFrame( version );
 }
 
+bool Config::handleEvent( const eq::ConfigEvent* event )
+{
+    switch( event->data.type)
+    {
+        case eq::Event::KEY_PRESS:
+        {
+            if( _handleKeyEvent( event->data.keyPress ))
+            {
+                _redraw = true;
+                return true;
+            }
+            break;
+        }
+
+        case eq::Event::CHANNEL_POINTER_BUTTON_PRESS:
+        {
+	    break;
+        }
+
+        case eq::Event::CHANNEL_POINTER_BUTTON_RELEASE:
+        {
+            break;
+        }
+        case eq::Event::CHANNEL_POINTER_MOTION:
+        {
+            switch( event->data.pointerMotion.buttons )
+            {
+              case eq::PTR_BUTTON1:
+
+                      _frameData.spinCamera(
+                          -0.005f * event->data.pointerMotion.dy,
+                          -0.005f * event->data.pointerMotion.dx );
+                  _redraw = true;
+                  return true;
+
+              case eq::PTR_BUTTON2:
+                  _frameData.moveCamera( 0.f, 0.f, .005f );
+                  _redraw = true;
+                  return true;
+
+              case eq::PTR_BUTTON3:
+                  _frameData.moveCamera(  .0005f * event->data.pointerMotion.dx,
+                                         -.0005f * event->data.pointerMotion.dy,
+                                          0.f );
+                  _redraw = true;
+                  return true;
+            }
+            break;
+        }
+
+        case eq::Event::CHANNEL_POINTER_WHEEL:
+        {
+            _frameData.moveCamera( -0.05f * event->data.pointerWheel.yAxis,
+                                   0.f,
+                                   0.05f * event->data.pointerWheel.xAxis );
+            _redraw = true;
+            return true;
+        }
+
+        case eq::Event::MAGELLAN_AXIS:
+        {
+	    break;
+        }
+
+        case eq::Event::MAGELLAN_BUTTON:
+        {
+	    break;
+        }
+
+        case eq::Event::WINDOW_EXPOSE:
+        case eq::Event::WINDOW_RESIZE:
+        case eq::Event::WINDOW_CLOSE:
+        case eq::Event::VIEW_RESIZE:
+            _redraw = true;
+            break;
+    default:
+        break;
+    }
+
+    _redraw |= eq::Config::handleEvent( event );
+    return _redraw;
+}
+
 bool Config::handleEvent( eq::EventICommand command )
 {
     switch( command.getEventType( ))
