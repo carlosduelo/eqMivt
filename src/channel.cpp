@@ -177,36 +177,32 @@ void Channel::frameDraw( const eq::uint128_t& frameID )
 	}
     }
 
+    glEnable( GL_TEXTURE_2D );
     GLuint texture;
     // allocate a texture name
     glGenTextures( 1, &texture );
     // select our current texture
     glBindTexture( GL_TEXTURE_2D, texture );
-    #if 1
+
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);  //Always set the base and max mipmap levels of a texture.
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
-    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    #endif
+    glTexEnvi(GL_TEXTURE_ENV,GL_TEXTURE_ENV_MODE,GL_REPLACE);
 
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32F, pvp.w, pvp.h, 0, GL_RGB, GL_FLOAT, data);
     delete[] data;
 
-    glEnable( GL_TEXTURE_2D );
-
     applyViewport();
     applyBuffer();
-//    glMatrixMode(GL_MODELVIEW);
-//    glPushMatrix();
-//    glLoadIdentity();
     glBegin(GL_QUADS);
-    glTexCoord2f(0.0f,0.0f); glVertex2f(-1.0f,-1.0f);
-    glTexCoord2f(1.0f,0.0f); glVertex2f( 1.0f,-1.0f);
-    glTexCoord2f(1.0f,1.0f); glVertex2f( 1.0f, 1.0f);
-    glTexCoord2f(0.0f,1.0f); glVertex2f(-1.0f, 1.0f);
+	glTexCoord2f(0.0f,0.0f); glVertex2f(-1.0f,-1.0f);
+	glTexCoord2f(1.0f,0.0f); glVertex2f( 1.0f,-1.0f);
+	glTexCoord2f(1.0f,1.0f); glVertex2f( 1.0f, 1.0f);
+	glTexCoord2f(0.0f,1.0f); glVertex2f(-1.0f, 1.0f);
     glEnd();
-//    glPopMatrix();
 
     glDisable(GL_TEXTURE_2D);
     glDeleteTextures( 1, &texture );
