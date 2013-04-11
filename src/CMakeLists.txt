@@ -13,26 +13,26 @@ set(MIVT_SOURCE
 		eqMivt.cpp
 )
 
-#set(MIVT_CUDA_SOURCE octreeContainer_GPU.cu)
+set(MIVT_CUDA_SOURCE ray-casting-sphere.cu)
 
 # SETTING CUDA PARAMETERS
-#list(APPEND CUDA_NVCC_FLAGS -arch=sm_20)
+list(APPEND CUDA_NVCC_FLAGS -arch=sm_13)
 
-#if (CMAKE_BUILD_TYPE STREQUAL "Debug")
-#	list(APPEND CUDA_NVCC_FLAGS -G)
-#	list(APPEND CUDA_NVCC_FLAGS -Xcompiler;-O0)
-#	list(APPEND CUDA_NVCC_FLAGS -Xcompiler;-Wall)
-#else()
-#	list(APPEND CUDA_NVCC_FLAGS -O3)
-#	list(APPEND CUDA_NVCC_FLAGS -Xcompiler;-Wall)
-#	list(APPEND CUDA_NVCC_FLAGS -Xcompiler;-O3)
-#endif()
+if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+	list(APPEND CUDA_NVCC_FLAGS -G)
+	list(APPEND CUDA_NVCC_FLAGS -Xcompiler;-O0)
+	list(APPEND CUDA_NVCC_FLAGS -Xcompiler;-Wall)
+else()
+	list(APPEND CUDA_NVCC_FLAGS -O3)
+	list(APPEND CUDA_NVCC_FLAGS -Xcompiler;-Wall)
+	list(APPEND CUDA_NVCC_FLAGS -Xcompiler;-O3)
+endif()
 
 # COMPILING CUDA OBJECTS
-#cuda_compile(MIVT_CUDA_OBJECTS ${MIVT_CUDA_SOURCE})
+cuda_compile(MIVT_CUDA_OBJECTS ${MIVT_CUDA_SOURCE})
 #message(STATUS ${MIVT_CUDA_OBJECTS})
 
-set(LIBS_NEEDED ${EQUALIZER_LIBRARIES} GL)# ${Boost_LIBRARIES} ${HDF5_LIBRARIES} ${CUDA_LIBRARIES}) 
+set(LIBS_NEEDED ${EQUALIZER_LIBRARIES} GL ${CUDA_LIBRARIES})# ${Boost_LIBRARIES} ${HDF5_LIBRARIES} ) 
 
 add_executable(mivt ${MIVT_SOURCE} ${MIVT_CUDA_OBJECTS} main.cpp) 
 target_link_libraries(mivt ${LIBS_NEEDED}) 

@@ -36,13 +36,13 @@ set(CMAKE_BUILD_TYPE Debug)
 #endif()
 
 # CUDA
-#find_package(CUDA 5.0 REQUIRED)
-#if (CUDA_FOUND)
-#	include_directories(${CUDA_INCLUDE_DIRS})
-#	cuda_include_directories(${mivt_SOURCE_DIR}/inc)
-#else()
-#	message(ERROR "CUDA NOT FOUND")
-#endif()
+find_package(CUDA 5.0 REQUIRED)
+if (CUDA_FOUND)
+	include_directories(${CUDA_INCLUDE_DIRS})
+	cuda_include_directories(${mivt_SOURCE_DIR}/inc)
+else()
+	message(ERROR "CUDA NOT FOUND")
+endif()
 
 
 # TOOLS

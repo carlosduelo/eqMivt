@@ -11,10 +11,8 @@ Notes:
 #include "initData.h"
 #include "config.h"
 #include "pipe.h"
-
-#include "eq/client/gl.h"
-#include <GL/glu.h>
-#include <GL/gl.h>
+#define GL_GLEXT_PROTOTYPES
+#include "ray-casting-sphere.h"
 
 namespace eqMivt
 {
@@ -136,46 +134,22 @@ void Channel::frameDraw( const eq::uint128_t& frameID )
     const eq::PixelViewport& pvp = getPixelViewport();
     std::cout<<pvp<<std::endl;
 
-    eq::Vector4f ray;
     eq::Vector4f up = p3 - p4;
     eq::Vector4f right = p1 - p4;
     up.normalize();
     right.normalize();
     float w = frustum.get_width()/(float)pvp.w;
     float h = frustum.get_height()/(float)pvp.h;
-    glColor3f(0.0f,1.0f,0.0f);
 
-    float * data = new float [3*pvp.h*pvp.w];
-    for(int i=0; i<pvp.w; i++)
-    {
-    	for(int j=0; j<pvp.h; j++)
-	{
-    	    ray = p4 - pos;
-	    ray = ray + j*h*up + i*w*right;
-	    ray.normalize();
-	    float hit = 1000.f;
-	    int p = 3*i + 3*j*pvp.w;
-            if (intersection(ray, pos, 1.0f, &hit))
-	    {
-	    	eq::Vector3f ph = pos + hit * ray;
-	    	eq::Vector3f n = ph/1.0f;
-		n.normalize();
-		eq::Vector3f l; l.set(pos.x() - ph.x(), pos.y() - ph.y(), pos.z() - ph.z());
-		l.normalize();
-		eq::Vector3f k = n.cross(l);
-	        // Compute normal 
-	    	data[p]=k.x()*0.3f;
-		data[p+1]=k.y()*0.5f;
-		data[p+2]=k.z()*0.3f;
-	    }
-	    else
-	    {
-	    	data[p]=1.0f;
-		data[p+1]=1.0f;
-		data[p+2]=1.0f;
-	    }
-	}
-    }
+    // Creating pbo
+    // create pixel buffer object for display
+    GLuint pbo;
+    glGenBuffers(1, &pbo);
+    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, pbo);
+    glBufferData(GL_PIXEL_UNPACK_BUFFER, pvp.w*pvp.h*sizeof(float)*3, 0, GL_STREAM_DRAW_ARB);
+    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
+
+    render_sphere(pbo, pvp.w, pvp.h, pos.x(), pos.y(), pos.z(), p4.x(), p4.y(), p4.z(), up.x(), up.y(), up.z(), right.x(), right.y(), right.z(), w, h);
 
     glEnable( GL_TEXTURE_2D );
     GLuint texture;
@@ -183,7 +157,7 @@ void Channel::frameDraw( const eq::uint128_t& frameID )
     glGenTextures( 1, &texture );
     // select our current texture
     glBindTexture( GL_TEXTURE_2D, texture );
-
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32F, pvp.w, pvp.h, 0, GL_RGB, GL_FLOAT, NULL);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
@@ -192,8 +166,10 @@ void Channel::frameDraw( const eq::uint128_t& frameID )
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
     glTexEnvi(GL_TEXTURE_ENV,GL_TEXTURE_ENV_MODE,GL_REPLACE);
 
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32F, pvp.w, pvp.h, 0, GL_RGB, GL_FLOAT, data);
-    delete[] data;
+    // copy from pbo to texture
+    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, pbo);
+    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, pvp.w, pvp.h, GL_RGB, GL_FLOAT, 0);
+    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
 
     applyViewport();
     applyBuffer();
@@ -206,6 +182,7 @@ void Channel::frameDraw( const eq::uint128_t& frameID )
 
     glDisable(GL_TEXTURE_2D);
     glDeleteTextures( 1, &texture );
+    glDeleteBuffers(1, &pbo);
 }
 
 const FrameData& Channel::_getFrameData() const
