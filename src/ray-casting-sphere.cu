@@ -161,12 +161,27 @@ void render_sphere(GLuint pbo, int pvpW, int pvpH, float posx, float posy, float
     }
     std::cout<<"CUDA MAPPED "<<num_bytes<<std::endl;
 
+    cudaStream_t stream;
+    if (cudaSuccess != cudaStreamCreate(&stream))
+    {
+	    std::cerr<<"Error cudaStreamCreate"<<std::endl;
+    }
+
     dim3 threads = getThreads(pvpW*pvpH);
     dim3 blocks = getBlocks(pvpW*pvpH);
-    kernel_render_sphere<<<blocks, threads>>>(d_output, pvpW, pvpH, make_float3(posx,posy,posz), make_float3(LBx, LBy, LBz), make_float3(upx,upy,upz),make_float3(rightx,righty,rightz), w, h);
+    kernel_render_sphere<<<blocks, threads, 0, stream>>>(d_output, pvpW, pvpH, make_float3(posx,posy,posz), make_float3(LBx, LBy, LBz), make_float3(upx,upy,upz),make_float3(rightx,righty,rightz), w, h);
 
-    cudaDeviceSynchronize();
+    if (cudaSuccess !=  cudaStreamSynchronize(stream))
+    {
+	    std::cerr<<"Error cudaSreamSynchronize"<<std::endl;
+    }
+
     std::cerr<<"Launching kernek blocks ("<<blocks.x<<","<<blocks.y<<","<<blocks.z<<") threads ("<<threads.x<<","<<threads.y<<","<<threads.z<<") error: "<< cudaGetErrorString(cudaGetLastError())<<std::endl;
+
+    if (cudaSuccess != cudaStreamDestroy(stream))
+    {
+	    std::cerr<<"Error cudaStreamDestroy"<<std::endl;
+    }
 
     if (cudaSuccess != cudaGraphicsUnmapResources(1, &cuda_pbo_resource, 0))
     {
