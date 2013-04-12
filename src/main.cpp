@@ -10,6 +10,7 @@ Notes:
 
 #include "error.h"
 #include "config.h"
+#include "node.h"
 #include "pipe.h"
 #include "channel.h"
 
@@ -24,9 +25,9 @@ public:
         { return new eqMivt::Pipe( parent ); }
     virtual eq::Channel* createChannel( eq::Window* parent )
         { return new eqMivt::Channel( parent ); }
+    virtual eq::Node*    createNode( eq::Config* parent ) 
+        { return new eqMivt::Node( parent ); }
 #if 0
-    virtual eq::Node*    createNode( eq::Config* parent )  
-        { return new eqPly::Node( parent ); }
     virtual eq::Window*  createWindow( eq::Pipe* parent )
         { return new eqPly::Window( parent ); }
     virtual eq::View* createView( eq::Layout* parent )

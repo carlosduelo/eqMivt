@@ -8,12 +8,13 @@ set(MIVT_SOURCE
 		localInitData.cpp
 		frameData.cpp
 		config.cpp
+		node.cpp
 		pipe.cpp
 		channel.cpp
 		eqMivt.cpp
 )
 
-set(MIVT_CUDA_SOURCE ray-casting-sphere.cu)
+set(MIVT_CUDA_SOURCE ray-casting-sphere.cu )
 
 # SETTING CUDA PARAMETERS
 list(APPEND CUDA_NVCC_FLAGS -arch=sm_13)
