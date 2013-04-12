@@ -8,6 +8,7 @@ set(MIVT_SOURCE
 		localInitData.cpp
 		frameData.cpp
 		config.cpp
+		node.cpp
 		pipe.cpp
 		channel.cpp
 		eqMivt.cpp
