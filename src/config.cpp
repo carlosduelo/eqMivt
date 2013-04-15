@@ -8,6 +8,8 @@ Notes:
 
 #include "config.h"
 
+#include <boost/filesystem.hpp>
+
 namespace eqMivt
 {
 
@@ -69,6 +71,14 @@ bool Config::loadData( const eq::uint128_t& initDataID )
     {
         LBASSERT( _initData.getID() == initDataID );
     }
+
+    // Check needed files exist
+    if (!boost::filesystem::exists(_initData.getOctreeFilename()))
+    {
+	    LBERROR << "Cannot open "<<_initData.getOctreeFilename()<< "in level "<<_initData.getOctreeMaxLevel()<<" file."<< std::endl;
+	    return false;
+    }
+
     return true;
 }
 

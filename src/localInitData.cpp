@@ -25,6 +25,9 @@ const LocalInitData& LocalInitData::operator = ( const LocalInitData& from )
     _maxFrames   = from._maxFrames;
     _isResident  = from._isResident;
 
+    setOctreeFilename(from.getOctreeFilename());
+    setOctreeMaxLevel(from.getOctreeMaxLevel());
+
     return *this;
 }
 
@@ -57,15 +60,18 @@ bool LocalInitData::parseArguments( const int argc, char** argv )
     if (vm.count("octree-file"))
     {
         std::vector<std::string> octreefiles = vm["octree-file"].as< std::vector<std::string> >();
+
 	if (octreefiles.size() != 2)
 	{
 	    std::cout <<"octree-file option: octree-file-path<string> maximum-level<int>" << std::endl;
 	    return false;
 	}
-	octreeFilename = octreefiles[0];
+
+	setOctreeFilename(octreefiles[0]);
+
 	try
 	{
-	    int x = boost::lexical_cast<int>(octreefiles[1] );
+	    setOctreeMaxLevel(boost::lexical_cast<int>(octreefiles[1]));
 	} 
 	catch( boost::bad_lexical_cast const& )
 	{
