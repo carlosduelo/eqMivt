@@ -11,6 +11,9 @@ Notes:
 
 #include "eqMivt.h"
 #include "initData.h"
+#include "octreeContainer.h"
+
+#include <map>
 
 #include <eq/eq.h>
 
@@ -27,12 +30,16 @@ namespace eqMivt
 		public:
 			Node( eq::Config* parent ) : eq::Node( parent ) {}
 
+			bool checkOctree(int device);
+
 		protected:
 			virtual ~Node(){}
 
 			virtual bool configInit( const eq::uint128_t& initID );
 
 		private:
+
+			std::map<int , eqMivt::OctreeContainer *> _octrees;
 	};
 }
 

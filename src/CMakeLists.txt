@@ -12,9 +12,10 @@ set(MIVT_SOURCE
 		pipe.cpp
 		channel.cpp
 		eqMivt.cpp
+		octreeContainer.cpp
 )
 
-set(MIVT_CUDA_SOURCE ray-casting-sphere.cu )
+set(MIVT_CUDA_SOURCE ray-casting-sphere.cu octreeContainer_GPU.cu)
 
 # SETTING CUDA PARAMETERS
 list(APPEND CUDA_NVCC_FLAGS -arch=sm_13)
@@ -33,7 +34,7 @@ endif()
 cuda_compile(MIVT_CUDA_OBJECTS ${MIVT_CUDA_SOURCE})
 #message(STATUS ${MIVT_CUDA_OBJECTS})
 
-set(LIBS_NEEDED ${EQUALIZER_LIBRARIES} GL ${CUDA_LIBRARIES})# ${Boost_LIBRARIES} ${HDF5_LIBRARIES} ) 
+set(LIBS_NEEDED ${EQUALIZER_LIBRARIES} GL ${CUDA_LIBRARIES} ${Boost_LIBRARIES} )#${HDF5_LIBRARIES} ) 
 
 add_executable(mivt ${MIVT_SOURCE} ${MIVT_CUDA_OBJECTS} main.cpp) 
 target_link_libraries(mivt ${LIBS_NEEDED}) 

@@ -49,7 +49,11 @@ int main( const int argc, char** argv )
 
     // 2. parse arguments
     eqMivt::LocalInitData initData;
-    initData.parseArguments( argc, argv );
+    if (!initData.parseArguments( argc, argv ))
+    {
+    	eq::exit();
+	return EXIT_FAILURE;
+    }
 
     // 3. initialization of local client node
     lunchbox::RefPtr< eqMivt::EqMivt > client = new eqMivt::EqMivt( initData );

@@ -18,7 +18,7 @@ namespace eqMivt
     public:
         LocalInitData();
 
-        void parseArguments( const int argc, char** argv );
+        bool parseArguments( const int argc, char** argv );
 
         uint32_t           getMaxFrames()   const { return _maxFrames; }
 	bool               isResident()     const { return _isResident; }

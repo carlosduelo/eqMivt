@@ -11,6 +11,8 @@ Notes:
 
 #include "eqMivt.h"
 
+#include <string>
+
 namespace eqMivt
 {
     class InitData : public co::Object
@@ -24,6 +26,10 @@ namespace eqMivt
         eq::uint128_t getFrameDataID() const  { return _frameDataID; }
 
     protected:
+	std::string	octreeFilename;
+	int		maxLevelOctree;
+
+
         virtual void getInstanceData( co::DataOStream& os );
         virtual void applyInstanceData( co::DataIStream& is );
 

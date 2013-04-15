@@ -9,6 +9,8 @@ Notes:
 #ifndef EQ_MIVT_H
 #define EQ_MIVT_H
 
+#define VERSION_EQ_MIVT 0.1
+
 #include <eq/eq.h>
 
 namespace eqMivt
