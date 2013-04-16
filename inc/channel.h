@@ -36,7 +36,8 @@ namespace eqMivt
     private:
         const FrameData& _getFrameData() const;
 
-        uint32_t _frameRestart;
+        uint32_t 		_frameRestart;
+	eq::PixelViewport 	_lastViewport;
     };
 }
 

@@ -28,6 +28,7 @@ bool Create_OctreeContainer(int device, index_node_t ** octreeCPU, int * sizesCP
 {
 	std::stringstream ss (std::stringstream::in | std::stringstream::out);
 
+#if 0 
 	ss<< "Setting device "<<device<<" "<<std::endl;;
 	if (cudaSuccess != (cudaSetDevice(device)))
 	{
@@ -35,7 +36,7 @@ bool Create_OctreeContainer(int device, index_node_t ** octreeCPU, int * sizesCP
 		*result = ss.str();
 		return false;
 	}
-
+#endif
 
 	int total = 0;
 	for(int i=0; i<=maxLevel; i++)
@@ -127,11 +128,13 @@ bool Create_OctreeContainer(int device, index_node_t ** octreeCPU, int * sizesCP
 
 bool Destroy_OctreeContainer(int device, index_node_t ** octree, index_node_t * memoryGPU, int * sizes)
 {
+	#if 0
 	if (cudaSuccess != (cudaSetDevice(device)))
 	{
 		std::cerr<< "Error setting device "<<device<<std::endl;
 		return false;
 	}
+	#endif
 
 	cudaFree(memoryGPU);
 	cudaFree(octree);

@@ -9,6 +9,7 @@ Notes:
 #include "pipe.h"
 
 #include "config.h"
+#include "node.h"
 #include <eq/eq.h>
 
 namespace eqMivt

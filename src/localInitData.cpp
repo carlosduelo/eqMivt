@@ -39,6 +39,7 @@ bool LocalInitData::parseArguments( const int argc, char** argv )
     desc.add_options()
     ("version,v", "print version")
     ("help", "produce help message")
+    ("eq-config", "Select equalizer configuration file")
     ("octree-file,o", boost::program_options::value< std::vector<std::string> >()->multitoken(), "octree-file-path maximum-level")
     ;
 

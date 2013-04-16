@@ -31,4 +31,43 @@ namespace eqMivt
 		return true;
 	}
 
+	bool Node::configExit()
+	{
+	    for (std::map<int , eqMivt::OctreeContainer *>::iterator it = _octrees.begin(); it!=_octrees.end(); it++)
+	        delete it->second;
+	}
+
+	bool Node::registerPipeResources(int device)
+	{
+	    // Check octree
+	    std::map<int , eqMivt::OctreeContainer *>::iterator it;
+	    it = _octrees.find(device);
+
+	    if (it ==  _octrees.end())
+	    {
+	        _octrees[device] = new eqMivt::OctreeContainer(device);
+		
+		Config* config = static_cast< Config* >( getConfig( ));
+		const InitData& initData = config->getInitData();
+
+		if (!_octrees[device]->readOctreeFile(initData.getOctreeFilename(), initData.getOctreeMaxLevel()))
+		{
+		    LBERROR<<"Error: creating octree in node"<<std::endl;
+		    return false;
+		}
+	    }
+	    
+	    return true;
+	}
+
+	index_node_t **	Node::getOctreePointer(int device)
+	{
+		return _octrees[device]->getOctree();
+	}
+
+	int *	Node::getOctreeSizesPointer(int device)
+	{
+		return _octrees[device]->getSizes();
+	}
+
 }

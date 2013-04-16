@@ -11,6 +11,7 @@ Notes:
 #include "initData.h"
 #include "config.h"
 #include "pipe.h"
+#include "node.h"
 #define GL_GLEXT_PROTOTYPES
 #include "ray-casting-sphere.h"
 
@@ -21,6 +22,8 @@ Channel::Channel( eq::Window* parent )
         : eq::Channel( parent )
         , _frameRestart( 0 )
 {
+    _lastViewport.h = 0;
+    _lastViewport.w = 0;
 }
 
 bool Channel::configInit( const eq::uint128_t& initID )
@@ -29,6 +32,7 @@ bool Channel::configInit( const eq::uint128_t& initID )
         return false;
 
     setNearFar( 0.1f, 10.0f );
+
     return true;
 }
 
@@ -99,6 +103,27 @@ void Channel::frameDraw( const eq::uint128_t& frameID )
     if( stopRendering( ))
         return;
 
+    const Pipe* pipe = static_cast<const Pipe*>( getPipe( ));
+    Node*       node = static_cast<Node*>( getNode( ));
+
+    std::cout<<getName()<<" Device: "<<pipe->getDevice()<<std::endl;
+    std::cout<<getName()<<" Port: "<<pipe->getPort()<<std::endl;
+
+    // Check for CUDA RESOURCES
+    if (!node->registerPipeResources(pipe->getDevice()))
+    {
+    	LBERROR<<"Error creating pipe"<<std::endl;
+    	return;
+    }
+
+    // Check viewport
+    const eq::PixelViewport& pvp = getPixelViewport();
+    if (pvp.w > _lastViewport.w || pvp.h > _lastViewport.h)
+    {
+        _lastViewport.w = pvp.w;
+	_lastViewport.h = pvp.h;
+    }
+
     const FrameData& frameData = _getFrameData();
 
     // Compute cull matrix
@@ -131,7 +156,6 @@ void Channel::frameDraw( const eq::uint128_t& frameID )
      ************************
     */
 
-    const eq::PixelViewport& pvp = getPixelViewport();
     std::cout<<pvp<<std::endl;
 
     eq::Vector4f up = p3 - p4;

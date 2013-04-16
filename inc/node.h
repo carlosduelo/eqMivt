@@ -30,12 +30,16 @@ namespace eqMivt
 		public:
 			Node( eq::Config* parent ) : eq::Node( parent ) {}
 
-			bool checkOctree(int device);
+			bool 		registerPipeResources(int device);
+			index_node_t **	getOctreePointer(int device);
+			int *		getOctreeSizesPointer(int device);
 
 		protected:
 			virtual ~Node(){}
 
 			virtual bool configInit( const eq::uint128_t& initID );
+
+			virtual bool configExit();
 
 		private:
 
