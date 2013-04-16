@@ -11,9 +11,11 @@ Notes:
 
 #include "eqMivt.h"
 
+#define GL_GLEXT_PROTOTYPES
+#include "render.h"
+
 #include <eq/eq.h>
 
-#define GL_GLEXT_PROTOTYPES
 #include "ray-casting-sphere.h"
 
 namespace eqMivt
@@ -49,6 +51,8 @@ namespace eqMivt
 
         uint32_t 		_frameRestart;
 	eq::PixelViewport 	_lastViewport;
+
+	Render			_render;
     };
 }
 

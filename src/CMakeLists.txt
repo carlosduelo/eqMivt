@@ -13,6 +13,7 @@ set(MIVT_SOURCE
 		channel.cpp
 		eqMivt.cpp
 		octreeContainer.cpp
+		render.cpp
 )
 
 set(MIVT_CUDA_SOURCE ray-casting-sphere.cu octreeContainer_GPU.cu)

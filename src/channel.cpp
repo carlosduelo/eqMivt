@@ -41,63 +41,6 @@ bool Channel::configExit()
     return eq::Channel::configExit();
 }
 
-bool intersection(const eq::Vector4f& ray, const eq::Vector4f& posR, float r, float * t)
-{
-	eq::Vector4f posE; posE.set(0.0f, 0.0f, 0.0f, 1.0f);
-	eq::Vector4f d = posR -posE;
-	//Compute A, B and C coefficients
-	float a = ray.dot(ray);
-	float b = 2 * ray.dot(d);
-	float c = d.dot(d) - (r * r);
-
-	//Find discriminant
-	float disc = b * b - 4 * a * c;
-
-	// if discriminant is negative there are no real roots, so return 
-	// false as ray misses sphere
-	if (disc < 0)
-		return false;
-
-	// compute q as described above
-	float distSqrt = sqrtf(disc);
-	float q;
-	if (b < 0)
-		q = (-b - distSqrt);
-	else
-		q = (-b + distSqrt);
-
-	// compute t0 and t1
-	float t0 = q / (2.0f*a);
-	float t1 = q / (2.0f*a);
-
-	// make sure t0 is smaller than t1
-	if (t0 > t1)
-	{
-		// if t0 is bigger than t1 swap them around
-		float temp = t0;
-		t0 = t1;
-		t1 = temp;
-	}
-
-	// if t1 is less than zero, the object is in the ray's negative direction
-	// and consequently the ray misses the sphere
-	if (t1 < 0)
-		return false;
-
-	// if t0 is less than zero, the intersection point is at t1
-	if (t0 < 0)
-	{
-		*t = t1;
-		return true;
-	}
-	// else the intersection point is at t0
-	else
-	{
-		*t = t0;
-		return true;
-	}
-}
-
 void Channel::frameDraw( const eq::uint128_t& frameID )
 {
     if( stopRendering( ))
@@ -127,6 +70,8 @@ void Channel::frameDraw( const eq::uint128_t& frameID )
 	_destroyTexture();
 	_createPBO();
 	_createTexture();
+
+	_render.resizeViewport(_lastViewport.w, _lastViewport.h, _pbo);
     }
 
     const FrameData& frameData = _getFrameData();
