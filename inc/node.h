@@ -14,6 +14,7 @@ Notes:
 #include "octreeContainer.h"
 
 #include <map>
+#include <lunchbox/lock.h>
 
 #include <eq/eq.h>
 
@@ -43,7 +44,8 @@ namespace eqMivt
 
 		private:
 
-			std::map<int , eqMivt::OctreeContainer *> _octrees;
+			lunchbox::Lock	 				_lock;
+			std::map<int , eqMivt::OctreeContainer *> 	_octrees;
 	};
 }
 

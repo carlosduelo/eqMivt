@@ -13,6 +13,8 @@ Notes:
 
 #include <eq/eq.h>
 
+#define GL_GLEXT_PROTOTYPES
+#include "ray-casting-sphere.h"
 
 namespace eqMivt
 {
@@ -35,6 +37,15 @@ namespace eqMivt
 
     private:
         const FrameData& _getFrameData() const;
+
+	GLuint _pbo;
+	GLuint _texture;
+
+	void _createPBO();
+	void _createTexture();
+	void _destroyPBO();
+	void _destroyTexture();
+	void _draw();
 
         uint32_t 		_frameRestart;
 	eq::PixelViewport 	_lastViewport;

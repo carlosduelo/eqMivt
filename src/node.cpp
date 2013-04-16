@@ -39,6 +39,8 @@ namespace eqMivt
 
 	bool Node::registerPipeResources(int device)
 	{
+	    _lock.set();
+
 	    // Check octree
 	    std::map<int , eqMivt::OctreeContainer *>::iterator it;
 	    it = _octrees.find(device);
@@ -53,10 +55,12 @@ namespace eqMivt
 		if (!_octrees[device]->readOctreeFile(initData.getOctreeFilename(), initData.getOctreeMaxLevel()))
 		{
 		    LBERROR<<"Error: creating octree in node"<<std::endl;
+		    _lock.unset();
 		    return false;
 		}
 	    }
 	    
+	    _lock.unset();
 	    return true;
 	}
 
