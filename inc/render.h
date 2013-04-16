@@ -20,6 +20,10 @@ namespace eqMivt
     class Render 
     {
 	private:
+	
+	    bool _initOctree;
+
+
 	    int  _height;
 	    int  _width;
 	  
@@ -39,6 +43,10 @@ namespace eqMivt
 	    ~Render();
 
 	    void resizeViewport(int width, int height, GLuint pbo);
+
+	    bool checkCudaResources();
+
+	    void setCudaResources(index_node_t ** octree, int * sizes);
     };
 
 }

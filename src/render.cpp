@@ -15,6 +15,8 @@ namespace eqMivt
 
 Render::Render()
 {
+    _initOctree = false;
+
     _height = 0;
     _width = 0;
 
@@ -64,6 +66,16 @@ void Render::resizeViewport(int width, int height, GLuint pbo)
     {
     	std::cerr<<"Error cudaGraphicsGLRegisterBuffer"<<std::endl;
     }
+}
+
+bool Render::checkCudaResources()
+{
+    return _initOctree;
+}
+
+void Render::setCudaResources(index_node_t ** octree, int * sizes)
+{
+    return;
 }
 
 void Render::_CreateVisibleCubes()

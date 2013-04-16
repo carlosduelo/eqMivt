@@ -9,6 +9,9 @@ Notes:
 #ifndef EQ_MIVT_TYPEDEF_H
 #define EQ_MIVT_TYPEDEF_H
 
+namespace eqMivt
+{
+
 /* indentifier type for octree's node */
 typedef unsigned long long index_node_t;
 
@@ -26,4 +29,5 @@ typedef struct
 #define NOCACHED 	(unsigned char)1
 #define NOCUBE		(unsigned char)0
 
+}
 #endif /* EQ_MIVT_TYPEDEF_H */
