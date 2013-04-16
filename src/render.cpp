@@ -66,6 +66,9 @@ void Render::resizeViewport(int width, int height, GLuint pbo)
     {
     	std::cerr<<"Error cudaGraphicsGLRegisterBuffer"<<std::endl;
     }
+
+
+	_octree.resizeViewport(width, height);
 }
 
 bool Render::checkCudaResources()
@@ -73,9 +76,16 @@ bool Render::checkCudaResources()
     return _initOctree;
 }
 
-void Render::setCudaResources(index_node_t ** octree, int * sizes)
+void Render::setCudaResources(OctreeContainer * oc)
 {
-    return;
+    _octree.setOctree(oc, _height*_width);
+	_initOctree = true;
+}
+
+void Render::frameDraw(eq::Vector4f origin, eq::Vector4f LB, eq::Vector4f up, eq::Vector4f right, float w, float h, int pvpW, int pvpH)
+{
+	_octree.resetState(_stream);
+	_octree.getBoxIntersected(make_float3(origin.x(),origin.y(),origin.z()), make_float3(LB.x(),LB.y(),LB.z()), make_float3(up.x(),up.y(),up.z()), make_float3(right.x(),right.y(),right.z()), w, h, pvpW, pvpH, _visibleCubesGPU, _visibleCubesCPU, _stream);
 }
 
 void Render::_CreateVisibleCubes()

@@ -11,6 +11,8 @@ Notes:
 
 #include "typedef.h"
 
+#include "octree.h"
+
 #include <cuda_gl_interop.h> 
 #include "cuda_runtime.h"
 
@@ -23,21 +25,22 @@ namespace eqMivt
 	
 	    bool _initOctree;
 
+		Octree _octree;
 
 	    int  _height;
 	    int  _width;
 	  
-            visibleCube_t * _visibleCubesGPU;
-            visibleCube_t * _visibleCubesCPU;
+        visibleCube_t * _visibleCubesGPU;
+        visibleCube_t * _visibleCubesCPU;
 
-    	    struct cudaGraphicsResource * _cuda_pbo_resource;
+  	    struct cudaGraphicsResource * _cuda_pbo_resource;
     
-    	    cudaStream_t _stream;
+   	    cudaStream_t _stream;
 
 	    void _CreateVisibleCubes();
 	    void _DestroyVisibleCubes();
 
-        public:
+	public:
 	    Render();
 
 	    ~Render();
@@ -46,7 +49,9 @@ namespace eqMivt
 
 	    bool checkCudaResources();
 
-	    void setCudaResources(index_node_t ** octree, int * sizes);
+	    void setCudaResources(OctreeContainer * oc);
+
+		void frameDraw(eq::Vector4f origin, eq::Vector4f  LB, eq::Vector4f up, eq::Vector4f right, float w, float h, int pvpW, int pvpH);
     };
 
 }

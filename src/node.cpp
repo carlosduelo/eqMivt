@@ -64,14 +64,9 @@ namespace eqMivt
 	    return true;
 	}
 
-	index_node_t **	Node::getOctreePointer(int device)
+	OctreeContainer * Node::getOctreeContainer(int device)
 	{
-		return _octrees[device]->getOctree();
-	}
-
-	int *	Node::getOctreeSizesPointer(int device)
-	{
-		return _octrees[device]->getSizes();
+		return _octrees[device];
 	}
 
 }

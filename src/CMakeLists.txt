@@ -14,9 +14,10 @@ set(MIVT_SOURCE
 		eqMivt.cpp
 		octreeContainer.cpp
 		render.cpp
+		octree.cpp
 )
 
-set(MIVT_CUDA_SOURCE ray-casting-sphere.cu octreeContainer_GPU.cu)
+set(MIVT_CUDA_SOURCE ray-casting-sphere.cu octreeContainer_GPU.cu octree_CUDA.cu)
 
 # SETTING CUDA PARAMETERS
 list(APPEND CUDA_NVCC_FLAGS -arch=sm_13)

@@ -60,7 +60,7 @@ void Channel::frameDraw( const eq::uint128_t& frameID )
     	    LBERROR<<"Error creating pipe"<<std::endl;
     	    return;
         }
-	_render.setCudaResources(node->getOctreePointer(pipe->getDevice()), node->getOctreeSizesPointer(pipe->getDevice()));
+		_render.setCudaResources(node->getOctreeContainer(pipe->getDevice()));
     }
 
     // Check viewport
@@ -68,14 +68,14 @@ void Channel::frameDraw( const eq::uint128_t& frameID )
     if (pvp.w != _lastViewport.w || pvp.h != _lastViewport.h)
     {
         _lastViewport.w = pvp.w;
-	_lastViewport.h = pvp.h;
+		_lastViewport.h = pvp.h;
 
-	_destroyPBO();
-	_destroyTexture();
-	_createPBO();
-	_createTexture();
+		_destroyPBO();
+		_destroyTexture();
+		_createPBO();
+		_createTexture();
 
-	_render.resizeViewport(_lastViewport.w, _lastViewport.h, _pbo);
+		_render.resizeViewport(_lastViewport.w, _lastViewport.h, _pbo);
     }
 
     const FrameData& frameData = _getFrameData();
@@ -120,6 +120,8 @@ void Channel::frameDraw( const eq::uint128_t& frameID )
     float h = frustum.get_height()/(float)pvp.h;
 
     render_sphere(_pbo, pvp.w, pvp.h, pos.x(), pos.y(), pos.z(), p4.x(), p4.y(), p4.z(), up.x(), up.y(), up.z(), right.x(), right.y(), right.z(), w, h);
+
+	_render.frameDraw(pos, p4, up, right, w, h, pvp.w, pvp.h);
 
     _draw();
 }

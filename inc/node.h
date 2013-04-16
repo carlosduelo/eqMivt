@@ -32,8 +32,7 @@ namespace eqMivt
 			Node( eq::Config* parent ) : eq::Node( parent ) {}
 
 			bool 		registerPipeResources(int device);
-			index_node_t **	getOctreePointer(int device);
-			int *		getOctreeSizesPointer(int device);
+			OctreeContainer * getOctreeContainer(int device);
 
 		protected:
 			virtual ~Node(){}
