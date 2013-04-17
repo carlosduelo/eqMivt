@@ -47,6 +47,7 @@ namespace eqMivt
 			lunchbox::Lock								_lock;
 			std::map<int , eqMivt::OctreeContainer *> 	_octrees;
 			cubeCacheCPU								_cubeCacheCPU;
+			bool										_initCubeCacheCPU;
 	};
 }
 
