@@ -47,6 +47,10 @@ namespace eqMivt
 		int			getMaxCubesCacheCPU() const { return _maxCubesCacheCPU; }
 		void		setMaxCubesCacheCPU(int maxCubesCacheCPU){ _maxCubesCacheCPU = maxCubesCacheCPU; }
 
+		int			getMaxCubesCacheGPU() { return _maxCubesCacheGPU; }
+		int			getMaxCubesCacheGPU() const { return _maxCubesCacheGPU; }
+		void		setMaxCubesCacheGPU(int maxCubesCacheGPU){ _maxCubesCacheGPU = maxCubesCacheGPU; }
+
     protected:
         virtual void getInstanceData( co::DataOStream& os );
         virtual void applyInstanceData( co::DataIStream& is );
@@ -63,6 +67,7 @@ namespace eqMivt
 		int				_cubeLevelData;
 
 		int				_maxCubesCacheCPU;
+		int				_maxCubesCacheGPU;
 
     };
 }

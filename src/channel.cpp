@@ -53,14 +53,14 @@ void Channel::frameDraw( const eq::uint128_t& frameID )
     std::cout<<getName()<<" Port: "<<pipe->getPort()<<std::endl;
     
     // Check for CUDA RESOURCES
-    if (_render.checkCudaResources())
+    if (!_render.checkCudaResources())
     {
         if (!node->registerPipeResources(pipe->getDevice()))
         {
     	    LBERROR<<"Error creating pipe"<<std::endl;
     	    return;
         }
-		_render.setCudaResources(node->getOctreeContainer(pipe->getDevice()));
+		_render.setCudaResources(node->getOctreeContainer(pipe->getDevice()), node->getCubeCache(pipe->getDevice()), node->getNewId());
     }
 
     // Check viewport

@@ -35,6 +35,7 @@ const LocalInitData& LocalInitData::operator = ( const LocalInitData& from )
 	setCubeLevelData(from.getCubeLevelData());
 
 	setMaxCubesCacheCPU(from.getMaxCubesCacheCPU());
+	setMaxCubesCacheGPU(from.getMaxCubesCacheGPU());
 
     return *this;
 }
@@ -50,7 +51,8 @@ bool LocalInitData::parseArguments( const int argc, char** argv )
     ("eq-config", "Select equalizer configuration file")
     ("octree-file,o", boost::program_options::value< std::vector<std::string> >()->multitoken(), "octree-file-path maximum-level")
     ("data-file,d", boost::program_options::value< std::vector<std::string> >()->multitoken(), "type-data-file data-file-path level-cube-data\nType file supported: hdf5_file file-path:data-set-name level-cube-data")
-	 ("size-cpu-cache,c", boost::program_options::value<int>(), "set size in cubes cpu cache")
+	("size-cpu-cache,c", boost::program_options::value<int>(), "set size in cubes cpu cache")
+	("size-gpu-cache,g", boost::program_options::value<int>(), "set size in cubes gpu cache")
     ;
 
     boost::program_options::variables_map vm;
@@ -160,6 +162,15 @@ bool LocalInitData::parseArguments( const int argc, char** argv )
 		return false;
 	}
 
+	if (vm.count("size-gpu-cache"))
+	{
+		setMaxCubesCacheGPU(vm["size-gpu-cache"].as<int>());
+	}
+	else 
+	{
+		LBERROR << "size-gpu-cache: <int>"<<std::endl;
+		return false;
+	}
 
     return true;
 }

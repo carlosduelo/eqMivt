@@ -11,6 +11,8 @@ Notes:
 #include "config.h"
 #include "error.h"
 
+#define MAX_WORKERS 32
+
 namespace eqMivt
 {
 	bool Node::configInit( const eq::uint128_t& initID )
@@ -30,6 +32,7 @@ namespace eqMivt
 		}
 
 		_initCubeCacheCPU = false;
+		_idPipes = 0;
 
 		return true;
 	}
@@ -37,6 +40,9 @@ namespace eqMivt
 	bool Node::configExit()
 	{
 	    for (std::map<int , eqMivt::OctreeContainer *>::iterator it = _octrees.begin(); it!=_octrees.end(); it++)
+	        delete it->second;
+
+	    for (std::map<int , eqMivt::cubeCache *>::iterator it = _caches.begin(); it!=_caches.end(); it++)
 	        delete it->second;
 	}
 
@@ -71,16 +77,36 @@ namespace eqMivt
 	    {
 	        _octrees[device] = new eqMivt::OctreeContainer(device);
 		
-		Config* config = static_cast< Config* >( getConfig( ));
-		const InitData& initData = config->getInitData();
+			Config* config = static_cast< Config* >( getConfig( ));
+			const InitData& initData = config->getInitData();
 
-		if (!_octrees[device]->readOctreeFile(initData.getOctreeFilename(), initData.getOctreeMaxLevel()))
-		{
-		    LBERROR<<"Error: creating octree in node"<<std::endl;
-		    _lock.unset();
-		    return false;
-		}
+			if (!_octrees[device]->readOctreeFile(initData.getOctreeFilename(), initData.getOctreeMaxLevel()))
+			{
+				LBERROR<<"Error: creating octree in node"<<std::endl;
+				_lock.unset();
+				return false;
+			}
 	    }
+		
+		std::map<int , eqMivt::cubeCache *>::iterator itC;
+		itC = _caches.find(device);
+
+		if (itC == _caches.end())
+		{
+			_caches[device] = new eqMivt::cubeCache();
+
+
+			Config* config = static_cast< Config* >( getConfig( ));
+			const InitData& initData = config->getInitData();
+
+			if (!_caches[device]->init(&_cubeCacheCPU, MAX_WORKERS, initData.getMaxCubesCacheGPU()))
+			{
+				LBERROR<<"Error: creating cache in node"<<std::endl;
+				_lock.unset();
+				return false;
+			}
+
+		}
 	    
 	    _lock.unset();
 	    return true;
@@ -89,6 +115,14 @@ namespace eqMivt
 	OctreeContainer * Node::getOctreeContainer(int device)
 	{
 		return _octrees[device];
+	}
+	cubeCache *	Node::getCubeCache(int device)
+	{
+		return _caches[device];
+	}
+	int			Node::getNewId()
+	{
+		return _idPipes++;
 	}
 
 }

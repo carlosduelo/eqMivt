@@ -15,7 +15,7 @@ namespace eqMivt
 
 Render::Render()
 {
-    _initOctree = false;
+    _init = false;
 
     _height = 0;
     _width = 0;
@@ -73,19 +73,26 @@ void Render::resizeViewport(int width, int height, GLuint pbo)
 
 bool Render::checkCudaResources()
 {
-    return _initOctree;
+    return _init;
 }
 
-void Render::setCudaResources(OctreeContainer * oc)
+void Render::setCudaResources(OctreeContainer * oc, cubeCache * cc, int id)
 {
     _octree.setOctree(oc, _height*_width);
-	_initOctree = true;
+	_cache = cc;
+	_id  = id;
+	_init = true;
 }
 
 void Render::frameDraw(eq::Vector4f origin, eq::Vector4f LB, eq::Vector4f up, eq::Vector4f right, float w, float h, int pvpW, int pvpH)
 {
+	// Reset VisibleCubes 
+	//cudaMemsetAsync((void*)_visibleCubesGPU, 0, (_height*_width)*sizeof(visibleCube_t), _stream);
+
 	_octree.resetState(_stream);
-	//_octree.getBoxIntersected(make_float3(origin.x(),origin.y(),origin.z()), make_float3(LB.x(),LB.y(),LB.z()), make_float3(up.x(),up.y(),up.z()), make_float3(right.x(),right.y(),right.z()), w, h, pvpW, pvpH, _visibleCubesGPU, _visibleCubesCPU, _stream);
+	_octree.getBoxIntersected(make_float3(origin.x(),origin.y(),origin.z()), make_float3(LB.x(),LB.y(),LB.z()), make_float3(up.x(),up.y(),up.z()), make_float3(right.x(),right.y(),right.z()), w, h, pvpW, pvpH, _visibleCubesGPU, _visibleCubesCPU, _stream);
+	_cache->push(_visibleCubesCPU, (_height*_width), _octree.getOctreeLevel(), _id, _stream);
+	_cache->pop(_visibleCubesCPU, (_height*_width), _octree.getOctreeLevel(), _id, _stream);
 }
 
 void Render::_CreateVisibleCubes()

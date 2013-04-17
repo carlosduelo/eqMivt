@@ -12,6 +12,7 @@ Notes:
 #include "typedef.h"
 
 #include "octree.h"
+#include "cubeCache.h"
 
 #include <cuda_gl_interop.h> 
 #include "cuda_runtime.h"
@@ -22,10 +23,13 @@ namespace eqMivt
     class Render 
     {
 	private:
+
+		int _id;
 	
-	    bool _initOctree;
+	    bool _init;
 
 		Octree _octree;
+		cubeCache * _cache;
 
 	    int  _height;
 	    int  _width;
@@ -49,7 +53,7 @@ namespace eqMivt
 
 	    bool checkCudaResources();
 
-	    void setCudaResources(OctreeContainer * oc);
+	    void setCudaResources(OctreeContainer * oc, cubeCache * cc, int id);
 
 		void frameDraw(eq::Vector4f origin, eq::Vector4f  LB, eq::Vector4f up, eq::Vector4f right, float w, float h, int pvpW, int pvpH);
     };

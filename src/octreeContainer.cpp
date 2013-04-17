@@ -51,6 +51,8 @@ int OctreeContainer::getnLevelsFromOctreeFile(std::string file_name)
 	file.read((char*)&no, 	sizeof(int));
 	file.read((char*)&no, 	sizeof(int));
 	file.read((char*)&nLevels, 	sizeof(int));
+
+	return nLevels;
 }
 
 OctreeContainer::OctreeContainer(int device)

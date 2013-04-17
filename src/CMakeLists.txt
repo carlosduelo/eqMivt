@@ -19,6 +19,8 @@ set(MIVT_SOURCE
 		hdf5File.cpp
 		linkedList.cpp
 		cubeCacheCPU.cpp
+		cubeCacheGPU.cpp
+		cubeCache.cpp
 )
 
 set(MIVT_CUDA_SOURCE ray-casting-sphere.cu octreeContainer_GPU.cu octree_CUDA.cu)
