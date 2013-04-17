@@ -15,6 +15,10 @@ set(MIVT_SOURCE
 		octreeContainer.cpp
 		render.cpp
 		octree.cpp
+		fileFactory.cpp
+		hdf5File.cpp
+		linkedList.cpp
+		cubeCacheCPU.cpp
 )
 
 set(MIVT_CUDA_SOURCE ray-casting-sphere.cu octreeContainer_GPU.cu octree_CUDA.cu)
@@ -36,7 +40,7 @@ endif()
 cuda_compile(MIVT_CUDA_OBJECTS ${MIVT_CUDA_SOURCE})
 #message(STATUS ${MIVT_CUDA_OBJECTS})
 
-set(LIBS_NEEDED ${EQUALIZER_LIBRARIES} GL ${CUDA_LIBRARIES} ${Boost_LIBRARIES} )#${HDF5_LIBRARIES} ) 
+set(LIBS_NEEDED ${EQUALIZER_LIBRARIES} GL ${CUDA_LIBRARIES} ${Boost_LIBRARIES} ${HDF5_LIBRARIES} ) 
 
 add_executable(mivt ${MIVT_SOURCE} ${MIVT_CUDA_OBJECTS} main.cpp) 
 target_link_libraries(mivt ${LIBS_NEEDED}) 

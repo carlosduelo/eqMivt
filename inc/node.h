@@ -12,6 +12,7 @@ Notes:
 #include "eqMivt.h"
 #include "initData.h"
 #include "octreeContainer.h"
+#include "cubeCacheCPU.h"
 
 #include <map>
 #include <lunchbox/lock.h>
@@ -31,8 +32,8 @@ namespace eqMivt
 		public:
 			Node( eq::Config* parent ) : eq::Node( parent ) {}
 
-			bool 		registerPipeResources(int device);
-			OctreeContainer * getOctreeContainer(int device);
+			bool				registerPipeResources(int device);
+			OctreeContainer *	getOctreeContainer(int device);
 
 		protected:
 			virtual ~Node(){}
@@ -43,8 +44,9 @@ namespace eqMivt
 
 		private:
 
-			lunchbox::Lock	 				_lock;
+			lunchbox::Lock								_lock;
 			std::map<int , eqMivt::OctreeContainer *> 	_octrees;
+			cubeCacheCPU								_cubeCacheCPU;
 	};
 }
 

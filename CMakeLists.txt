@@ -28,12 +28,12 @@ else()
 endif()
 
 # HDF5
-#find_package(HDF5 REQUIRED)
-#if (HDF5_FOUND)
-#	include_directories(HDF5_INCLUDE_DIRS)
-#else()
-#	message(ERROR "HDF5 NOT FOUND")
-#endif()
+find_package(HDF5 REQUIRED)
+if (HDF5_FOUND)
+	include_directories(HDF5_INCLUDE_DIRS)
+else()
+	message(ERROR "HDF5 NOT FOUND")
+endif()
 
 # CUDA
 find_package(CUDA 5.0 REQUIRED)
@@ -43,12 +43,6 @@ if (CUDA_FOUND)
 else()
 	message(ERROR "CUDA NOT FOUND")
 endif()
-
-
-# TOOLS
-#include_directories(${TCLAP_INDCLUDE_DIR})
-#message(STATUS ${TCLAP_INDCLUDE_DIR})
-#include_directories(${mivt_SOURCE_DIR}/tools/tclap/include)
 
 
 # MIVT

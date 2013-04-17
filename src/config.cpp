@@ -78,6 +78,11 @@ bool Config::loadData( const eq::uint128_t& initDataID )
 	    LBERROR << "Cannot open "<<_initData.getOctreeFilename()<< "in level "<<_initData.getOctreeMaxLevel()<<" file."<< std::endl;
 	    return false;
     }
+    if (!boost::filesystem::exists(_initData.getDataFilename()[0]))
+    {
+	    LBERROR << "Cannot open "<<_initData.getDataFilename()[0]<< "in level "<<_initData.getOctreeMaxLevel()<<" file."<< std::endl;
+	    return false;
+    }
 
     return true;
 }

@@ -28,6 +28,21 @@ namespace eqMivt
 			setError( ERROR_EQ_MIVT_FAILED );
 			return false;
 		}
+
+		// Init cpu Cache
+		const InitData& initData = config->getInitData();
+
+		vmml::vector<3, int> cubeDim;
+		int nLevels = OctreeContainer::getnLevelsFromOctreeFile(initData.getOctreeFilename());
+		int cDim = exp2(nLevels - initData.getCubeLevelData());
+		cubeDim.set(cDim, cDim, cDim);
+
+		if (!_cubeCacheCPU.init(initData.getDataTypeFile(), initData.getDataFilename(), initData.getMaxCubesCacheCPU(), cubeDim, 2 ,initData.getCubeLevelData(), nLevels ))
+		{
+			setError( ERROR_EQ_MIVT_FAILED );
+			return false;
+		}
+
 		return true;
 	}
 
