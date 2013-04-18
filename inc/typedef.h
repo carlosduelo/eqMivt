@@ -18,7 +18,7 @@ typedef unsigned long long index_node_t;
 typedef struct
 {
 	index_node_t 	id;
-	float * 	data;
+	float *			data;
 	unsigned char   state;
 	index_node_t	cubeID;
 } visibleCube_t;

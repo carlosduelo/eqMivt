@@ -111,7 +111,6 @@ void cubeCacheCPU::pop_cube(index_node_t idCube)
 #else
 	std::map<index_node_t, NodeLinkedList *>::iterator it;
 #endif
-
 	lock.set();
 
 	// Find the cube in the CPU cache

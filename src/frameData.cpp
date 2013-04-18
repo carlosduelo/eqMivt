@@ -75,7 +75,7 @@ void FrameData::reset()
     if( _position == eq::Vector3f( 0.f, 0.f, -2.f ) &&
         _rotation == eq::Matrix4f::IDENTITY)
     {
-        _position.z() = 0.f;
+        _position.z() = 0.0f;
     }
     else
     {

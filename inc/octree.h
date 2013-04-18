@@ -66,7 +66,7 @@ class Octree
 		void resetState(cudaStream_t stream);
 
 		/* Dado un rayo devuelve true si el rayo impacta contra el volumen, el primer box del nivel dado contra el que impacta y la distancia entre el origen del rayo y la box */
-		void getBoxIntersected(float3 origin, float3  LB, float3 up, float3 right, float w, float h, int pvpW, int pvpH, visibleCube_t * visibleGPU, visibleCube_t * visibleCPU, cudaStream_t stream);
+		void getBoxIntersected(float3 origin, float * rays, int pvpW, int pvpH, visibleCube_t * visibleGPU, visibleCube_t * visibleCPU, cudaStream_t stream);
 
 };
 

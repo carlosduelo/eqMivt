@@ -13,6 +13,7 @@ Notes:
 
 #include "octree.h"
 #include "cubeCache.h"
+#include "rayCaster.h"
 
 #include <cuda_gl_interop.h> 
 #include "cuda_runtime.h"
@@ -28,8 +29,10 @@ namespace eqMivt
 	
 	    bool _init;
 
-		Octree _octree;
+		Octree		_octree;
 		cubeCache * _cache;
+		rayCaster	_raycaster;
+		float	*	_rays;
 
 	    int  _height;
 	    int  _width;

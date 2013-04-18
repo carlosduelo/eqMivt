@@ -21,9 +21,10 @@ set(MIVT_SOURCE
 		cubeCacheCPU.cpp
 		cubeCacheGPU.cpp
 		cubeCache.cpp
+		rayCaster.cpp
 )
 
-set(MIVT_CUDA_SOURCE ray-casting-sphere.cu octreeContainer_GPU.cu octree_CUDA.cu)
+set(MIVT_CUDA_SOURCE ray-casting-sphere.cu octreeContainer_GPU.cu octree_CUDA.cu rayCaster_CUDA.cu rayGenerator.cu)
 
 # SETTING CUDA PARAMETERS
 list(APPEND CUDA_NVCC_FLAGS -arch=sm_13)
