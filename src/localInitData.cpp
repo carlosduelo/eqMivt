@@ -95,8 +95,8 @@ bool LocalInitData::parseArguments( const int argc, char** argv )
     // Parameter needed
     else
     {
-        LBERROR << desc << "\n";
-		return false;
+		setOctreeFilename("");
+		setOctreeMaxLevel(0);
     }
 
 	if (vm.count("data-file"))
@@ -142,8 +142,10 @@ bool LocalInitData::parseArguments( const int argc, char** argv )
     // Parameter needed
     else
     {
-        LBERROR << desc << "\n";
-		return false;
+		setDataTypeFile("");
+		std::vector<std::string> fileParams;
+		setDataFilename(fileParams);
+		setCubeLevelData(0);
     }
 
 	if (checkCubeLevels())
@@ -158,8 +160,7 @@ bool LocalInitData::parseArguments( const int argc, char** argv )
 	}
 	else 
 	{
-		LBERROR << "size-cpu-cache: <int>"<<std::endl;
-		return false;
+		setMaxCubesCacheCPU(1);
 	}
 
 	if (vm.count("size-gpu-cache"))
@@ -168,8 +169,7 @@ bool LocalInitData::parseArguments( const int argc, char** argv )
 	}
 	else 
 	{
-		LBERROR << "size-gpu-cache: <int>"<<std::endl;
-		return false;
+		setMaxCubesCacheGPU(1);
 	}
 
     return true;

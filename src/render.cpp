@@ -137,8 +137,6 @@ void Render::frameDraw(eq::Vector4f origin, eq::Vector4f LB, eq::Vector4f up, eq
 		for(int i=0; i<numPixels; i++)
 			if (_visibleCubesCPU[i].state == PAINTED)
 				numP++;
-			else if (_visibleCubesCPU[i].state == CUBE)
-				nocached++;
 
 		if (numP == numPixels)
 		{
@@ -147,9 +145,6 @@ void Render::frameDraw(eq::Vector4f origin, eq::Vector4f LB, eq::Vector4f up, eq
 		}
 
 		_cache->push(_visibleCubesCPU, (_height*_width), _octree.getOctreeLevel(), _id, _stream);
-
-
-std::cout<<iterations<< " "<<numP<<" "<<nocached<<std::endl;
 
 		cudaMemcpyAsync((void*) _visibleCubesGPU, (const void*) _visibleCubesCPU, (_height*_width)*sizeof(visibleCube_t), cudaMemcpyHostToDevice, _stream);
 
