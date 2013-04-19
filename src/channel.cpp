@@ -11,7 +11,6 @@ Notes:
 #include "initData.h"
 #include "config.h"
 #include "pipe.h"
-#include "node.h"
 
 namespace eqMivt
 {
@@ -46,22 +45,14 @@ void Channel::frameDraw( const eq::uint128_t& frameID )
     if( stopRendering( ))
         return;
 
-    const Pipe* pipe = static_cast<const Pipe*>( getPipe( ));
-    Node*       node = static_cast<Node*>( getNode( ));
+    Pipe* pipe = static_cast<Pipe*>( getPipe( ));
 
     std::cout<<getName()<<" Device: "<<pipe->getDevice()<<std::endl;
     std::cout<<getName()<<" Port: "<<pipe->getPort()<<std::endl;
     
-    // Check for CUDA RESOURCES
-    if (!_render.checkCudaResources())
-    {
-        if (!node->registerPipeResources(pipe->getDevice()))
-        {
-    	    LBERROR<<"Error creating pipe"<<std::endl;
-    	    return;
-        }
-		_render.setCudaResources(node->getOctreeContainer(pipe->getDevice()), node->getCubeCache(pipe->getDevice()), node->getNewId());
-    }
+	Render * render = pipe->getRender();
+	if (render == 0)
+		return;
 
     // Check viewport
     const eq::PixelViewport& pvp = getPixelViewport();
@@ -75,7 +66,7 @@ void Channel::frameDraw( const eq::uint128_t& frameID )
 		_createPBO();
 		_createTexture();
 
-		_render.resizeViewport(_lastViewport.w, _lastViewport.h, _pbo);
+		render->resizeViewport(_lastViewport.w, _lastViewport.h, _pbo);
     }
 
     const FrameData& frameData = _getFrameData();
@@ -121,7 +112,7 @@ void Channel::frameDraw( const eq::uint128_t& frameID )
 
     //render_sphere(_pbo, pvp.w, pvp.h, pos.x(), pos.y(), pos.z(), p4.x(), p4.y(), p4.z(), up.x(), up.y(), up.z(), right.x(), right.y(), right.z(), w, h);
 
-	_render.frameDraw(pos, p4, up, right, w, h, pvp.w, pvp.h);
+	render->frameDraw(pos, p4, up, right, w, h, pvp.w, pvp.h);
 
     _draw();
 }

@@ -40,19 +40,17 @@ namespace eqMivt
     private:
         const FrameData& _getFrameData() const;
 
-	GLuint _pbo;
-	GLuint _texture;
+		GLuint _pbo;
+		GLuint _texture;
 
-	void _createPBO();
-	void _createTexture();
-	void _destroyPBO();
-	void _destroyTexture();
-	void _draw();
+		void _createPBO();
+		void _createTexture();
+		void _destroyPBO();
+		void _destroyTexture();
+		void _draw();
 
-        uint32_t 		_frameRestart;
-	eq::PixelViewport 	_lastViewport;
-
-	Render			_render;
+		uint32_t			_frameRestart;
+		eq::PixelViewport 	_lastViewport;
     };
 }
 

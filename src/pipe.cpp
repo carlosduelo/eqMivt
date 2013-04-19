@@ -39,4 +39,22 @@ void Pipe::frameStart( const eq::uint128_t& frameID, const uint32_t frameNumber)
     eq::Pipe::frameStart( frameID, frameNumber );
     _frameData.sync( frameID );
 }
+
+Render * Pipe::getRender()
+{
+    Node*       node = static_cast<Node*>( getNode( ));
+    // Check for CUDA RESOURCES
+    if (!_render.checkCudaResources())
+    {
+        if (!node->registerPipeResources(getDevice()))
+        {
+    	    LBERROR<<"Error creating pipe"<<std::endl;
+    	    return 0;
+        }
+		_render.setCudaResources(node->getOctreeContainer(getDevice()), node->getCubeCache(getDevice()), node->getNewId());
+    }
+
+	return &_render;
+}
+
 }

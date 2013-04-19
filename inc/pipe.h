@@ -12,6 +12,7 @@ Notes:
 #include <eq/eq.h>
 
 #include "frameData.h"
+#include "render.h"
 
 namespace eqMivt
 {
@@ -22,6 +23,8 @@ namespace eqMivt
 
         const FrameData& getFrameData() const { return _frameData; }
 
+		Render * getRender();
+
     protected:
         virtual ~Pipe() {}
 
@@ -31,7 +34,9 @@ namespace eqMivt
                                  const uint32_t frameNumber );
 
     private:
-        FrameData _frameData;
+        FrameData	_frameData;
+
+		Render		_render;
     };
 }
 
