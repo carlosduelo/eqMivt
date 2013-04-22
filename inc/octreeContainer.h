@@ -38,6 +38,8 @@ class OctreeContainer
 
 		static int getnLevelsFromOctreeFile(std::string file_name);
 
+		static eq::Vector3f  getRealDimFromOctreeFile(std::string file_name);
+
 		bool readOctreeFile(std::string file_name, int p_maxLevel);
 
 		int getDevice(){ return _device; }
