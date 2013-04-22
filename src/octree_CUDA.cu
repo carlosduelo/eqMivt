@@ -336,7 +336,7 @@ __device__ bool _cuda_searchChildrenValidAndHit2(index_node_t * elements, int si
 	int dim = (1<<(nLevels-level));
 	int3 minBox = make_int3(minB.x, minB.y, minB.z);
 
-	float closer = cTnear;
+	float closer = 0x7ff0000000000000;//infinity
 	bool find = false;
 	float childTnearT = 0.0f;
 	float childTfarT  = 0.0f;
@@ -584,7 +584,7 @@ __global__ void cuda_getFirtsVoxel(index_node_t ** octree, int * sizes, int nLev
 
 		visibleCube_t * indexNode	= &p_indexNode[i];
 
-		if (indexNode->state ==  NOCUBE)// && i == 969342)
+		if (indexNode->state ==  NOCUBE)// && i >= 938227)
 		{
 			float			currentTnear	= 0.0f;
 			float			currentTfar		= 0.0f;
@@ -592,7 +592,7 @@ __global__ void cuda_getFirtsVoxel(index_node_t ** octree, int * sizes, int nLev
 			int				currentLevel	= 0;
 			
 			// Update tnear and tfar
-			if (!_cuda_RayAABB(current, origin, ray,  &currentTnear, &currentTfar, nLevels) || currentTfar < 0.0f)
+			if (!_cuda_RayAABB(current, origin, ray,  &currentTnear, &currentTfar, nLevels) || currentTnear < 0.0f)
 			{
 				// NO CUBE FOUND
 				indexNode->id 	= 0;
@@ -604,16 +604,16 @@ __global__ void cuda_getFirtsVoxel(index_node_t ** octree, int * sizes, int nLev
 				current  >>= 3;
 				currentLevel = finalLevel - 1;
 				currentTnear = currentTfar;
-				printf("--> %d %lld %d %f %f\n", i, current, currentLevel, currentTnear, currentTfar);
+				//printf("--> %d %lld %d %f %f\n", i, current, currentLevel, currentTnear, currentTfar);
 			}
 
 			int3		minBox 		= getMinBoxIndex2(current, currentLevel, nLevels);
 
 			while(1)
 			{
+				//printf("--> %d %lld %d %f %f\n", i, current, currentLevel, currentTnear, currentTfar);
 				if (currentLevel == finalLevel)
 				{
-					printf("--> %d %lld %d %f %f\n", i, current, currentLevel, currentTnear, currentTfar);
 					indexNode->id = current;
 					indexNode->state = CUBE;
 					return;
