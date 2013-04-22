@@ -99,44 +99,6 @@ __device__  bool _cuda_searchSecuential(index_node_t * elements, index_node_t in
 	return find;
 }
 
-__device__ int _cuda_searchChildren(index_node_t * elements, int size, index_node_t father, index_node_t * children)
-{
-	index_node_t childrenID = father << 3;
-	int numChild = 0;
-
-	if (size==2)
-	{
-		for(int i=0; i<8; i++)
-		{
-			if (_cuda_checkRange(elements, childrenID,0,1))
-			{
-				children[numChild] = childrenID;
-				numChild++;
-			}
-			childrenID++;
-		}
-	}
-	else
-	{
-		unsigned int closer1 = _cuda_binary_search_closer(elements, childrenID,   0, size-1);
-		unsigned int closer8 = _cuda_binary_search_closer(elements, childrenID+7, closer1, size-1) + 1;
-
-		if (closer8 >= size)
-			closer8 = size-1;
-
-		for(int i=0; i<8; i++)
-		{
-			if (_cuda_searchSecuential(elements, childrenID, closer1, closer8))
-			{
-				children[numChild] = childrenID;
-				numChild++;
-			}
-			childrenID++;
-		}
-	}
-	return numChild;
-}
-
 __device__ bool _cuda_RayAABB(index_node_t index, float3 origin, float3 dir,  float * tnear, float * tfar, int nLevels)
 {
 	int3 minBox;
@@ -210,7 +172,7 @@ __device__ bool _cuda_RayAABB(index_node_t index, float3 origin, float3 dir,  fl
 		*tnear=tmin;
 	*tfar=tmax;
 
-	return hit;
+	return *tnear == *tfar ? false : hit;
 }
 
 __device__ bool _cuda_RayAABB2(float3 origin, float3 dir,  float * tnear, float * tfar, int nLevels, int3 minBox, int level)
@@ -281,65 +243,23 @@ __device__ bool _cuda_RayAABB2(float3 origin, float3 dir,  float * tnear, float 
 	 	*tnear=0.0;
 	else
 		*tnear=tmin;
+
 	*tfar=tmax;
 
-	return hit;
+	return *tnear == *tfar ? false : hit;
 
 }
 
-__device__ int _cuda_searchChildrenValidAndHit(index_node_t * elements, int size, float3 origin, float3 ray, index_node_t father, index_node_t * children, float * tnears, float * tfars, int nLevels)
-{
-	index_node_t childrenID = father << 3;
-	int numChild = 0;
-/*
-	if ((childrenID+7) < elements[0] || (childrenID) > elements[size-1])
-		return 0;
-*/
-	if (size==2)
-	{
-		for(int i=0; i<8; i++)
-		{
-			if (	_cuda_checkRange(elements, childrenID,0,1) &&
-				_cuda_RayAABB(childrenID, origin, ray,  &tnears[numChild], &tfars[numChild], nLevels))
-			{
-				children[numChild] = childrenID;
-				numChild++;
-			}
-			childrenID++;
-		}
-	}
-	else
-	{
-		unsigned int closer1 = _cuda_binary_search_closer(elements, childrenID,   0, size-1);
-		unsigned int closer8 = _cuda_binary_search_closer(elements, childrenID+7, closer1, size-1) + 1;
-
-		if (closer8 >= size)
-			closer8 = size-1;
-
-		for(int i=0; i<8; i++)
-		{
-			if (	_cuda_searchSecuential(elements, childrenID, closer1, closer8) &&
-				_cuda_RayAABB(childrenID, origin, ray, &tnears[numChild], &tfars[numChild], nLevels) && tfars[numChild]>=0.0f)
-			{
-				children[numChild] = childrenID;
-				numChild++;
-			}
-			childrenID++;
-		}
-	}
-	return numChild;
-}
-
-__device__ bool _cuda_searchChildrenValidAndHit2(index_node_t * elements, int size, float3 origin, float3 ray, index_node_t father, float cTnear, float cTfar, int nLevels, int level, int3 minB, index_node_t * child, float * childTnear, float * childTfar)
+__device__ bool _cuda_searchNextChildrenValidAndHit(index_node_t * elements, int size, float3 origin, float3 ray, index_node_t father, float cTnear, float cTfar, int nLevels, int level, int3 minB, index_node_t * child, float * childTnear, float * childTfar)
 {
 	index_node_t childrenID = father << 3;
 	int dim = (1<<(nLevels-level));
 	int3 minBox = make_int3(minB.x, minB.y, minB.z);
 
-	float closer = 0x7ff0000000000000;//infinity
+	float closer = 0x7ff0000000000000;	//infinity
 	bool find = false;
-	float childTnearT = 0.0f;
-	float childTfarT  = 0.0f;
+	float childTnearT = 0xfff0000000000000; // -infinity
+	float childTfarT  = 0xfff0000000000000; // -infinity
 
 	if (size==2)
 	{
@@ -611,7 +531,6 @@ __global__ void cuda_getFirtsVoxel(index_node_t ** octree, int * sizes, int nLev
 
 			while(1)
 			{
-				//printf("--> %d %lld %d %f %f\n", i, current, currentLevel, currentTnear, currentTfar);
 				if (currentLevel == finalLevel)
 				{
 					indexNode->id = current;
@@ -623,13 +542,20 @@ __global__ void cuda_getFirtsVoxel(index_node_t ** octree, int * sizes, int nLev
 				index_node_t	child;
 				float			childTnear;
 				float			childTfar;
-				if (_cuda_searchChildrenValidAndHit2(octree[currentLevel+1], sizes[currentLevel+1], origin, ray, current, currentTnear, currentTfar, nLevels, currentLevel+1, minBox, &child, &childTnear, &childTfar))
+				if (_cuda_searchNextChildrenValidAndHit(octree[currentLevel+1], sizes[currentLevel+1], origin, ray, current, currentTnear, currentTfar, nLevels, currentLevel+1, minBox, &child, &childTnear, &childTfar))
 				{
 					minBox = _cuda_updateCoordinates(nLevels, currentLevel, current, currentLevel + 1, child, minBox);
 					current = child;
 					currentLevel++;
 					currentTnear = childTnear;
 					currentTfar = childTfar;
+				//if (currentTnear == currentTfar)
+				//	printf("--> %d %lld %d %f %f\n", i, current, currentLevel, currentTnear, currentTfar);
+				}
+				else if (current == 1) 
+				{
+					indexNode->id 	= 0;
+					return;
 				}
 				else
 				{
@@ -639,11 +565,6 @@ __global__ void cuda_getFirtsVoxel(index_node_t ** octree, int * sizes, int nLev
 					currentTnear = currentTfar;
 				}
 
-				if (current <= 1)
-				{
-					indexNode->id 	= 0;
-					return;
-				}
 			}
 		}
 	}
