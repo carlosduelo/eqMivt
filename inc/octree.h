@@ -29,11 +29,6 @@ class Octree
 
 		int		_maxRays;
 
-		// Octree State
-		int 	*		_GstackActual;
-		index_node_t * 	_GstackIndex;
-		int	*			_GstackLevel;
-
 	public:
 		Octree();
 
@@ -62,8 +57,6 @@ class Octree
 		}
 
 		void resizeViewport(int width, int height);
-
-		void resetState(cudaStream_t stream);
 
 		/* Dado un rayo devuelve true si el rayo impacta contra el volumen, el primer box del nivel dado contra el que impacta y la distancia entre el origen del rayo y la box */
 		void getBoxIntersected(float3 origin, float * rays, int pvpW, int pvpH, visibleCube_t * visibleGPU, visibleCube_t * visibleCPU, cudaStream_t stream);

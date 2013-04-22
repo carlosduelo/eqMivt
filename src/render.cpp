@@ -104,8 +104,6 @@ void Render::frameDraw(eq::Vector4f origin, eq::Vector4f LB, eq::Vector4f up, eq
 {
 	// Reset VisibleCubes 
 	cudaMemsetAsync((void*)_visibleCubesGPU, 0, (_height*_width)*sizeof(visibleCube_t), _stream);
-
-	_octree.resetState(_stream);
 	
 	//Generate rays
 	generateRays_CUDA(_rays, make_float3(origin.x(),origin.y(),origin.z()), make_float3(LB.x(),LB.y(),LB.z()), make_float3(up.x(),up.y(),up.z()), make_float3(right.x(),right.y(),right.z()), w, h, pvpW, pvpH, _stream);
