@@ -146,7 +146,6 @@ __global__ void cuda_rayCaster(float3 origin, float *rays, int numRays, float is
 
 	if (tid < numRays)
 	{
-	
 		if (cube[tid].state == NOCUBE)
 		{
 			screen[tid*3] = 1.0f; 
