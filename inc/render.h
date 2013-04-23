@@ -32,7 +32,6 @@ namespace eqMivt
 		Octree		_octree;
 		cubeCache * _cache;
 		rayCaster	_raycaster;
-		float	*	_rays;
 
 	    int  _height;
 	    int  _width;

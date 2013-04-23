@@ -9,8 +9,6 @@ Notes:
 #include "render.h"
 #include <iostream>
 
-#include "rayGenerator.h"
-
 namespace eqMivt
 {
 
@@ -24,8 +22,6 @@ Render::Render()
     _visibleCubesGPU = 0;
     _visibleCubesCPU = 0;
 
-	_rays = 0;
-
     _cuda_pbo_resource = 0;
 
     if (cudaSuccess != cudaStreamCreate(&_stream))
@@ -36,9 +32,6 @@ Render::Render()
 
 Render::~Render()
 {
-
-	if (_rays != 0)
-		cudaFree(_rays);
 
     // Destroy Visible cubes
     _DestroyVisibleCubes();
@@ -76,14 +69,6 @@ void Render::resizeViewport(int width, int height, GLuint pbo)
 
 
 	_octree.resizeViewport(width, height);
-
-
-	// Resize Rays
-    if (cudaSuccess != (cudaMalloc(&_rays, (3*_height*_width)*sizeof(float))))
-    {
-    	std::cerr<< "Render: error allocating rays in the gpu\n";
-    }
-
 }
 
 bool Render::checkCudaResources()
@@ -105,9 +90,6 @@ void Render::frameDraw(eq::Vector4f origin, eq::Vector4f LB, eq::Vector4f up, eq
 	// Reset VisibleCubes 
 	cudaMemsetAsync((void*)_visibleCubesGPU, 0, (_height*_width)*sizeof(visibleCube_t), _stream);
 	
-	//Generate rays
-	generateRays_CUDA(_rays, make_float3(origin.x(),origin.y(),origin.z()), make_float3(LB.x(),LB.y(),LB.z()), make_float3(up.x(),up.y(),up.z()), make_float3(right.x(),right.y(),right.z()), w, h, pvpW, pvpH, _stream);
-
 	float * pixelBuffer;
     if (cudaSuccess != cudaGraphicsMapResources(1, &_cuda_pbo_resource, 0))
     {
@@ -126,7 +108,7 @@ void Render::frameDraw(eq::Vector4f origin, eq::Vector4f LB, eq::Vector4f up, eq
 
 	while(notEnd)
 	{
-		_octree.getBoxIntersected(make_float3(origin.x(),origin.y(),origin.z()), _rays, pvpW, pvpH, _visibleCubesGPU, _visibleCubesCPU, _stream);
+		_octree.getBoxIntersected(origin, LB, up, right, w, h, pvpW, pvpH, _visibleCubesGPU, _visibleCubesCPU, _stream);
 
 		cudaStreamSynchronize(_stream);
 
@@ -163,7 +145,7 @@ void Render::frameDraw(eq::Vector4f origin, eq::Vector4f LB, eq::Vector4f up, eq
 		vmml::vector<3, int> cDim = _cache->getCubeDim();
 		vmml::vector<3, int> cInc = _cache->getCubeInc();
 
-		_raycaster.render(make_float3(origin.x(),origin.y(),origin.z()), _rays, (_height*_width), _octree.getOctreeLevel(), _cache->getCacheLevel(), _octree.getnLevels(), _visibleCubesGPU,  make_int3(cDim.x(), cDim.y(), cDim.z()), make_int3(cInc.x(), cInc.y(), cInc.z()), pixelBuffer, _stream);
+		_raycaster.render(origin, LB, up, right, w, h, pvpW, pvpH, (_height*_width), _octree.getOctreeLevel(), _cache->getCacheLevel(), _octree.getnLevels(), _visibleCubesGPU,  make_int3(cDim.x(), cDim.y(), cDim.z()), make_int3(cInc.x(), cInc.y(), cInc.z()), pixelBuffer, _stream);
 
 		_cache->pop(_visibleCubesCPU, (_height*_width), _octree.getOctreeLevel(), _id, _stream);
 		
