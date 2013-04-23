@@ -32,11 +32,6 @@ void Octree::setOctree(OctreeContainer * oc, int maxRays)
 }
 
 
-void Octree::resizeViewport(int width, int height)
-{
-	_maxRays = width * height;
-}
-
 void Octree::getBoxIntersected(eq::Vector4f origin, eq::Vector4f  LB, eq::Vector4f up, eq::Vector4f right, float w, float h, int pvpW, int pvpH, visibleCube_t * visibleGPU, visibleCube_t * visibleCPU, cudaStream_t stream)
 {
 	

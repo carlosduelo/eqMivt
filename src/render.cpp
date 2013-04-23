@@ -50,12 +50,15 @@ Render::~Render()
 
 void Render::resizeViewport(int width, int height, GLuint pbo)
 {
-    _height = height;
-    _width = width;
+	if (_height < height || _width < width)
+	{
+		_height = height;
+		_width = width;
 
-    // Resize VisibleCubes
-    _DestroyVisibleCubes();
-    _CreateVisibleCubes();
+		// Resize VisibleCubes
+		_DestroyVisibleCubes();
+		_CreateVisibleCubes();
+	}
 
     // Resize pbo
     if (_cuda_pbo_resource != 0 && cudaSuccess != cudaGraphicsUnregisterResource(_cuda_pbo_resource))
@@ -66,9 +69,6 @@ void Render::resizeViewport(int width, int height, GLuint pbo)
     {
     	std::cerr<<"Error cudaGraphicsGLRegisterBuffer"<<std::endl;
     }
-
-
-	_octree.resizeViewport(width, height);
 }
 
 bool Render::checkCudaResources()
@@ -87,14 +87,19 @@ void Render::setCudaResources(OctreeContainer * oc, cubeCache * cc, int id)
 
 void Render::frameDraw(eq::Vector4f origin, eq::Vector4f LB, eq::Vector4f up, eq::Vector4f right, float w, float h, int pvpW, int pvpH)
 {
+	bool notEnd		= true;
+	int numPixels	= pvpW*pvpH;
+	int	iterations = 0;
+
 	// Reset VisibleCubes 
-	cudaMemsetAsync((void*)_visibleCubesGPU, 0, (_height*_width)*sizeof(visibleCube_t), _stream);
+	cudaMemsetAsync((void*)_visibleCubesGPU, 0, numPixels*sizeof(visibleCube_t), _stream);
 	
 	float * pixelBuffer;
-    if (cudaSuccess != cudaGraphicsMapResources(1, &_cuda_pbo_resource, 0))
+    if (cudaSuccess != cudaGraphicsMapResources(1, &_cuda_pbo_resource, _stream))
     {
     	std::cerr<<"Error cudaGraphicsMapResources"<<std::endl;
     }
+
     size_t num_bytes;
     if (cudaSuccess != cudaGraphicsResourceGetMappedPointer((void **)&pixelBuffer, &num_bytes, _cuda_pbo_resource))
     {
@@ -102,9 +107,6 @@ void Render::frameDraw(eq::Vector4f origin, eq::Vector4f LB, eq::Vector4f up, eq
     }
     std::cout<<"CUDA MAPPED "<<num_bytes<<std::endl;
 
-	bool notEnd		= true;
-	int numPixels	= _height*_width;
-	int	iterations = 0;
 
 	while(notEnd)
 	{
@@ -113,14 +115,17 @@ void Render::frameDraw(eq::Vector4f origin, eq::Vector4f LB, eq::Vector4f up, eq
 		cudaStreamSynchronize(_stream);
 
 		int numP = 0;
+		#if 0
 		int nocached = 0;
 		int painted = 0;
 		int cube = 0;
 		int cached = 0;
 		int nocube = 0;
+		#endif
 		for(int i=0; i<numPixels; i++)
 			if (_visibleCubesCPU[i].state == PAINTED)
 				numP++;
+		#if 0
 			else if (_visibleCubesCPU[i].state == NOCACHED)
 				nocached++;
 			else if (_visibleCubesCPU[i].state == CACHED)
@@ -130,15 +135,16 @@ void Render::frameDraw(eq::Vector4f origin, eq::Vector4f LB, eq::Vector4f up, eq
 			else if (_visibleCubesCPU[i].state == CUBE)
 				cube++;
 
+		std::cout<<"Painted "<<numP<<" NOCACHED "<<nocached<<" cached "<<cached<<" nocube "<<nocube<<" cube "<<cube<<std::endl;
+		#endif
+
 		if (numP == numPixels)
 		{
 			notEnd = false;
 			break;
 		}
 
-		std::cout<<"Painted "<<numP<<" NOCACHED "<<nocached<<" cached "<<cached<<" nocube "<<nocube<<" cube "<<cube<<std::endl;
-
-		_cache->push(_visibleCubesCPU, (_height*_width), _octree.getOctreeLevel(), _id, _stream);
+		_cache->push(_visibleCubesCPU, numPixels, _octree.getOctreeLevel(), _id, _stream);
 
 		cudaMemcpyAsync((void*) _visibleCubesGPU, (const void*) _visibleCubesCPU, (_height*_width)*sizeof(visibleCube_t), cudaMemcpyHostToDevice, _stream);
 
@@ -147,15 +153,13 @@ void Render::frameDraw(eq::Vector4f origin, eq::Vector4f LB, eq::Vector4f up, eq
 
 		_raycaster.render(origin, LB, up, right, w, h, pvpW, pvpH, (_height*_width), _octree.getOctreeLevel(), _cache->getCacheLevel(), _octree.getnLevels(), _visibleCubesGPU,  make_int3(cDim.x(), cDim.y(), cDim.z()), make_int3(cInc.x(), cInc.y(), cInc.z()), pixelBuffer, _stream);
 
-		_cache->pop(_visibleCubesCPU, (_height*_width), _octree.getOctreeLevel(), _id, _stream);
+		_cache->pop(_visibleCubesCPU, numPixels, _octree.getOctreeLevel(), _id, _stream);
 		
 		std::cout<<iterations<<std::endl;
 		iterations++;
 	}
 
-
-
-    if (cudaSuccess != cudaGraphicsUnmapResources(1, &_cuda_pbo_resource, 0))
+    if (cudaSuccess != cudaGraphicsUnmapResources(1, &_cuda_pbo_resource, _stream))
     {
     	std::cerr<<"Error cudaGraphicsUnmapResources"<<std::endl;
     }
