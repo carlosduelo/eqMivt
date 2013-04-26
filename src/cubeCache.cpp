@@ -29,7 +29,7 @@ cubeCache::~cubeCache()
 	delete insertedCubes;
 }
 
-void cubeCache::push(visibleCube_t * visibleCubes, int num, int octreeLevel, int threadID, cudaStream_t stream)
+bool cubeCache::push(visibleCube_t * visibleCubes, int num, int octreeLevel, int threadID, cudaStream_t stream)
 {
 #ifdef _BUNORDER_MAP_
 	boost::unordered_map<index_node_t, cacheElement_t>::iterator it;
@@ -37,11 +37,14 @@ void cubeCache::push(visibleCube_t * visibleCubes, int num, int octreeLevel, int
 	std::map<index_node_t, cacheElement_t>::iterator it;
 #endif
 
+	bool notEnd = false;
+
 	// For each visible cube push into the cache
 	for(int i=0; i<num; i++)
 	{
 		if (visibleCubes[i].state == NOCACHED || visibleCubes[i].state == CUBE)
 		{
+			notEnd = true;
 			index_node_t idCube = visibleCubes[i].id >> (3*(octreeLevel - cache.getLevelCube()));
 
 			it = insertedCubes[threadID].find(idCube);
@@ -69,6 +72,8 @@ void cubeCache::push(visibleCube_t * visibleCubes, int num, int octreeLevel, int
 			}
 		}
 	}
+
+	return notEnd;
 
 }
 

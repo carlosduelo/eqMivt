@@ -119,6 +119,8 @@ void Channel::frameDraw( const eq::uint128_t& frameID )
 
 void Channel::_draw()
 {
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
     glEnable( GL_TEXTURE_2D );
 
     glBindTexture( GL_TEXTURE_2D, _texture );

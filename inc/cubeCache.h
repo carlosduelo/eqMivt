@@ -45,7 +45,8 @@ class cubeCache
 
 		vmml::vector<3, int> getCubeInc(){ return cache.getCubeInc(); }
 
-		void push(visibleCube_t * visibleCubes, int num, int octreeLevel, int threadID, cudaStream_t stream);
+		// Return true if exist some petition and false otherwise
+		bool push(visibleCube_t * visibleCubes, int num, int octreeLevel, int threadID, cudaStream_t stream);
 
 		void pop(visibleCube_t * visibleCubes, int num, int octreeLevel, int threadID, cudaStream_t stream);
 };
