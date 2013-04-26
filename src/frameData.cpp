@@ -14,6 +14,7 @@ namespace eqMivt
 FrameData::FrameData()
         : _rotation( eq::Matrix4f::ZERO )
         , _position( eq::Vector3f::ZERO )
+		, _idle( false )
 {
     reset();
 }
@@ -23,6 +24,10 @@ void FrameData::serialize( co::DataOStream& os, const uint64_t dirtyBits )
     co::Serializable::serialize( os, dirtyBits );
     if( dirtyBits & DIRTY_CAMERA )
         os << _position << _rotation;
+	if( dirtyBits & DIRTY_FLAGS )
+		os << _idle;
+	if( dirtyBits & DIRTY_VIEW )
+		os << _currentViewID;
 }
 
 void FrameData::deserialize( co::DataIStream& is, const uint64_t dirtyBits )
@@ -30,6 +35,10 @@ void FrameData::deserialize( co::DataIStream& is, const uint64_t dirtyBits )
     co::Serializable::deserialize( is, dirtyBits );
     if( dirtyBits & DIRTY_CAMERA )
         is >> _position >> _rotation;
+	if( dirtyBits & DIRTY_FLAGS )
+		is >> _idle;
+	if( dirtyBits & DIRTY_VIEW )
+		is >> _currentViewID;
 }
 
 void FrameData::spinCamera( const float x, const float y )
@@ -64,6 +73,21 @@ void FrameData::setRotation( const eq::Vector3f& rotation )
     _rotation.rotate_y( rotation.y() );
     _rotation.rotate_z( rotation.z() );
     setDirty( DIRTY_CAMERA );
+}
+
+void FrameData::setIdle( const bool idle )
+{
+	if( _idle == idle )
+		return;
+
+	_idle = idle;
+	setDirty( DIRTY_FLAGS );
+}
+
+void FrameData::setCurrentViewID( const eq::uint128_t& id )
+{
+	_currentViewID = id;
+	setDirty( DIRTY_VIEW );
 }
 
 void FrameData::reset()

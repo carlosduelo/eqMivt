@@ -34,6 +34,7 @@ namespace eqMivt
 		virtual bool handleEvent( const eq::ConfigEvent* event );
 
         bool needRedraw();
+		bool isIdleAA();
 
     protected:
         virtual ~Config();
@@ -41,12 +42,13 @@ namespace eqMivt
         virtual co::uint128_t sync(const co::uint128_t& version = co::VERSION_HEAD);
 
     private:
-        LocalInitData _initData;
-        FrameData     _frameData;
-        bool _redraw;
+        LocalInitData	_initData;
+        FrameData		_frameData;
+        bool			_redraw;
+		int32_t			_numFramesAA;
 
         bool _handleKeyEvent( const eq::KeyEvent& event );
-	void _deregisterData();
+		void _deregisterData();
     };
 }
 

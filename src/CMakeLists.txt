@@ -11,6 +11,7 @@ set(MIVT_SOURCE
 		node.cpp
 		pipe.cpp
 		channel.cpp
+		view.cpp
 		eqMivt.cpp
 		octreeContainer.cpp
 		render.cpp

@@ -8,6 +8,8 @@ Notes:
 
 #include "config.h"
 
+#include "configEvent.h"
+
 #include <boost/filesystem.hpp>
 
 namespace eqMivt
@@ -16,6 +18,7 @@ namespace eqMivt
 Config::Config( eq::ServerPtr parent )
         : eq::Config( parent )
         , _redraw( true )
+		, _numFramesAA( 0 )
 {
 }
 
@@ -89,6 +92,17 @@ bool Config::loadData( const eq::uint128_t& initDataID )
 
 uint32_t Config::startFrame()
 {
+	// idle mode
+	if( isIdleAA( ))
+	{
+		LBASSERT( _numFramesAA > 0 );
+		_frameData.setIdle( true );
+	}
+	else
+		_frameData.setIdle( false );
+
+	_numFramesAA = 0;
+
     const eq::uint128_t& version = _frameData.commit();
 
     _redraw = false;
@@ -111,7 +125,13 @@ bool Config::handleEvent( const eq::ConfigEvent* event )
 
         case eq::Event::CHANNEL_POINTER_BUTTON_PRESS:
         {
-	    break;
+			const eq::uint128_t& viewID = event->data.context.view.identifier;
+			_frameData.setCurrentViewID( viewID );
+			if (viewID == 0)
+			{
+				return false;
+			}
+			break;
         }
 
         case eq::Event::CHANNEL_POINTER_BUTTON_RELEASE:
@@ -181,10 +201,16 @@ bool Config::handleEvent( const eq::ConfigEvent* event )
 bool Config::handleEvent( eq::EventICommand command )
 {
     switch( command.getEventType( ))
-    {
+	{
+		case IDLE_AA_LEFT:
+		{
+			const int32_t steps = command.get< int32_t >();
+			_numFramesAA = LB_MAX( _numFramesAA, steps );
+			return false;
+		}
         case eq::Event::KEY_PRESS:
         {
-	    const eq::Event& event = command.get< eq::Event >();
+			const eq::Event& event = command.get< eq::Event >();
             if( _handleKeyEvent( event.keyPress ))
             {
                 _redraw = true;
@@ -195,7 +221,14 @@ bool Config::handleEvent( eq::EventICommand command )
 
         case eq::Event::CHANNEL_POINTER_BUTTON_PRESS:
         {
-	    break;
+			const eq::Event& event = command.get< eq::Event >();
+			const eq::uint128_t& viewID = event.context.view.identifier;
+			_frameData.setCurrentViewID( viewID );
+			if (viewID == 0)
+			{
+				return false;
+			}
+			break;
         }
 
         case eq::Event::CHANNEL_POINTER_BUTTON_RELEASE:
@@ -275,7 +308,12 @@ bool Config::_handleKeyEvent( const eq::KeyEvent& event )
 
 bool Config::needRedraw()
 {
-    return _redraw;
+    return _redraw || _numFramesAA > 0;
+}
+
+bool Config::isIdleAA()
+{
+    return ( !_redraw && _numFramesAA > 0 );
 }
 
 co::uint128_t Config::sync( const co::uint128_t& version )

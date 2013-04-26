@@ -13,6 +13,7 @@ Notes:
 #include "node.h"
 #include "pipe.h"
 #include "channel.h"
+#include "view.h"
 
 #include <stdlib.h>
 
@@ -27,11 +28,11 @@ public:
         { return new eqMivt::Channel( parent ); }
     virtual eq::Node*    createNode( eq::Config* parent ) 
         { return new eqMivt::Node( parent ); }
+    virtual eq::View* createView( eq::Layout* parent )
+        { return new eqMivt::View( parent ); }
 #if 0
     virtual eq::Window*  createWindow( eq::Pipe* parent )
         { return new eqPly::Window( parent ); }
-    virtual eq::View* createView( eq::Layout* parent )
-        { return new eqPly::View( parent ); }
 #endif
 };
 
