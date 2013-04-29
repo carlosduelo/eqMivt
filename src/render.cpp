@@ -85,7 +85,7 @@ void Render::setCudaResources(OctreeContainer * oc, cubeCache * cc, int id)
 	_init = true;
 }
 
-void Render::frameDraw(eq::Vector4f origin, eq::Vector4f LB, eq::Vector4f up, eq::Vector4f right, float w, float h, int pvpW, int pvpH)
+void Render::frameDraw(eq::Vector4f origin, eq::Vector4f LB, eq::Vector4f up, eq::Vector4f right, float w, float h, int pvpW, int pvpH, eq::Vector2f jitter)
 {
 	bool notEnd		= true;
 	int numPixels	= pvpW*pvpH;
@@ -110,7 +110,7 @@ void Render::frameDraw(eq::Vector4f origin, eq::Vector4f LB, eq::Vector4f up, eq
 
 	while(notEnd)
 	{
-		_octree.getBoxIntersected(origin, LB, up, right, w, h, pvpW, pvpH, _visibleCubesGPU, _visibleCubesCPU, _stream);
+		_octree.getBoxIntersected(origin, LB, up, right, w, h, pvpW, pvpH, jitter, _visibleCubesGPU, _visibleCubesCPU, _stream);
 
 		cudaStreamSynchronize(_stream);
 
@@ -146,7 +146,7 @@ void Render::frameDraw(eq::Vector4f origin, eq::Vector4f LB, eq::Vector4f up, eq
 		vmml::vector<3, int> cDim = _cache->getCubeDim();
 		vmml::vector<3, int> cInc = _cache->getCubeInc();
 
-		_raycaster.render(origin, LB, up, right, w, h, pvpW, pvpH, (_height*_width), _octree.getOctreeLevel(), _cache->getCacheLevel(), _octree.getnLevels(), _visibleCubesGPU,  make_int3(cDim.x(), cDim.y(), cDim.z()), make_int3(cInc.x(), cInc.y(), cInc.z()), pixelBuffer, _stream);
+		_raycaster.render(origin, LB, up, right, w, h, pvpW, pvpH, jitter, (_height*_width), _octree.getOctreeLevel(), _cache->getCacheLevel(), _octree.getnLevels(), _visibleCubesGPU,  make_int3(cDim.x(), cDim.y(), cDim.z()), make_int3(cInc.x(), cInc.y(), cInc.z()), pixelBuffer, _stream);
 
 		_cache->pop(_visibleCubesCPU, numPixels, _octree.getOctreeLevel(), _id, _stream);
 		

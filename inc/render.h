@@ -57,7 +57,7 @@ namespace eqMivt
 
 	    void setCudaResources(OctreeContainer * oc, cubeCache * cc, int id);
 
-		void frameDraw(eq::Vector4f origin, eq::Vector4f  LB, eq::Vector4f up, eq::Vector4f right, float w, float h, int pvpW, int pvpH);
+		void frameDraw(eq::Vector4f origin, eq::Vector4f  LB, eq::Vector4f up, eq::Vector4f right, float w, float h, int pvpW, int pvpH, eq::Vector2f jitter);
     };
 
 }

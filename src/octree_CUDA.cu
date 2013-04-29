@@ -491,7 +491,7 @@ __device__ int3 _cuda_updateCoordinates(int maxLevel, int cLevel, index_node_t c
 	}
 }
 
-__global__ void cuda_getFirtsVoxel(index_node_t ** octree, int * sizes, int nLevels, float3 origin, float3 LB, float3 up, float3 right, float w, float h, int pvpW, int pvpH, int finalLevel, visibleCube_t * p_indexNode, int numElements)
+__global__ void cuda_getFirtsVoxel(index_node_t ** octree, int * sizes, int nLevels, float3 origin, float3 LB, float3 up, float3 right, float w, float h, int pvpW, int pvpH, float2 jitter, int finalLevel, visibleCube_t * p_indexNode, int numElements)
 {
 	int i = blockIdx.y * blockDim.x * gridDim.y + blockIdx.x * blockDim.x +threadIdx.x;
 
@@ -501,12 +501,12 @@ __global__ void cuda_getFirtsVoxel(index_node_t ** octree, int * sizes, int nLev
 		int js = i / pvpW;
 
 		float3 ray = LB - origin;
-		ray += js*h*up + is*w*right;
+		ray += (js*h + jitter.y)*up + (is*w + jitter.x)*right;
 		ray = normalize(ray);
 
 		visibleCube_t * indexNode	= &p_indexNode[i];
 
-		if (indexNode->state ==  NOCUBE)// && i >= 938227)
+		if (indexNode->state ==  NOCUBE)
 		{
 			float			currentTnear	= 0.0f;
 			float			currentTfar		= 0.0f;
@@ -579,7 +579,7 @@ __global__ void cuda_getFirtsVoxel(index_node_t ** octree, int * sizes, int nLev
  ******************************************************************************************************
  */
 
-void getBoxIntersectedOctree(index_node_t ** octree, int * sizes, int nLevels, float3 origin, float3 LB, float3 up, float3 right, float w, float h, int pvpW, int pvpH, int finalLevel, int numElements, visibleCube_t * visibleGPU, visibleCube_t * visibleCPU, cudaStream_t stream)
+void getBoxIntersectedOctree(index_node_t ** octree, int * sizes, int nLevels, float3 origin, float3 LB, float3 up, float3 right, float w, float h, int pvpW, int pvpH, float2 jitter, int finalLevel, int numElements, visibleCube_t * visibleGPU, visibleCube_t * visibleCPU, cudaStream_t stream)
 {
 	//std::cerr<<"Getting firts box intersected"<<std::endl;
 
@@ -588,7 +588,7 @@ void getBoxIntersectedOctree(index_node_t ** octree, int * sizes, int nLevels, f
 
 	//std::cerr<<"Set HEAP size: "<< cudaGetErrorString(cudaThreadSetLimit(cudaLimitMallocHeapSize , numElements*1216)) << std::endl;
 
-	cuda_getFirtsVoxel<<<blocks,threads, 0,stream>>>(octree, sizes, nLevels, origin, LB, up, right, w, h, pvpW, pvpH, finalLevel, visibleGPU, numElements);
+	cuda_getFirtsVoxel<<<blocks,threads, 0,stream>>>(octree, sizes, nLevels, origin, LB, up, right, w, h, pvpW, pvpH, jitter, finalLevel, visibleGPU, numElements);
 
 	//std::cerr<<"Launching kernek blocks ("<<blocks.x<<","<<blocks.y<<","<<blocks.z<<") threads ("<<threads.x<<","<<threads.y<<","<<threads.z<<") error: "<< cudaGetErrorString(cudaGetLastError())<<std::endl;
 

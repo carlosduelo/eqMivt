@@ -89,6 +89,9 @@ void Channel::frameDraw( const eq::uint128_t& frameID )
 	if( _isDone( ))
 		return;
 
+    applyViewport();
+    applyBuffer();
+
     Pipe* pipe = static_cast<Pipe*>( getPipe( ));
 
     std::cout<<getName()<<" Device: "<<pipe->getDevice()<<std::endl;
@@ -98,9 +101,8 @@ void Channel::frameDraw( const eq::uint128_t& frameID )
 	if (render == 0)
 		return;
 
-    const eq::PixelViewport& pvp = getPixelViewport();
-#if 0
     // Check viewport
+    const eq::PixelViewport& pvp = getPixelViewport();
     if (pvp.w != _lastViewport.w || pvp.h != _lastViewport.h)
     {
         _lastViewport.w = pvp.w;
@@ -113,7 +115,6 @@ void Channel::frameDraw( const eq::uint128_t& frameID )
 
 		render->resizeViewport(_lastViewport.w, _lastViewport.h, _pbo);
     }
-#endif
 
     const FrameData& frameData = _getFrameData();
 
@@ -123,21 +124,16 @@ void Channel::frameDraw( const eq::uint128_t& frameID )
     positionM.set_translation( frameData.getCameraPosition());
 
     const eq::Matrix4f model = getHeadTransform() * (positionM * rotation);
-    //std::cout<<"ModelView"<<std::endl<<model<<std::endl;
 
     const eq::Frustumf& frustum = getFrustum();
     eq::Vector4f pos;
     pos.set(0.0f, 0.0f, 0.0f, 1.0f);
     pos = model*pos;
-    //std::cout<<"position camera "<< pos<<std::endl;
+
     eq::Vector4f p1; p1.set(frustum.right(),frustum.bottom(),frustum.near_plane(),1.0f); p1 = model * p1; 
     eq::Vector4f p2; p2.set(frustum.right(),frustum.top(),frustum.near_plane(),1.0f);  p2 = model * p2;
     eq::Vector4f p3; p3.set(frustum.left(),frustum.top(),frustum.near_plane(),1.0f);  p3 = model * p3;
     eq::Vector4f p4; p4.set(frustum.left(),frustum.bottom(),frustum.near_plane(),1.0f);  p4 = model * p4;
-    //std::cout<<p1<<std::endl;
-    //std::cout<<p2<<std::endl;
-    //std::cout<<p3<<std::endl;
-    //std::cout<<p4<<std::endl;
     /************************
      *********FRUSTUM********
      ****p3------------p2****
@@ -146,8 +142,6 @@ void Channel::frameDraw( const eq::uint128_t& frameID )
      ****p4------------p1****
      ************************
     */
-
-    std::cout<<pvp<<std::endl;
 
     eq::Vector4f up = p3 - p4;
     eq::Vector4f right = p1 - p4;
@@ -158,7 +152,7 @@ void Channel::frameDraw( const eq::uint128_t& frameID )
 
     //render_sphere(_pbo, pvp.w, pvp.h, pos.x(), pos.y(), pos.z(), p4.x(), p4.y(), p4.z(), up.x(), up.y(), up.z(), right.x(), right.y(), right.z(), w, h);
 
-	render->frameDraw(pos, p4, up, right, w, h, pvp.w, pvp.h);
+	render->frameDraw(pos, p4, up, right, w, h, pvp.w, pvp.h, getJitter());
 
     _draw();
 
@@ -178,7 +172,7 @@ void Channel::frameAssemble( const eq::uint128_t& frameID )
 
 	Accum& accum = _accum[ lunchbox::getIndexOfLastBit( getEye()) ];
 
-	if( getPixelViewport() != _lastViewport)
+	if( getPixelViewport() != _currentPVP)
 	{
 		accum.transfer = true;
 
@@ -269,28 +263,7 @@ void Channel::frameViewStart( const eq::uint128_t& frameID )
 	if( stopRendering( ))
 		return;
 
-    Pipe* pipe = static_cast<Pipe*>( getPipe( ));
-
-	Render * render = pipe->getRender();
-	if (render == 0)
-		return;
-
-    // Check viewport
-    const eq::PixelViewport& pvp = getPixelViewport();
-    if (pvp.w != _lastViewport.w || pvp.h != _lastViewport.h)
-    {
-        _lastViewport.w = pvp.w;
-		_lastViewport.h = pvp.h;
-
-		_destroyPBO();
-		_destroyTexture();
-		_createPBO();
-		_createTexture();
-
-		render->resizeViewport(_lastViewport.w, _lastViewport.h, _pbo);
-    }
-
-	_lastViewport = getPixelViewport();
+	_currentPVP= getPixelViewport();
 	_initJitter();
 	eq::Channel::frameViewStart( frameID );
 }
@@ -378,8 +351,6 @@ void Channel::frameViewFinish( const eq::uint128_t& frameID )
 
 void Channel::_draw()
 {
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
     glEnable( GL_TEXTURE_2D );
 
     glBindTexture( GL_TEXTURE_2D, _texture );
@@ -387,8 +358,6 @@ void Channel::_draw()
     glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, _lastViewport.w, _lastViewport.h, GL_RGB, GL_FLOAT, 0);
     glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
 
-    applyViewport();
-    applyBuffer();
     glBegin(GL_QUADS);
 	glTexCoord2f(0.0f,0.0f); glVertex2f(-1.0f,-1.0f);
 	glTexCoord2f(1.0f,0.0f); glVertex2f( 1.0f,-1.0f);

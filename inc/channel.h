@@ -61,6 +61,7 @@ namespace eqMivt
 		void _draw();
 
 		uint32_t			_frameRestart;
+		eq::PixelViewport 	_currentPVP;
 		eq::PixelViewport 	_lastViewport;
 
 		bool _initAccum();
