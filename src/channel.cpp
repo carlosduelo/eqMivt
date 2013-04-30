@@ -14,6 +14,8 @@ Notes:
 #include "view.h"
 #include "configEvent.h"
 
+#include "FreeImage.h"
+
 namespace eqMivt
 {
 
@@ -89,8 +91,8 @@ void Channel::frameDraw( const eq::uint128_t& frameID )
 	if( _isDone( ))
 		return;
 
-    applyViewport();
-    applyBuffer();
+    //applyViewport();
+    //applyBuffer();
 
     Pipe* pipe = static_cast<Pipe*>( getPipe( ));
 
@@ -150,15 +152,16 @@ void Channel::frameDraw( const eq::uint128_t& frameID )
     float w = frustum.get_width()/(float)pvp.w;
     float h = frustum.get_height()/(float)pvp.h;
 
-    //render_sphere(_pbo, pvp.w, pvp.h, pos.x(), pos.y(), pos.z(), p4.x(), p4.y(), p4.z(), up.x(), up.y(), up.z(), right.x(), right.y(), right.z(), w, h);
+    render_sphere(_pbo, pvp.w, pvp.h, pos.x(), pos.y(), pos.z(), p4.x(), p4.y(), p4.z(), up.x(), up.y(), up.z(), right.x(), right.y(), right.z(), w, h, getJitter().x(), getJitter().y());
 
-	render->frameDraw(pos, p4, up, right, w, h, pvp.w, pvp.h, getJitter());
+	//render->frameDraw(pos, p4, up, right, w, h, pvp.w, pvp.h, getJitter());
 
     _draw();
 
+	//_saveFrameBuffer(frameID);
+
 	Accum& accum = _accum[ lunchbox::getIndexOfLastBit( getEye()) ];
-	accum.stepsDone = LB_MAX( accum.stepsDone,
-			getSubPixel().size * getPeriod( ));
+	accum.stepsDone = LB_MAX( accum.stepsDone, getSubPixel().size * getPeriod( ));
 	accum.transfer = true;
 }
 
@@ -316,6 +319,7 @@ void Channel::frameViewFinish( const eq::uint128_t& frameID )
 
 			if( !_isDone() && accum.transfer )
 				accum.buffer->accum();
+	_saveFrameBuffer(frameID);
 			accum.buffer->display();
 
 			resetAssemblyState();
@@ -351,6 +355,8 @@ void Channel::frameViewFinish( const eq::uint128_t& frameID )
 
 void Channel::_draw()
 {
+    declareRegion( getPixelViewport( ));
+
     glEnable( GL_TEXTURE_2D );
 
     glBindTexture( GL_TEXTURE_2D, _texture );
@@ -585,6 +591,33 @@ eq::Vector2f Channel::getJitter() const
 			float( jitterStep.y( )) * subpixel_h ) / float( pixel.h );
 
 	return eq::Vector2f( i, j );
+}
+
+void Channel::_saveFrameBuffer(const eq::uint128_t& frameID)
+{
+    const eq::PixelViewport& pvp = getPixelViewport();
+
+	// Print png
+	FreeImage_Initialise();
+	float pixels [3*pvp.w*pvp.h];
+	FIBITMAP * bitmap = FreeImage_Allocate(pvp.w, pvp.h, 24);
+	RGBQUAD color;
+
+	glReadPixels(0,0, pvp.w, pvp.h, GL_BGR, GL_FLOAT, pixels);
+	for(int i=0; i<pvp.h; i++)
+		for(int j=0; j<pvp.w; j++)
+		{
+			int id = i*pvp.w + j;
+			color.rgbRed	= pixels[id*3]*255;
+			color.rgbGreen	= pixels[id*3+1]*255;
+			color.rgbBlue	= pixels[id*3+2]*255;
+			FreeImage_SetPixelColor(bitmap, j, i, &color);
+		}
+	std::stringstream name;
+	name<<getName()<<"-"<<frameID<<"-"<<_accum[ lunchbox::getIndexOfLastBit( getEye()) ].step<<".png";
+	FreeImage_Save(FIF_PNG, bitmap, name.str().c_str(), 0);
+
+	FreeImage_DeInitialise();
 }
 
 }

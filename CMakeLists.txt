@@ -6,6 +6,8 @@ cmake_minimum_required (VERSION 2.8)
 
 project (mivt)
 
+SET( CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_SOURCE_DIR}/packages.cmake)
+
 # Equalizer
 find_package(Equalizer 1.5.0 REQUIRED)
 if (EQUALIZER_FOUND)
@@ -44,6 +46,13 @@ else()
 	message(ERROR "CUDA NOT FOUND")
 endif()
 
+find_package(FreeImage REQUIRED)
+if(FREEIMAGE_FOUND)
+	set(HAVE_FREEIMAGE ${FREEIMAGE_FOUND} CACHE BOOL "Set to TRUE if FreeImage is found, FALSE otherwise")
+	message(STATUS "Looking for FreeImage - found")
+else(FREEIMAGE_FOUND)
+	message(STATUS "Looking for FreeImage - not found")
+endif(FREEIMAGE_FOUND)
 
 # MIVT
 include_directories(${mivt_SOURCE_DIR}/inc)

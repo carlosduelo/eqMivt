@@ -69,6 +69,8 @@ namespace eqMivt
 		void _initJitter();
 		eq::Vector2i _getJitterStep() const;
 
+		void _saveFrameBuffer(const eq::uint128_t& frameID);
+
 		struct Accum
 		{
 			Accum() : buffer( 0 ), step( 0 ), stepsDone( 0 ), transfer( false )

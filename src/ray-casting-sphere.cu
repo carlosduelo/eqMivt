@@ -104,7 +104,7 @@ inline __device__ bool intersection(float3 ray, float3 posR, float r, float * t)
 }
 
 //__global__ void kernel_render_sphere(float3 pos, float3 LB, float3 up, float3 right, float w, float h, int pvpW, int pvpH)
-__global__ void kernel_render_sphere(float * buffer, int pvpW, int pvpH, float3 pos, float3 LB, float3 up, float3 right, float w, float h)
+__global__ void kernel_render_sphere(float * buffer, int pvpW, int pvpH, float3 pos, float3 LB, float3 up, float3 right, float w, float h, float2 jitter)
 {
     unsigned int tid = blockIdx.y * blockDim.x * gridDim.y + blockIdx.x * blockDim.x + threadIdx.x;
 
@@ -114,21 +114,22 @@ __global__ void kernel_render_sphere(float * buffer, int pvpW, int pvpH, float3 
 	int j = tid / pvpW;
 
 	float3 ray = LB - pos;
-	ray += j*h*up + i*w*right;
+	ray += (j*h*up+jitter.y) + (i*w+jitter.x)*right;
 	ray = normalize(ray);
 
 	float hit = 100.0f;
 	if (intersection(ray, pos, 1.0f , &hit))
 	{
 	    float3 ph = pos + hit * ray;
-	    float3 n = ph/1.0f;
+	    float3 n = ph;
 	    n = normalize(n);
 	    float3 l = make_float3(pos.x - ph.x, pos.y - ph.y, pos.z - ph.z);
 	    l = normalize(l);
 	    float3 k = cross(n,l);
-    	    buffer[3*tid] = k.x*0.3f; 
-    	    buffer[3*tid+1] = k.y*0.5f;
-    	    buffer[3*tid+2] = k.z*0.3f;
+		float dif = fabs(n.x*l.x + n.y*l.y + n.z*l.z);
+    	    buffer[3*tid] = dif*0.3f; 
+    	    buffer[3*tid+1] = dif*0.5f;
+    	    buffer[3*tid+2] = dif*0.3f;
         }
 	else
 	{
@@ -140,7 +141,7 @@ __global__ void kernel_render_sphere(float * buffer, int pvpW, int pvpH, float3 
 }
 
 
-void render_sphere(GLuint pbo, int pvpW, int pvpH, float posx, float posy, float posz,  float LBx, float LBy, float LBz, float upx, float upy, float upz, float rightx, float righty, float rightz, float w, float h)
+	void render_sphere(GLuint pbo, int pvpW, int pvpH, float posx, float posy, float posz,  float LBx, float LBy, float LBz, float upx, float upy, float upz, float rightx, float righty, float rightz, float w, float h, float jitterX, float jitterY)
 {
     struct cudaGraphicsResource *cuda_pbo_resource;
     if (cudaSuccess != cudaGraphicsGLRegisterBuffer(&cuda_pbo_resource, pbo, cudaGraphicsMapFlagsWriteDiscard))
@@ -169,7 +170,7 @@ void render_sphere(GLuint pbo, int pvpW, int pvpH, float posx, float posy, float
 
     dim3 threads = getThreads(pvpW*pvpH);
     dim3 blocks = getBlocks(pvpW*pvpH);
-    kernel_render_sphere<<<blocks, threads, 0, stream>>>(d_output, pvpW, pvpH, make_float3(posx,posy,posz), make_float3(LBx, LBy, LBz), make_float3(upx,upy,upz),make_float3(rightx,righty,rightz), w, h);
+    kernel_render_sphere<<<blocks, threads, 0, stream>>>(d_output, pvpW, pvpH, make_float3(posx,posy,posz), make_float3(LBx, LBy, LBz), make_float3(upx,upy,upz),make_float3(rightx,righty,rightz), w, h, make_float2(jitterX, jitterY));
 
     if (cudaSuccess !=  cudaStreamSynchronize(stream))
     {

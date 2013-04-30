@@ -15,7 +15,7 @@ Notes:
 
 namespace eqMivt
 {
-void render_sphere(GLuint pbo, int pvpW, int pvpH, float posx, float posy, float posz,  float LBx, float LBy, float LBz, float upx, float upy, float upz, float rightx, float righty, float rightz, float w, float h);
+	void render_sphere(GLuint pbo, int pvpW, int pvpH, float posx, float posy, float posz,  float LBx, float LBy, float LBz, float upx, float upy, float upz, float rightx, float righty, float rightz, float w, float h, float jitterX, float jitterY);
 }
 
 #endif /*EQ_MIVT_RAY_CASTING_SPHERE_H*/
