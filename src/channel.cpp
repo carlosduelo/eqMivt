@@ -14,7 +14,7 @@ Notes:
 #include "view.h"
 #include "configEvent.h"
 
-#include "FreeImage.h"
+//#include "FreeImage.h"
 
 namespace eqMivt
 {
@@ -319,7 +319,6 @@ void Channel::frameViewFinish( const eq::uint128_t& frameID )
 
 			if( !_isDone() && accum.transfer )
 				accum.buffer->accum();
-	_saveFrameBuffer(frameID);
 			accum.buffer->display();
 
 			resetAssemblyState();
@@ -595,6 +594,7 @@ eq::Vector2f Channel::getJitter() const
 
 void Channel::_saveFrameBuffer(const eq::uint128_t& frameID)
 {
+#if 0
     const eq::PixelViewport& pvp = getPixelViewport();
 
 	// Print png
@@ -618,6 +618,7 @@ void Channel::_saveFrameBuffer(const eq::uint128_t& frameID)
 	FreeImage_Save(FIF_PNG, bitmap, name.str().c_str(), 0);
 
 	FreeImage_DeInitialise();
+#endif
 }
 
 }

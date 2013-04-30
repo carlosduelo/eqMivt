@@ -6,6 +6,8 @@ cmake_minimum_required (VERSION 2.8)
 
 project (mivt)
 
+set(CMAKE_BUILD_TYPE Debug)
+
 SET( CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_SOURCE_DIR}/packages.cmake)
 
 # Equalizer
@@ -16,7 +18,11 @@ else()
 	message(ERROR "EQUALIZER NOT FOUND")
 endif()
 
-set(CMAKE_BUILD_TYPE Debug)
+#GLEW_MX
+add_definitions(-DEQ_SYSTEM_INCLUDES) # get GL headers
+if(GLEW_MX_FOUND)
+  include_directories(BEFORE SYSTEM ${GLEW_MX_INCLUDE_DIRS})
+endif()
 
 # BOOST 
 set(Boost_USE_STATIC_LIBS        ON)
@@ -46,6 +52,7 @@ else()
 	message(ERROR "CUDA NOT FOUND")
 endif()
 
+#FreeImage
 find_package(FreeImage REQUIRED)
 if(FREEIMAGE_FOUND)
 	set(HAVE_FREEIMAGE ${FREEIMAGE_FOUND} CACHE BOOL "Set to TRUE if FreeImage is found, FALSE otherwise")

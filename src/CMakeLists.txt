@@ -12,6 +12,7 @@ set(MIVT_SOURCE
 		pipe.cpp
 		channel.cpp
 		view.cpp
+		window.cpp
 		eqMivt.cpp
 		octreeContainer.cpp
 		render.cpp
@@ -44,7 +45,7 @@ endif()
 cuda_compile(MIVT_CUDA_OBJECTS ${MIVT_CUDA_SOURCE})
 #message(STATUS ${MIVT_CUDA_OBJECTS})
 
-set(LIBS_NEEDED ${EQUALIZER_LIBRARIES} GL ${CUDA_LIBRARIES} ${Boost_LIBRARIES} ${HDF5_LIBRARIES} ${FREEIMAGE_LIBRARIES} ) 
+set(LIBS_NEEDED ${EQUALIZER_LIBRARIES} ${CUDA_LIBRARIES} ${Boost_LIBRARIES} ${HDF5_LIBRARIES} ${FREEIMAGE_LIBRARIES} ${OPENGL_gl_LIBRARY}) 
 
 add_executable(mivt ${MIVT_SOURCE} ${MIVT_CUDA_OBJECTS} main.cpp) 
 target_link_libraries(mivt ${LIBS_NEEDED}) 

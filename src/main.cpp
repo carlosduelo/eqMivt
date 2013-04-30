@@ -14,6 +14,7 @@ Notes:
 #include "pipe.h"
 #include "channel.h"
 #include "view.h"
+#include "window.h"
 
 #include <stdlib.h>
 
@@ -30,10 +31,8 @@ public:
         { return new eqMivt::Node( parent ); }
     virtual eq::View* createView( eq::Layout* parent )
         { return new eqMivt::View( parent ); }
-#if 0
     virtual eq::Window*  createWindow( eq::Pipe* parent )
-        { return new eqPly::Window( parent ); }
-#endif
+        { return new eqMivt::Window( parent ); }
 };
 
 int main( const int argc, char** argv )

@@ -11,7 +11,7 @@ Notes:
 
 #include "eqMivt.h"
 
-#define GL_GLEXT_PROTOTYPES
+//#define GL_GLEXT_PROTOTYPES
 #include "render.h"
 
 #include <eq/eq.h>
