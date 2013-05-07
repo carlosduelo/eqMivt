@@ -111,32 +111,26 @@ __global__ void kernel_render_sphere(float * buffer, int pvpW, int pvpH, float3 
     if (tid < (pvpW*pvpH))
     {
     	int i = tid % pvpW;
-	int j = tid / pvpW;
+		int j = tid / pvpW;
 
-	float3 ray = LB - pos;
-	ray += (j*h*up+jitter.y) + (i*w+jitter.x)*right;
-	ray = normalize(ray);
+		float3 ray = LB - pos;
+		ray += (j*h*up+jitter.y) + (i*w+jitter.x)*right;
+		ray = normalize(ray);
 
-	float hit = 100.0f;
-	if (intersection(ray, pos, 1.0f , &hit))
-	{
-	    float3 ph = pos + hit * ray;
-	    float3 n = ph;
-	    n = normalize(n);
-	    float3 l = make_float3(pos.x - ph.x, pos.y - ph.y, pos.z - ph.z);
-	    l = normalize(l);
-	    float3 k = cross(n,l);
-		float dif = fabs(n.x*l.x + n.y*l.y + n.z*l.z);
-    	    buffer[3*tid] = dif*0.3f; 
-    	    buffer[3*tid+1] = dif*0.5f;
-    	    buffer[3*tid+2] = dif*0.3f;
-        }
-	else
-	{
-    	    buffer[3*tid] = 1.0f; 
-    	    buffer[3*tid+1] = 1.0f;
-    	    buffer[3*tid+2] = 1.0f;
-	}
+		float hit = 100.0f;
+		if (intersection(ray, pos, 1.0f , &hit))
+		{
+			float3 ph = pos + hit * ray;
+			float3 n = ph;
+			n = normalize(n);
+			float3 l = make_float3(pos.x - ph.x, pos.y - ph.y, pos.z - ph.z);
+			l = normalize(l);
+			float3 k = cross(n,l);
+			float dif = fabs(n.x*l.x + n.y*l.y + n.z*l.z);
+			buffer[3*tid] = dif*0.3f; 
+			buffer[3*tid+1] = dif*0.5f;
+			buffer[3*tid+2] = dif*0.3f;
+		}
     }
 }
 
@@ -161,6 +155,10 @@ __global__ void kernel_render_sphere(float * buffer, int pvpW, int pvpH, float3 
     	std::cerr<<"Error cudaGraphicsResourceGetMappedPointer"<<std::endl;
     }
     std::cout<<"CUDA MAPPED "<<num_bytes<<std::endl;
+    if (cudaSuccess != cudaMemset(d_output, (int)1.0f, num_bytes))
+    {
+    	std::cerr<<"Error cudaMemSet"<<std::endl;
+    }
 
     cudaStream_t stream;
     if (cudaSuccess != cudaStreamCreate(&stream))

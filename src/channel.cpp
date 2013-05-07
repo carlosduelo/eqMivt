@@ -58,6 +58,24 @@ void Channel::frameClear( const eq::uint128_t& frameID )
 	_initJitter();
 	resetRegions();
 
+    Pipe* pipe = static_cast<Pipe*>( getPipe( ));
+	Render * render = pipe->getRender();
+	if (render == 0)
+		return;
+    const eq::PixelViewport& pvp = getPixelViewport();
+    if (pvp.w != _lastViewport.w || pvp.h != _lastViewport.h)
+    {
+        _lastViewport.w = pvp.w;
+		_lastViewport.h = pvp.h;
+
+		_destroyPBO();
+		_destroyTexture();
+		_createPBO();
+		_createTexture();
+
+		render->resizeViewport(_lastViewport.w, _lastViewport.h, _pbo);
+    }
+
 	const FrameData& frameData = _getFrameData();
 	const int32_t eyeIndex = lunchbox::getIndexOfLastBit( getEye() );
 	if( _isDone() && !_accum[ eyeIndex ].transfer )
@@ -79,7 +97,7 @@ void Channel::frameClear( const eq::uint128_t& frameID )
 	else
 		glClearColor( 0.f, 0.f, 0.f, 0.0f );
 
-	glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
 }
 
 void Channel::frameDraw( const eq::uint128_t& frameID )
@@ -105,18 +123,6 @@ void Channel::frameDraw( const eq::uint128_t& frameID )
 
     // Check viewport
     const eq::PixelViewport& pvp = getPixelViewport();
-    if (pvp.w != _lastViewport.w || pvp.h != _lastViewport.h)
-    {
-        _lastViewport.w = pvp.w;
-		_lastViewport.h = pvp.h;
-
-		_destroyPBO();
-		_destroyTexture();
-		_createPBO();
-		_createTexture();
-
-		render->resizeViewport(_lastViewport.w, _lastViewport.h, _pbo);
-    }
 
     const FrameData& frameData = _getFrameData();
 
@@ -152,9 +158,11 @@ void Channel::frameDraw( const eq::uint128_t& frameID )
     float w = frustum.get_width()/(float)pvp.w;
     float h = frustum.get_height()/(float)pvp.h;
 
-    render_sphere(_pbo, pvp.w, pvp.h, pos.x(), pos.y(), pos.z(), p4.x(), p4.y(), p4.z(), up.x(), up.y(), up.z(), right.x(), right.y(), right.z(), w, h, getJitter().x(), getJitter().y());
+	eq::Vector2f jitter = getJitter();
 
-	//render->frameDraw(pos, p4, up, right, w, h, pvp.w, pvp.h, getJitter());
+    //render_sphere(_pbo, pvp.w, pvp.h, pos.x(), pos.y(), pos.z(), p4.x(), p4.y(), p4.z(), up.x(), up.y(), up.z(), right.x(), right.y(), right.z(), w, h, jitter.x(), jitter.y());
+
+	render->frameDraw(pos, p4, up, right, w, h, pvp.w, pvp.h, jitter);
 
     _draw();
 
@@ -330,7 +338,7 @@ void Channel::frameViewFinish( const eq::uint128_t& frameID )
 //	_drawHelp();
 
 //	if( frameData.useStatistics())
-//		drawStatistics();
+		drawStatistics();
 
 	int32_t steps = 0;
 	if( frameData.isIdle( ))
@@ -396,7 +404,7 @@ void Channel::_createTexture()
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);  //Always set the base and max mipmap levels of a texture.
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
-    glTexEnvi(GL_TEXTURE_ENV,GL_TEXTURE_ENV_MODE,GL_REPLACE);
+    glTexEnvf(GL_TEXTURE_ENV,GL_TEXTURE_ENV_MODE, GL_REPLACE);
 }
 void Channel::_destroyPBO()
 {
