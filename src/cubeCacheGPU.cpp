@@ -113,7 +113,8 @@ float * cubeCacheGPU::push_cube(index_node_t idCube, cudaStream_t stream)
 
 				if (cudaSuccess != cudaMemcpyAsync((void*) cube, (void*) pCube, offsetCube*sizeof(float), cudaMemcpyHostToDevice, stream))
 				{
-					std::cerr<<"Cache GPU_CPU_File: error copying to a device"<<std::endl;
+					std::cerr<<"Cache GPU_CPU_File: error copying to a device "<<cube<<" "<<pCube<<" "<<offsetCube<<std::endl;
+					throw;
 				}
 
 				// Unlock the cube on cpu cache

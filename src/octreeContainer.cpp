@@ -166,12 +166,20 @@ bool OctreeContainer::readOctreeFile(std::string file_name, int p_maxLevel)
 		//std::cout<<"Dimension del node en el nivel "<<i<<" es de "<<powf(2.0,*nLevels-i)<<std::endl;
 		//std::cout<<"Numero de elementos de nivel "<<i<<" "<<numElem<<std::endl;
 		sizesCPU[i] = numElem;
-		octreeCPU[i] = new index_node_t[numElem];
-		for(int j=0; j<numElem; j++)
+		if (i <= _maxLevel)
 		{
-			index_node_t node = 0;
-			file.read((char*) &node, sizeof(index_node_t));
-			octreeCPU[i][j]= node;
+			octreeCPU[i] = new index_node_t[numElem];
+			for(int j=0; j<numElem; j++)
+			{
+				index_node_t node = 0;
+				file.read((char*) &node, sizeof(index_node_t));
+				octreeCPU[i][j]= node;
+			}
+		}
+		else
+		{
+			octreeCPU[i] = 0;
+			file.seekg(numElem*sizeof(index_node_t), std::ios_base::cur);
 		}
 	}
 
@@ -193,7 +201,8 @@ bool OctreeContainer::readOctreeFile(std::string file_name, int p_maxLevel)
 	delete[] sizesCPU;
 	for(int i=0; i<=_nLevels; i++)
 	{
-		delete[] octreeCPU[i];
+		if (octreeCPU[i] != 0)
+			delete[] octreeCPU[i];
 	}
 	delete[]        octreeCPU;
 
