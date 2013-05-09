@@ -58,24 +58,6 @@ void Channel::frameClear( const eq::uint128_t& frameID )
 	_initJitter();
 	resetRegions();
 
-    Pipe* pipe = static_cast<Pipe*>( getPipe( ));
-	Render * render = pipe->getRender();
-	if (render == 0)
-		return;
-    const eq::PixelViewport& pvp = getPixelViewport();
-    if (pvp.w != _lastViewport.w || pvp.h != _lastViewport.h)
-    {
-        _lastViewport.w = pvp.w;
-		_lastViewport.h = pvp.h;
-
-		_destroyPBO();
-		_destroyTexture();
-		_createPBO();
-		_createTexture();
-
-		render->resizeViewport(_lastViewport.w, _lastViewport.h, _pbo);
-    }
-
 	const FrameData& frameData = _getFrameData();
 	const int32_t eyeIndex = lunchbox::getIndexOfLastBit( getEye() );
 	if( _isDone() && !_accum[ eyeIndex ].transfer )
@@ -121,10 +103,22 @@ void Channel::frameDraw( const eq::uint128_t& frameID )
 	if (render == 0)
 		return;
 
+    const FrameData& frameData = _getFrameData();
+
     // Check viewport
     const eq::PixelViewport& pvp = getPixelViewport();
+    if (pvp.w != _lastViewport.w || pvp.h != _lastViewport.h)
+    {
+        _lastViewport.w = pvp.w;
+		_lastViewport.h = pvp.h;
 
-    const FrameData& frameData = _getFrameData();
+		_destroyPBO();
+		_destroyTexture();
+		_createPBO();
+		_createTexture();
+
+		render->resizeViewport(_lastViewport.w, _lastViewport.h, _pbo);
+    }
 
     // Compute cull matrix
     const eq::Matrix4f& rotation = frameData.getCameraRotation();

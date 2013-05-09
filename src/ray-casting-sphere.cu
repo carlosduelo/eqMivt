@@ -131,6 +131,12 @@ __global__ void kernel_render_sphere(float * buffer, int pvpW, int pvpH, float3 
 			buffer[3*tid+1] = dif*0.5f;
 			buffer[3*tid+2] = dif*0.3f;
 		}
+		else
+		{
+			buffer[3*tid] = 1.0f; 
+			buffer[3*tid+1] = 1.0f;
+			buffer[3*tid+2] = 1.0f;
+		}
     }
 }
 
