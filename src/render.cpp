@@ -23,11 +23,8 @@ Render::Render()
     _visibleCubesCPU = 0;
 
     _cuda_pbo_resource = 0;
+	_stream = 0;
 
-    if (cudaSuccess != cudaStreamCreate(&_stream))
-    {
-	    std::cerr<<"Error cudaStreamCreate"<<std::endl;
-    }
 }
 
 Render::~Render()
@@ -59,6 +56,11 @@ void Render::resizeViewport(int width, int height, GLuint pbo)
 		_DestroyVisibleCubes();
 		_CreateVisibleCubes();
 	}
+
+    if (_stream != 0 && (cudaSuccess != cudaStreamCreate(&_stream)))
+    {
+	    std::cerr<<"Error cudaStreamCreate"<<std::endl;
+    }
 
     // Resize pbo
     if (_cuda_pbo_resource != 0 && cudaSuccess != cudaGraphicsUnregisterResource(_cuda_pbo_resource))

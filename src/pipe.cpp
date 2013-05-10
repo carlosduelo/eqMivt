@@ -23,6 +23,21 @@ bool Pipe::configInit( const eq::uint128_t& initID )
     const InitData& initData    = config->getInitData();
     const eq::uint128_t&  frameDataID = initData.getFrameDataID();
 
+	int ds = -1;
+	if (cudaSuccess != cudaGetDevice(&ds))
+	{
+		std::cerr<<"Error checking cuda device capable"<<std::endl;
+		return false;
+	}
+
+	if (getDevice() < 32 && ds != getDevice())
+		if (cudaSuccess != cudaSetDevice(getDevice()))
+		{
+			std::cerr<<"Error setting cuda device capable"<<std::endl;
+			return false;
+		}
+		
+
     return config->mapObject( &_frameData, frameDataID );
 }
 
