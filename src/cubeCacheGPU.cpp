@@ -40,7 +40,6 @@ cubeCacheGPU::~cubeCacheGPU()
 bool cubeCacheGPU::init(cubeCacheCPU * p_cpuCache, int p_maxElements)
 {
 	cpuCache 	= p_cpuCache;
-	maxElements	= p_maxElements;
 
 	// cube size
 	cubeDim         = cpuCache->getCubeDim();
@@ -49,6 +48,26 @@ bool cubeCacheGPU::init(cubeCacheCPU * p_cpuCache, int p_maxElements)
 	levelCube       = cpuCache->getLevelCube();
 	nLevels         = cpuCache->getnLevels();
 	offsetCube      = (cubeDim.x()+2*cubeInc.x())*(cubeDim.y()+2*cubeInc.y())*(cubeDim.z()+2*cubeInc.z());
+
+	if (p_maxElements == 0)
+	{
+		size_t total = 0;
+		size_t free = 0;
+
+		if (cudaSuccess != cudaMemGetInfo(&free, &total))
+		{
+			LBERROR<<"LRUCache: Error getting memory info"<<std::endl;
+			return false;
+		}
+
+		float freeS = (8.0f*free)/10.0f; // Get 80% of free memory
+		maxElements = freeS / (float)(offsetCube*sizeof(float));
+		std::cout << total/1024/1024 <<" "<<free /1024/1024<< " "<<freeS/1024/1024<<" " <<maxElements<<std::endl;
+	}
+	else
+	{
+		maxElements	= p_maxElements;
+	}
 
 	// Creating caches
 	queuePositions  = new LinkedList(maxElements);

@@ -157,20 +157,20 @@ bool LocalInitData::parseArguments( const int argc, char** argv )
 
 	if (vm.count("size-cpu-cache"))
 	{
-		setMaxCubesCacheCPU(vm["size-cpu-cache"].as<int>());
+		setMaxCubesCacheCPU(vm["size-cpu-cache"].as<int>() <= 0 ? 1 : vm["size-cpu-cache"].as<int>());
 	}
 	else 
 	{
-		setMaxCubesCacheCPU(1);
+		setMaxCubesCacheCPU(0);
 	}
 
 	if (vm.count("size-gpu-cache"))
 	{
-		setMaxCubesCacheGPU(vm["size-gpu-cache"].as<int>());
+		setMaxCubesCacheGPU(vm["size-gpu-cache"].as<int>() <= 0 ? 1 : vm["size-gpu-cache"].as<int>());
 	}
 	else 
 	{
-		setMaxCubesCacheGPU(1);
+		setMaxCubesCacheGPU(0);
 	}
 
     return true;
