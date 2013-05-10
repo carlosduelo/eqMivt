@@ -63,12 +63,12 @@ bool LocalInitData::parseArguments( const int argc, char** argv )
     if (vm.count("help"))
     {
         std::cout << desc << "\n";
-	return false;
+		return false;
     }
     if (vm.count("version"))
     {
         std::cout << "Version eqMivt: "<<VERSION_EQ_MIVT << "\n";
-	return false;
+		return false;
     }
 
     if (vm.count("octree-file"))
@@ -98,6 +98,7 @@ bool LocalInitData::parseArguments( const int argc, char** argv )
     {
 		setOctreeFilename("");
 		setOctreeMaxLevel(0);
+		return false;
     }
 
 	if (vm.count("data-file"))
@@ -147,6 +148,7 @@ bool LocalInitData::parseArguments( const int argc, char** argv )
 		std::vector<std::string> fileParams;
 		setDataFilename(fileParams);
 		setCubeLevelData(0);
+		return false;
     }
 
 	if (checkCubeLevels())

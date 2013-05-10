@@ -42,6 +42,7 @@ namespace eqMivt
   	    struct cudaGraphicsResource * _cuda_pbo_resource;
     
    	    cudaStream_t _stream;
+		struct  cudaDeviceProp _cudaProp;
 
 	    void _CreateVisibleCubes();
 	    void _DestroyVisibleCubes();

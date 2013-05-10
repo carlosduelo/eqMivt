@@ -33,6 +33,16 @@ Render::~Render()
     // Destroy Visible cubes
     _DestroyVisibleCubes();
 
+	if (cudaSuccess != cudaStreamSynchronize(_stream))
+	{
+		std::cerr<<"Error cudaStreamSynchronize"<<std::endl;
+	}
+
+    if (cudaSuccess != cudaGraphicsUnmapResources(1, &_cuda_pbo_resource, _stream))
+    {
+    	std::cerr<<"Error cudaGraphicsUnmapResources"<<std::endl;
+    }
+
     // Destroy Stream
     if (cudaSuccess != cudaStreamDestroy(_stream))
     {
@@ -57,10 +67,19 @@ void Render::resizeViewport(int width, int height, GLuint pbo)
 		_CreateVisibleCubes();
 	}
 
-    if (_stream != 0 && (cudaSuccess != cudaStreamCreate(&_stream)))
-    {
-	    std::cerr<<"Error cudaStreamCreate"<<std::endl;
-    }
+    if (_stream == 0)
+	{
+		int dev = -1;
+		if (cudaGetDevice(&dev) && cudaGetDeviceProperties(&_cudaProp, dev) && (cudaSuccess != cudaStreamCreate(&_stream)))
+		{
+			std::cerr<<"Error cudaStreamCreate"<<std::endl;
+		}
+	}
+
+	if (cudaSuccess != cudaStreamSynchronize(_stream))
+	{
+		std::cerr<<"Error cudaStreamSynchronize"<<std::endl;
+	}
 
     // Resize pbo
     if (_cuda_pbo_resource != 0 && cudaSuccess != cudaGraphicsUnregisterResource(_cuda_pbo_resource))
@@ -114,7 +133,10 @@ void Render::frameDraw(eq::Vector4f origin, eq::Vector4f LB, eq::Vector4f up, eq
 	{
 		_octree.getBoxIntersected(origin, LB, up, right, w, h, pvpW, pvpH, jitter, _visibleCubesGPU, _visibleCubesCPU, _stream);
 
-		cudaStreamSynchronize(_stream);
+		if (cudaSuccess != cudaStreamSynchronize(_stream))
+		{
+			std::cerr<<"Error cudaStreamSynchronize"<<std::endl;
+		}
 
 		#if 0
 		int numP = 0;

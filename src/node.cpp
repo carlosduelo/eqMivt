@@ -95,7 +95,6 @@ namespace eqMivt
 		{
 			_caches[device] = new eqMivt::cubeCache();
 
-
 			Config* config = static_cast< Config* >( getConfig( ));
 			const InitData& initData = config->getInitData();
 
@@ -114,12 +113,26 @@ namespace eqMivt
 
 	OctreeContainer * Node::getOctreeContainer(int device)
 	{
-		return _octrees[device];
+	    std::map<int , eqMivt::OctreeContainer *>::iterator it;
+	    it = _octrees.find(device);
+
+	    if (it ==  _octrees.end())
+			return 0;
+		else
+			return _octrees[device];
 	}
+
 	cubeCache *	Node::getCubeCache(int device)
 	{
-		return _caches[device];
+		std::map<int , eqMivt::cubeCache *>::iterator itC;
+		itC = _caches.find(device);
+
+		if (itC == _caches.end())
+			return 0;
+		else
+			return _caches[device];
 	}
+
 	int			Node::getNewId()
 	{
 		return _idPipes++;

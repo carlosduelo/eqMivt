@@ -26,7 +26,7 @@ bool cubeCache::init(cubeCacheCPU * p_cpuCache, int p_numWorkers, int p_maxEleme
 
 cubeCache::~cubeCache()
 {
-	delete insertedCubes;
+	delete[] insertedCubes;
 }
 
 bool cubeCache::push(visibleCube_t * visibleCubes, int num, int octreeLevel, int threadID, cudaStream_t stream)
