@@ -20,9 +20,8 @@ Octree::~Octree()
 {
 }
 
-void Octree::setOctree(OctreeContainer * oc, int maxRays)
+void Octree::setOctree(OctreeContainer * oc)
 {
-    _maxRays = maxRays;
     _nLevels = oc->getnLevels();
     _maxLevel = oc->getMaxLevel();
     _currentLevel = _maxLevel;

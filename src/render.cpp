@@ -57,7 +57,7 @@ Render::~Render()
 
 void Render::resizeViewport(int width, int height, GLuint pbo)
 {
-	if (_height < height || _width < width)
+	if (_height != height || _width != width)
 	{
 		_height = height;
 		_width = width;
@@ -70,7 +70,9 @@ void Render::resizeViewport(int width, int height, GLuint pbo)
     if (_stream == 0)
 	{
 		int dev = -1;
-		if (cudaGetDevice(&dev) && cudaGetDeviceProperties(&_cudaProp, dev) && (cudaSuccess != cudaStreamCreate(&_stream)))
+		if (cudaSuccess == cudaGetDevice(&dev) && cudaSuccess == cudaGetDeviceProperties(&_cudaProp, dev))
+			std::cout<<dev<<" "<<_cudaProp.name<<std::endl;
+		if (cudaSuccess != cudaStreamCreate(&_stream))
 		{
 			std::cerr<<"Error cudaStreamCreate"<<std::endl;
 		}
@@ -97,9 +99,14 @@ bool Render::checkCudaResources()
     return _init;
 }
 
+void Render::printCudaProperties()
+{
+	std::cout<<_cudaProp.name<<std::endl;
+}
+
 void Render::setCudaResources(OctreeContainer * oc, cubeCache * cc, int id)
 {
-    _octree.setOctree(oc, _height*_width);
+    _octree.setOctree(oc);
 	_cache = cc;
 	_id  = id;
 	_raycaster.setIsosurface(oc->getIsosurface());

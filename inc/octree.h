@@ -27,14 +27,12 @@ class Octree
 		index_node_t ** _octree;
 		int	*			_sizes;
 
-		int		_maxRays;
-
 	public:
 		Octree();
 
 		~Octree();
 		
-		void setOctree(OctreeContainer * oc, int maxRays);
+		void setOctree(OctreeContainer * oc);
 
 		void	increaseLevel()
 		{
