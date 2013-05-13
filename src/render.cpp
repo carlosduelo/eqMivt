@@ -120,7 +120,10 @@ void Render::frameDraw(eq::Vector4f origin, eq::Vector4f LB, eq::Vector4f up, eq
 	int	iterations = 0;
 
 	// Reset VisibleCubes 
-	cudaMemsetAsync((void*)_visibleCubesGPU, 0, numPixels*sizeof(visibleCube_t), _stream);
+	if (cudaSuccess != cudaMemsetAsync((void*)_visibleCubesGPU, 0, numPixels*sizeof(visibleCube_t), _stream))
+	{
+		std::cerr<<"Error initialize visible cubes"<<std::endl;
+	}
 	
 	float * pixelBuffer;
     if (cudaSuccess != cudaGraphicsMapResources(1, &_cuda_pbo_resource, _stream))
@@ -134,6 +137,10 @@ void Render::frameDraw(eq::Vector4f origin, eq::Vector4f LB, eq::Vector4f up, eq
     	std::cerr<<"Error cudaGraphicsResourceGetMappedPointer"<<std::endl;
     }
     std::cout<<"CUDA MAPPED "<<num_bytes<<std::endl;
+	if (cudaSuccess != cudaMemsetAsync((void*)pixelBuffer, 1, num_bytes, _stream))
+	{
+		std::cerr<<"Error initialize visible cubes"<<std::endl;
+	}
 
 
 	while(notEnd)

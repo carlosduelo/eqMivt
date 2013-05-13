@@ -91,8 +91,8 @@ void Channel::frameDraw( const eq::uint128_t& frameID )
 	if( _isDone( ))
 		return;
 
-    //applyViewport();
-    //applyBuffer();
+    applyViewport();
+    applyBuffer();
 
     Pipe* pipe = static_cast<Pipe*>( getPipe( ));
 
