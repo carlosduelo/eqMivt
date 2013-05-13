@@ -25,6 +25,23 @@ Render::Render()
     _cuda_pbo_resource = 0;
 	_stream = 0;
 
+	_statistics = true;
+	_resizeTimes = 0;
+	_resizeAccum = 0.0;
+	_mapResourcesTimes = 0;
+	_mapResourcesAccum = 0.0;
+	_unmapResourcesTimes = 0;
+	_unmapResourcesAccum = 0.0;
+	_octreeTimes = 0;
+	_octreeAccum = 0.0;
+	_rayCastingTimes = 0;
+	_rayCastingAccum = 0.0;
+	_cachePushTimes = 0;
+	_cachePushAccum = 0.0;
+	_cachePopTimes = 0;
+	_cachePopAccum = 0.0;
+	_frameDrawTimes = 0;
+	_frameDrawAccum = 0.0;
 }
 
 Render::~Render()
@@ -57,6 +74,9 @@ Render::~Render()
 
 void Render::resizeViewport(int width, int height, GLuint pbo)
 {
+	_resizeTimes++;
+	_resizeClock.reset();
+
 	if (_height != height || _width != width)
 	{
 		_height = height;
@@ -92,6 +112,10 @@ void Render::resizeViewport(int width, int height, GLuint pbo)
     {
     	std::cerr<<"Error cudaGraphicsGLRegisterBuffer"<<std::endl;
     }
+
+	double time = _resizeClock.getTimed();
+	std::cout<<"Resize time "<<time/1000.0<<" seconds"<<std::endl;
+	_resizeAccum += time;;
 }
 
 bool Render::checkCudaResources()
@@ -115,9 +139,16 @@ void Render::setCudaResources(OctreeContainer * oc, cubeCache * cc, int id)
 
 void Render::frameDraw(eq::Vector4f origin, eq::Vector4f LB, eq::Vector4f up, eq::Vector4f right, float w, float h, int pvpW, int pvpH, eq::Vector2f jitter)
 {
+	_frameDrawTimes++;
+	_frameDrawClock.reset();
+
+
 	bool notEnd		= true;
 	int numPixels	= pvpW*pvpH;
 	int	iterations = 0;
+
+	_mapResourcesTimes++;
+	_mapResourcesClock.reset();
 
 	// Reset VisibleCubes 
 	if (cudaSuccess != cudaMemsetAsync((void*)_visibleCubesGPU, 0, numPixels*sizeof(visibleCube_t), _stream))
@@ -136,21 +167,31 @@ void Render::frameDraw(eq::Vector4f origin, eq::Vector4f LB, eq::Vector4f up, eq
     {
     	std::cerr<<"Error cudaGraphicsResourceGetMappedPointer"<<std::endl;
     }
-    std::cout<<"CUDA MAPPED "<<num_bytes<<std::endl;
+
 	if (cudaSuccess != cudaMemsetAsync((void*)pixelBuffer, 1, num_bytes, _stream))
 	{
 		std::cerr<<"Error initialize visible cubes"<<std::endl;
 	}
 
+	double time = _mapResourcesClock.getTimed();
+	_mapResourcesAccum += time;
+	std::cout<<"Time to map cuda resources and initialization "<<time/1000.0 <<" seconds"<<std::endl;
 
 	while(notEnd)
 	{
+		_octreeTimes++;
+		_octreeClock.reset();
+
 		_octree.getBoxIntersected(origin, LB, up, right, w, h, pvpW, pvpH, jitter, _visibleCubesGPU, _visibleCubesCPU, _stream);
 
 		if (cudaSuccess != cudaStreamSynchronize(_stream))
 		{
 			std::cerr<<"Error cudaStreamSynchronize"<<std::endl;
 		}
+
+		time = _octreeClock.getTimed();
+		_octreeAccum += time;
+		std::cout<<"Time octree: "<<time/1000.0 <<" seconds"<<std::endl;
 
 		#if 0
 		int numP = 0;
@@ -174,6 +215,9 @@ void Render::frameDraw(eq::Vector4f origin, eq::Vector4f LB, eq::Vector4f up, eq
 		std::cout<<"Painted "<<numP<<" NOCACHED "<<nocached<<" cached "<<cached<<" nocube "<<nocube<<" cube "<<cube<<std::endl;
 		#endif
 
+		_cachePushTimes++;
+		_cachePushClock.reset();
+
 		if(!_cache->push(_visibleCubesCPU, numPixels, _octree.getOctreeLevel(), _id, _stream))
 		{
 			break;
@@ -181,21 +225,57 @@ void Render::frameDraw(eq::Vector4f origin, eq::Vector4f LB, eq::Vector4f up, eq
 
 		cudaMemcpyAsync((void*) _visibleCubesGPU, (const void*) _visibleCubesCPU, (_height*_width)*sizeof(visibleCube_t), cudaMemcpyHostToDevice, _stream);
 
+		if (_statistics)
+			cudaStreamSynchronize(_stream);
+
+		time = _cachePushClock.getTimed();
+		_cachePushAccum += time;
+		std::cout<<"Time cache push: "<<time/1000.0 <<" seconds"<<std::endl;
+
+		_rayCastingTimes++;
+		_rayCastingClock.reset();
+
 		vmml::vector<3, int> cDim = _cache->getCubeDim();
 		vmml::vector<3, int> cInc = _cache->getCubeInc();
 
 		_raycaster.render(origin, LB, up, right, w, h, pvpW, pvpH, jitter, (_height*_width), _octree.getOctreeLevel(), _cache->getCacheLevel(), _octree.getnLevels(), _visibleCubesGPU,  make_int3(cDim.x(), cDim.y(), cDim.z()), make_int3(cInc.x(), cInc.y(), cInc.z()), pixelBuffer, _stream);
 
+		if (_statistics)
+			cudaStreamSynchronize(_stream);
+
+		time = _rayCastingClock.getTimed();
+		_rayCastingAccum += time;
+		std::cout<<"Time ray casting: "<<time/1000.0 <<" seconds"<<std::endl;
+
+		_cachePopTimes++;
+		_cachePopClock.reset();
+
 		_cache->pop(_visibleCubesCPU, numPixels, _octree.getOctreeLevel(), _id, _stream);
+
+		time = _cachePopClock.getTimed();
+		_cachePopAccum += time;
+		std::cout<<"Time cache pop: "<<time/1000.0 <<" seconds"<<std::endl;
 		
 		//std::cout<<iterations<<std::endl;
 		iterations++;
 	}
 
+	_unmapResourcesTimes++;
+	_unmapResourcesClock.reset();
+
     if (cudaSuccess != cudaGraphicsUnmapResources(1, &_cuda_pbo_resource, _stream))
     {
     	std::cerr<<"Error cudaGraphicsUnmapResources"<<std::endl;
     }
+
+	time = _unmapResourcesClock.getTimed();
+	_unmapResourcesAccum += time;
+	std::cout<<"Time to unmap cuda resources "<<time/1000.0 <<" seconds"<<std::endl;
+
+	time = _frameDrawClock.getTimed();
+	_frameDrawAccum += time;
+	std::cout<<"Time to draw a frame "<<time/1000.0 <<" seconds"<<std::endl;
+
 }
 
 void Render::_CreateVisibleCubes()

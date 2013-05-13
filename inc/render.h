@@ -15,6 +15,8 @@ Notes:
 #include "cubeCache.h"
 #include "rayCaster.h"
 
+#include <lunchbox/clock.h>
+
 #include <cuda_gl_interop.h> 
 #include "cuda_runtime.h"
 
@@ -46,6 +48,33 @@ namespace eqMivt
 
 	    void _CreateVisibleCubes();
 	    void _DestroyVisibleCubes();
+
+		// Statistics
+		bool	_statistics;
+		lunchbox::Clock		_resizeClock;
+		int					_resizeTimes;
+		double				_resizeAccum;
+		lunchbox::Clock		_mapResourcesClock;
+		int					_mapResourcesTimes;
+		double				_mapResourcesAccum;
+		lunchbox::Clock		_unmapResourcesClock;
+		int					_unmapResourcesTimes;
+		double				_unmapResourcesAccum;
+		lunchbox::Clock		_octreeClock;
+		int					_octreeTimes;
+		double				_octreeAccum;
+		lunchbox::Clock		_rayCastingClock;
+		int					_rayCastingTimes;
+		double				_rayCastingAccum;
+		lunchbox::Clock		_cachePushClock;
+		int					_cachePushTimes;
+		double				_cachePushAccum;
+		lunchbox::Clock		_cachePopClock;
+		int					_cachePopTimes;
+		double				_cachePopAccum;
+		lunchbox::Clock		_frameDrawClock;
+		int					_frameDrawTimes;
+		double				_frameDrawAccum;
 
 	public:
 	    Render();
