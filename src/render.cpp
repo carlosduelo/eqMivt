@@ -173,9 +173,17 @@ void Render::frameDraw(eq::Vector4f origin, eq::Vector4f LB, eq::Vector4f up, eq
 		std::cerr<<"Error initialize visible cubes"<<std::endl;
 	}
 
+	if (_statistics)
+		cudaStreamSynchronize(_stream);
+
 	double time = _mapResourcesClock.getTimed();
 	_mapResourcesAccum += time;
 	std::cout<<"Time to map cuda resources and initialization "<<time/1000.0 <<" seconds"<<std::endl;
+
+	double timeO = 0.0;
+	double timeCP = 0.0;
+	double timeR = 0.0;
+	double timeCp = 0.0;
 
 	while(notEnd)
 	{
@@ -191,29 +199,31 @@ void Render::frameDraw(eq::Vector4f origin, eq::Vector4f LB, eq::Vector4f up, eq
 
 		time = _octreeClock.getTimed();
 		_octreeAccum += time;
+		timeO += time;
 		std::cout<<"Time octree: "<<time/1000.0 <<" seconds"<<std::endl;
 
-		#if 0
-		int numP = 0;
-		int nocached = 0;
-		int painted = 0;
-		int cube = 0;
-		int cached = 0;
-		int nocube = 0;
-		for(int i=0; i<numPixels; i++)
-			if (_visibleCubesCPU[i].state == PAINTED)
-				numP++;
-			else if (_visibleCubesCPU[i].state == NOCACHED)
-				nocached++;
-			else if (_visibleCubesCPU[i].state == CACHED)
-				cached++;
-			else if (_visibleCubesCPU[i].state == NOCUBE)
-				nocube++;
-			else if (_visibleCubesCPU[i].state == CUBE)
-				cube++;
+		if (_statistics)
+		{
+			int numP = 0;
+			int nocached = 0;
+			int painted = 0;
+			int cube = 0;
+			int cached = 0;
+			int nocube = 0;
+			for(int i=0; i<numPixels; i++)
+				if (_visibleCubesCPU[i].state == PAINTED)
+					numP++;
+				else if (_visibleCubesCPU[i].state == NOCACHED)
+					nocached++;
+				else if (_visibleCubesCPU[i].state == CACHED)
+					cached++;
+				else if (_visibleCubesCPU[i].state == NOCUBE)
+					nocube++;
+				else if (_visibleCubesCPU[i].state == CUBE)
+					cube++;
 
-		std::cout<<"Painted "<<numP<<" NOCACHED "<<nocached<<" cached "<<cached<<" nocube "<<nocube<<" cube "<<cube<<std::endl;
-		#endif
+			std::cout<<"Painted "<<(numP*100.0)/(float)numPixels<<" NOCACHED "<<(nocached*100.0)/(float)numPixels<<" cached "<<(cached*100.0)/(float)numPixels<<" nocube "<<(nocube*100.0)/(float)numPixels<<" cube "<<(cube*100.0)/(float)numPixels<<std::endl;
+		}
 
 		_cachePushTimes++;
 		_cachePushClock.reset();
@@ -230,6 +240,7 @@ void Render::frameDraw(eq::Vector4f origin, eq::Vector4f LB, eq::Vector4f up, eq
 
 		time = _cachePushClock.getTimed();
 		_cachePushAccum += time;
+		timeCP += time;
 		std::cout<<"Time cache push: "<<time/1000.0 <<" seconds"<<std::endl;
 
 		_rayCastingTimes++;
@@ -245,6 +256,7 @@ void Render::frameDraw(eq::Vector4f origin, eq::Vector4f LB, eq::Vector4f up, eq
 
 		time = _rayCastingClock.getTimed();
 		_rayCastingAccum += time;
+		timeR += time;
 		std::cout<<"Time ray casting: "<<time/1000.0 <<" seconds"<<std::endl;
 
 		_cachePopTimes++;
@@ -254,6 +266,7 @@ void Render::frameDraw(eq::Vector4f origin, eq::Vector4f LB, eq::Vector4f up, eq
 
 		time = _cachePopClock.getTimed();
 		_cachePopAccum += time;
+		timeCp += time;
 		std::cout<<"Time cache pop: "<<time/1000.0 <<" seconds"<<std::endl;
 		
 		//std::cout<<iterations<<std::endl;
@@ -275,6 +288,7 @@ void Render::frameDraw(eq::Vector4f origin, eq::Vector4f LB, eq::Vector4f up, eq
 	time = _frameDrawClock.getTimed();
 	_frameDrawAccum += time;
 	std::cout<<"Time to draw a frame "<<time/1000.0 <<" seconds"<<std::endl;
+	std::cout<<"Iterations "<<iterations<<" Octree "<<(timeO*100.0)/time<<" cache push "<<(timeCP*100.0)/time<<" ray casting "<<(timeR*100.0)/time<<" cache pop "<<(timeCp*100.0)/time<<std::endl;
 
 }
 
