@@ -25,7 +25,9 @@ Render::Render()
     _cuda_pbo_resource = 0;
 	_stream = 0;
 
-	_statistics = true;
+	_name = "no-name";
+	_outputFile = 0;
+	_statistics = false;
 	_resizeTimes = 0;
 	_resizeAccum = 0.0;
 	_mapResourcesTimes = 0;
@@ -70,6 +72,9 @@ Render::~Render()
     {
     	std::cerr<<"Error cudaGraphicsUnregisterResource"<<std::endl;
     }
+
+	if (_outputFile != 0)
+		delete _outputFile;
 }
 
 void Render::resizeViewport(int width, int height, GLuint pbo)
@@ -114,8 +119,9 @@ void Render::resizeViewport(int width, int height, GLuint pbo)
     }
 
 	double time = _resizeClock.getTimed();
-	std::cout<<"Resize time "<<time/1000.0<<" seconds"<<std::endl;
-	_resizeAccum += time;;
+	_resizeAccum += time;
+	if (_statistics)
+		*_outputFile<<"Resize time "<<time/1000.0<<" seconds"<<std::endl;
 }
 
 bool Render::checkCudaResources()
@@ -123,18 +129,29 @@ bool Render::checkCudaResources()
     return _init;
 }
 
+void Render::setStatistics(bool stat)
+{ 
+	_statistics = stat;
+	if (stat && _outputFile == 0)
+	{
+		_outputFile = new std::ofstream((_name+".log").c_str(), std::ofstream::trunc );
+		*_outputFile<<"Render in graphic card: "<<_cudaProp.name<<std::endl;
+	}
+}
+
 void Render::printCudaProperties()
 {
 	std::cout<<_cudaProp.name<<std::endl;
 }
 
-void Render::setCudaResources(OctreeContainer * oc, cubeCache * cc, int id)
+void Render::setCudaResources(OctreeContainer * oc, cubeCache * cc, int id, std::string name)
 {
     _octree.setOctree(oc);
 	_cache = cc;
 	_id  = id;
 	_raycaster.setIsosurface(oc->getIsosurface());
 	_init = true;
+	_name = name + "-Render";
 }
 
 void Render::frameDraw(eq::Vector4f origin, eq::Vector4f LB, eq::Vector4f up, eq::Vector4f right, float w, float h, int pvpW, int pvpH, eq::Vector2f jitter)
@@ -178,7 +195,8 @@ void Render::frameDraw(eq::Vector4f origin, eq::Vector4f LB, eq::Vector4f up, eq
 
 	double time = _mapResourcesClock.getTimed();
 	_mapResourcesAccum += time;
-	std::cout<<"Time to map cuda resources and initialization "<<time/1000.0 <<" seconds"<<std::endl;
+	if (_statistics)
+		*_outputFile<<"Time to map cuda resources and initialization "<<time/1000.0 <<" seconds"<<std::endl;
 
 	double timeO = 0.0;
 	double timeCP = 0.0;
@@ -200,10 +218,10 @@ void Render::frameDraw(eq::Vector4f origin, eq::Vector4f LB, eq::Vector4f up, eq
 		time = _octreeClock.getTimed();
 		_octreeAccum += time;
 		timeO += time;
-		std::cout<<"Time octree: "<<time/1000.0 <<" seconds"<<std::endl;
-
 		if (_statistics)
 		{
+			*_outputFile<<"Time octree: "<<time/1000.0 <<" seconds"<<std::endl;
+
 			int numP = 0;
 			int nocached = 0;
 			int painted = 0;
@@ -222,7 +240,7 @@ void Render::frameDraw(eq::Vector4f origin, eq::Vector4f LB, eq::Vector4f up, eq
 				else if (_visibleCubesCPU[i].state == CUBE)
 					cube++;
 
-			std::cout<<"Painted "<<(numP*100.0)/(float)numPixels<<" NOCACHED "<<(nocached*100.0)/(float)numPixels<<" cached "<<(cached*100.0)/(float)numPixels<<" nocube "<<(nocube*100.0)/(float)numPixels<<" cube "<<(cube*100.0)/(float)numPixels<<std::endl;
+			*_outputFile<<"Painted "<<(numP*100.0)/(float)numPixels<<" NOCACHED "<<(nocached*100.0)/(float)numPixels<<" cached "<<(cached*100.0)/(float)numPixels<<" nocube "<<(nocube*100.0)/(float)numPixels<<" cube "<<(cube*100.0)/(float)numPixels<<std::endl;
 		}
 
 		_cachePushTimes++;
@@ -241,7 +259,8 @@ void Render::frameDraw(eq::Vector4f origin, eq::Vector4f LB, eq::Vector4f up, eq
 		time = _cachePushClock.getTimed();
 		_cachePushAccum += time;
 		timeCP += time;
-		std::cout<<"Time cache push: "<<time/1000.0 <<" seconds"<<std::endl;
+		if (_statistics)
+			*_outputFile<<"Time cache push: "<<time/1000.0 <<" seconds"<<std::endl;
 
 		_rayCastingTimes++;
 		_rayCastingClock.reset();
@@ -257,7 +276,8 @@ void Render::frameDraw(eq::Vector4f origin, eq::Vector4f LB, eq::Vector4f up, eq
 		time = _rayCastingClock.getTimed();
 		_rayCastingAccum += time;
 		timeR += time;
-		std::cout<<"Time ray casting: "<<time/1000.0 <<" seconds"<<std::endl;
+		if (_statistics)
+			*_outputFile<<"Time ray casting: "<<time/1000.0 <<" seconds"<<std::endl;
 
 		_cachePopTimes++;
 		_cachePopClock.reset();
@@ -267,9 +287,9 @@ void Render::frameDraw(eq::Vector4f origin, eq::Vector4f LB, eq::Vector4f up, eq
 		time = _cachePopClock.getTimed();
 		_cachePopAccum += time;
 		timeCp += time;
-		std::cout<<"Time cache pop: "<<time/1000.0 <<" seconds"<<std::endl;
+		if (_statistics)
+			*_outputFile<<"Time cache pop: "<<time/1000.0 <<" seconds"<<std::endl;
 		
-		//std::cout<<iterations<<std::endl;
 		iterations++;
 	}
 
@@ -283,12 +303,15 @@ void Render::frameDraw(eq::Vector4f origin, eq::Vector4f LB, eq::Vector4f up, eq
 
 	time = _unmapResourcesClock.getTimed();
 	_unmapResourcesAccum += time;
-	std::cout<<"Time to unmap cuda resources "<<time/1000.0 <<" seconds"<<std::endl;
 
 	time = _frameDrawClock.getTimed();
 	_frameDrawAccum += time;
-	std::cout<<"Time to draw a frame "<<time/1000.0 <<" seconds"<<std::endl;
-	std::cout<<"Iterations "<<iterations<<" Octree "<<(timeO*100.0)/time<<" cache push "<<(timeCP*100.0)/time<<" ray casting "<<(timeR*100.0)/time<<" cache pop "<<(timeCp*100.0)/time<<std::endl;
+	if (_statistics)
+	{
+		*_outputFile<<"Time to unmap cuda resources "<<time/1000.0 <<" seconds"<<std::endl;
+		*_outputFile<<"Time to draw a frame "<<time/1000.0 <<" seconds"<<std::endl;
+		*_outputFile<<"Iterations "<<iterations<<" Octree "<<(timeO*100.0)/time<<" cache push "<<(timeCP*100.0)/time<<" ray casting "<<(timeR*100.0)/time<<" cache pop "<<(timeCp*100.0)/time<<std::endl;
+	}
 
 }
 

@@ -71,6 +71,9 @@ namespace eqMivt
 
 		void _saveFrameBuffer(const eq::uint128_t& frameID);
 
+		eq::Vector3i	_dimCube;
+		void _drawCube();
+
 		struct Accum
 		{
 			Accum() : buffer( 0 ), step( 0 ), stepsDone( 0 ), transfer( false )

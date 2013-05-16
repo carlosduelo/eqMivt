@@ -301,6 +301,16 @@ bool Config::_handleKeyEvent( const eq::KeyEvent& event )
 {
     switch( event.key )
     {
+		case 's':
+		{
+			_frameData.setStatistics();
+			return true;
+		}
+		case 'S':
+		{
+			_frameData.setStatistics();
+			return true;
+		}
         default:
             return false;
     }

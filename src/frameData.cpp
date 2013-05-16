@@ -15,6 +15,7 @@ FrameData::FrameData()
         : _rotation( eq::Matrix4f::ZERO )
         , _position( eq::Vector3f::ZERO )
 		, _idle( false )
+		, _statistics(false)
 {
     reset();
 }
@@ -25,7 +26,7 @@ void FrameData::serialize( co::DataOStream& os, const uint64_t dirtyBits )
     if( dirtyBits & DIRTY_CAMERA )
         os << _position << _rotation;
 	if( dirtyBits & DIRTY_FLAGS )
-		os << _idle;
+		os << _idle << _statistics;
 	if( dirtyBits & DIRTY_VIEW )
 		os << _currentViewID;
 }
@@ -36,7 +37,7 @@ void FrameData::deserialize( co::DataIStream& is, const uint64_t dirtyBits )
     if( dirtyBits & DIRTY_CAMERA )
         is >> _position >> _rotation;
 	if( dirtyBits & DIRTY_FLAGS )
-		is >> _idle;
+		is >> _idle >> _statistics;
 	if( dirtyBits & DIRTY_VIEW )
 		is >> _currentViewID;
 }
@@ -81,6 +82,12 @@ void FrameData::setIdle( const bool idle )
 		return;
 
 	_idle = idle;
+	setDirty( DIRTY_FLAGS );
+}
+
+void FrameData::setStatistics()
+{ 
+	_statistics = !_statistics;
 	setDirty( DIRTY_FLAGS );
 }
 

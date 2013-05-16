@@ -66,7 +66,7 @@ Render * Pipe::getRender()
     	    LBERROR<<"Error creating pipe"<<std::endl;
     	    return 0;
         }
-		_render.setCudaResources(node->getOctreeContainer(getDevice()), node->getCubeCache(getDevice()), node->getNewId());
+		_render.setCudaResources(node->getOctreeContainer(getDevice()), node->getCubeCache(getDevice()), node->getNewId(), getName());
     }
 
 	return &_render;

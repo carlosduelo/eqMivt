@@ -28,6 +28,7 @@ namespace eqMivt
 	private:
 
 		int _id;
+		std::string	_name;
 	
 	    bool _init;
 
@@ -50,6 +51,7 @@ namespace eqMivt
 	    void _DestroyVisibleCubes();
 
 		// Statistics
+		std::ofstream *		_outputFile;
 		bool	_statistics;
 		lunchbox::Clock		_resizeClock;
 		int					_resizeTimes;
@@ -85,7 +87,9 @@ namespace eqMivt
 
 	    bool checkCudaResources();
 
-	    void setCudaResources(OctreeContainer * oc, cubeCache * cc, int id);
+		void setCudaResources(OctreeContainer * oc, cubeCache * cc, int id, std::string name);
+
+		void setStatistics(bool stat);
 
 		void printCudaProperties();
 

@@ -14,7 +14,9 @@ Notes:
 #include "view.h"
 #include "configEvent.h"
 
-//#include "FreeImage.h"
+#define BOOL bool
+#include "FreeImage.h"
+#undef	BOOL
 
 namespace eqMivt
 {
@@ -27,6 +29,7 @@ Channel::Channel( eq::Window* parent )
     _lastViewport.w = 0;
     _pbo = -1;
     _texture = -1;
+	_dimCube.set(512,512,512); 
 }
 
 bool Channel::configInit( const eq::uint128_t& initID )
@@ -95,15 +98,16 @@ void Channel::frameDraw( const eq::uint128_t& frameID )
     applyBuffer();
 
     Pipe* pipe = static_cast<Pipe*>( getPipe( ));
+	Render * render = pipe->getRender();
+    const FrameData& frameData = _getFrameData();
 
     std::cout<<getName()<<" Device: "<<pipe->getDevice()<<std::endl;
     std::cout<<getName()<<" Port: "<<pipe->getPort()<<std::endl;
     
-	Render * render = pipe->getRender();
 	if (render == 0)
 		return;
 
-    const FrameData& frameData = _getFrameData();
+	render->setStatistics(frameData.getStatistics());
 
     // Check viewport
     const eq::PixelViewport& pvp = getPixelViewport();
@@ -154,9 +158,9 @@ void Channel::frameDraw( const eq::uint128_t& frameID )
 
 	eq::Vector2f jitter = getJitter();
 
-    //render_sphere(_pbo, pvp.w, pvp.h, pos.x(), pos.y(), pos.z(), p4.x(), p4.y(), p4.z(), up.x(), up.y(), up.z(), right.x(), right.y(), right.z(), w, h, jitter.x(), jitter.y());
+    render_sphere(_pbo, pvp.w, pvp.h, pos.x(), pos.y(), pos.z(), p4.x(), p4.y(), p4.z(), up.x(), up.y(), up.z(), right.x(), right.y(), right.z(), w, h, jitter.x(), jitter.y());
 
-	render->frameDraw(pos, p4, up, right, w, h, pvp.w, pvp.h, jitter);
+	//render->frameDraw(pos, p4, up, right, w, h, pvp.w, pvp.h, jitter);
 
     _draw();
 
@@ -331,7 +335,9 @@ void Channel::frameViewFinish( const eq::uint128_t& frameID )
 //	_drawOverlay();
 //	_drawHelp();
 
-//	if( frameData.useStatistics())
+	_drawCube();
+
+	if( frameData.getStatistics())
 		drawStatistics();
 
 	int32_t steps = 0;
@@ -596,7 +602,6 @@ eq::Vector2f Channel::getJitter() const
 
 void Channel::_saveFrameBuffer(const eq::uint128_t& frameID)
 {
-#if 0
     const eq::PixelViewport& pvp = getPixelViewport();
 
 	// Print png
@@ -620,7 +625,74 @@ void Channel::_saveFrameBuffer(const eq::uint128_t& frameID)
 	FreeImage_Save(FIF_PNG, bitmap, name.str().c_str(), 0);
 
 	FreeImage_DeInitialise();
-#endif
+}
+
+void Channel::_drawCube()
+{
+	const FrameData& frameData = _getFrameData();
+    const eq::Matrix4f& rotation = frameData.getCameraRotation();
+    eq::Matrix4f positionM = eq::Matrix4f::IDENTITY;
+    positionM.set_translation( frameData.getCameraPosition());
+	#if 0
+    const eq::Matrix4f model = eq::Matrix4f::IDENTITY;
+	#else
+    const eq::Matrix4f model = getHeadTransform() * (positionM * rotation);
+	#endif
+
+	glMatrixMode( GL_PROJECTION );
+	glPushMatrix();
+	glLoadIdentity( );
+	glMatrixMode( GL_MODELVIEW );
+	glPushMatrix();
+	glLoadIdentity( );
+
+	//const eq::Vector3f& position = frameData.getCameraPosition();
+	//glMultMatrixf( frameData.getCameraRotation().array );
+	//glTranslatef( position.x(), position.y(), position.z() );
+
+	_dimCube.set(1,1,1);
+
+	eq::Vector4f p1; p1.set(0.0f, 0.0f, 0.0f, 1.0f);							p1 = model * p1;
+	eq::Vector4f p2; p2.set(_dimCube.x(), 0.0f, 0.0f, 1.0f);					p2 = model * p2;
+	eq::Vector4f p3; p3.set(_dimCube.x(), _dimCube.y(), 0.0f, 1.0f);			p3 = model * p3;
+	eq::Vector4f p4; p4.set(0.0f, _dimCube.y(), 0.0f, 1.0f);					p4 = model * p4;
+	eq::Vector4f p5; p5.set(0.0f, 0.0f, _dimCube.z(), 1.0f);					p5 = model * p5;
+	eq::Vector4f p6; p6.set(_dimCube.x(), 0.0f, _dimCube.z(), 1.0f);			p6 = model * p6;
+	eq::Vector4f p7; p7.set(_dimCube.x(), _dimCube.y(), _dimCube.z(), 1.0f);	p7 = model * p7;
+	eq::Vector4f p8; p8.set(0.0f, _dimCube.y(), _dimCube.z(), 1.0f);			p8 = model * p8;
+
+	std::cout<<p1<<std::endl;
+	std::cout<<p2<<std::endl;
+	std::cout<<p3<<std::endl;
+	std::cout<<p4<<std::endl;
+	std::cout<<p5<<std::endl;
+	std::cout<<p6<<std::endl;
+	std::cout<<p7<<std::endl;
+	std::cout<<p8<<std::endl;
+
+	glDisable( GL_DEPTH_TEST );
+	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    glBegin(GL_QUADS);
+	 glColor3f(0.0f,1.0f,0.0f);    
+	glVertex3f( p1.x(), p1.y(), p1.z());    
+	glVertex3f( p2.x(), p2.y(), p2.z());    
+	glVertex3f( p3.x(), p3.y(), p3.z());    
+	glVertex3f( p4.x(), p4.y(), p4.z());    
+	//glVertex3f( p5.x(), p5.y(), p5.z());    
+	//glVertex3f( p6.x(), p6.y(), p6.z());    
+	//glVertex3f( p7.x(), p7.y(), p7.z());    
+	//glVertex3f( p8.x(), p8.y(), p8.z());    
+    glEnd();
+
+	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+
+	glMatrixMode( GL_PROJECTION );
+	glPopMatrix();
+
+	glMatrixMode( GL_MODELVIEW );
+	glPopMatrix();
+
+	glFlush();
 }
 
 }
