@@ -17,6 +17,7 @@ Notes:
 #define BOOL bool
 #include "FreeImage.h"
 #undef	BOOL
+#include <GL/glut.h>
 
 namespace eqMivt
 {
@@ -71,7 +72,7 @@ void Channel::frameClear( const eq::uint128_t& frameID )
 
 	const eq::View* view = getView();
 	if( view && frameData.getCurrentViewID() == view->getID( ))
-		glClearColor( 1.f, 1.f, 1.f, 0.f );
+		glClearColor( 0.f, 0.f, 0.f, 0.f );
 #ifndef NDEBUG
 	else if( getenv( "EQ_TAINT_CHANNELS" ))
 	{
@@ -101,8 +102,8 @@ void Channel::frameDraw( const eq::uint128_t& frameID )
 	Render * render = pipe->getRender();
     const FrameData& frameData = _getFrameData();
 
-    std::cout<<getName()<<" Device: "<<pipe->getDevice()<<std::endl;
-    std::cout<<getName()<<" Port: "<<pipe->getPort()<<std::endl;
+    //std::cout<<getName()<<" Device: "<<pipe->getDevice()<<std::endl;
+    //std::cout<<getName()<<" Port: "<<pipe->getPort()<<std::endl;
     
 	if (render == 0)
 		return;
@@ -148,6 +149,13 @@ void Channel::frameDraw( const eq::uint128_t& frameID )
      ****p4------------p1****
      ************************
     */
+
+	#if 0
+	std::cout<<pos<<std::endl;
+	std::cout<<p4<<std::endl;
+	std::cout<<p3<<std::endl;
+	std::cout<<p1<<std::endl;
+	#endif
 
     eq::Vector4f up = p3 - p4;
     eq::Vector4f right = p1 - p4;
@@ -332,10 +340,9 @@ void Channel::frameViewFinish( const eq::uint128_t& frameID )
 	}
 
 	applyViewport();
-//	_drawOverlay();
-//	_drawHelp();
 
-	_drawCube();
+	//_drawCube();
+	_drawAxis();
 
 	if( frameData.getStatistics())
 		drawStatistics();
@@ -627,28 +634,57 @@ void Channel::_saveFrameBuffer(const eq::uint128_t& frameID)
 	FreeImage_DeInitialise();
 }
 
+void Channel::_drawAxis()
+{
+	const FrameData& frameData = _getFrameData();
+    eq::Matrix4f model = frameData.getCameraRotation();
+	eq::Vector4f right; right.set(model[0][0], model[0][1], model[0][2], 1.0f);
+	eq::Vector4f up;	up.set(model[1][0], model[1][1], model[1][2], 1.0f);
+	eq::Vector4f look;	look.set(model[2][0], model[2][1], model[2][2], 1.0f);
+	eq::Vector4f orig;	orig.set(0.0f, 0.0f, 0.0f, 1.0f);
+	eq::Matrix4f trans = eq::Matrix4f::IDENTITY;
+	trans.scale(0.1f, 0.1f, 0.1f);
+	trans.set_translation(0.8f, 0.8f, 0.8f);
+	orig = trans * orig;
+	up = trans * up; 
+	right = trans * right; 
+	look = trans * look; 
+
+	glDisable(GL_DEPTH_TEST);
+	glLineWidth(2.25f);
+	glBegin(GL_LINES);
+		glColor3f(1.0f,0.0f,0.0f);    
+		glVertex3f(orig.x(), orig.y(), orig.z());
+		glVertex3f(up.x(), up.y(), up.z());
+		glColor3f(0.0f,1.0f,0.0f);    
+		glVertex3f(orig.x(), orig.y(), orig.z());
+		glVertex3f(right.x(), right.y(), right.z());
+		glColor3f(0.0f,0.0f,1.0f);    
+		glVertex3f(orig.x(), orig.y(), orig.z());
+		glVertex3f(look.x(), look.y(), look.z());
+	glEnd();
+	glEnable(GL_DEPTH_TEST);
+
+}
+
 void Channel::_drawCube()
 {
+
 	const FrameData& frameData = _getFrameData();
     const eq::Matrix4f& rotation = frameData.getCameraRotation();
     eq::Matrix4f positionM = eq::Matrix4f::IDENTITY;
     positionM.set_translation( frameData.getCameraPosition());
-	#if 0
-    const eq::Matrix4f model = eq::Matrix4f::IDENTITY;
-	#else
-    const eq::Matrix4f model = getHeadTransform() * (positionM * rotation);
-	#endif
+	eq::Matrix4f model;
+    compute_inverse( getHeadTransform() * (positionM * rotation), model );
 
+#if 0
 	glMatrixMode( GL_PROJECTION );
 	glPushMatrix();
 	glLoadIdentity( );
 	glMatrixMode( GL_MODELVIEW );
 	glPushMatrix();
 	glLoadIdentity( );
-
-	//const eq::Vector3f& position = frameData.getCameraPosition();
-	//glMultMatrixf( frameData.getCameraRotation().array );
-	//glTranslatef( position.x(), position.y(), position.z() );
+#endif
 
 	_dimCube.set(1,1,1);
 
@@ -661,6 +697,7 @@ void Channel::_drawCube()
 	eq::Vector4f p7; p7.set(_dimCube.x(), _dimCube.y(), _dimCube.z(), 1.0f);	p7 = model * p7;
 	eq::Vector4f p8; p8.set(0.0f, _dimCube.y(), _dimCube.z(), 1.0f);			p8 = model * p8;
 
+#if 0
 	std::cout<<p1<<std::endl;
 	std::cout<<p2<<std::endl;
 	std::cout<<p3<<std::endl;
@@ -669,29 +706,31 @@ void Channel::_drawCube()
 	std::cout<<p6<<std::endl;
 	std::cout<<p7<<std::endl;
 	std::cout<<p8<<std::endl;
-
-	glDisable( GL_DEPTH_TEST );
-	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+#endif
+	//glDisable( GL_DEPTH_TEST );
+	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINES);
     glBegin(GL_QUADS);
 	 glColor3f(0.0f,1.0f,0.0f);    
 	glVertex3f( p1.x(), p1.y(), p1.z());    
 	glVertex3f( p2.x(), p2.y(), p2.z());    
 	glVertex3f( p3.x(), p3.y(), p3.z());    
 	glVertex3f( p4.x(), p4.y(), p4.z());    
-	//glVertex3f( p5.x(), p5.y(), p5.z());    
-	//glVertex3f( p6.x(), p6.y(), p6.z());    
-	//glVertex3f( p7.x(), p7.y(), p7.z());    
-	//glVertex3f( p8.x(), p8.y(), p8.z());    
+	 glColor3f(1.0f,0.0f,0.0f);    
+	glVertex3f( p5.x(), p5.y(), p5.z());    
+	glVertex3f( p6.x(), p6.y(), p6.z());    
+	glVertex3f( p7.x(), p7.y(), p7.z());    
+	glVertex3f( p8.x(), p8.y(), p8.z());    
     glEnd();
 
-	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-
+	//glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+	//glEnable( GL_DEPTH_TEST );
+#if 0
 	glMatrixMode( GL_PROJECTION );
 	glPopMatrix();
 
 	glMatrixMode( GL_MODELVIEW );
 	glPopMatrix();
-
+#endif
 	glFlush();
 }
 

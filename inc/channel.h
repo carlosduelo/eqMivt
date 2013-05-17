@@ -73,6 +73,7 @@ namespace eqMivt
 
 		eq::Vector3i	_dimCube;
 		void _drawCube();
+		void _drawAxis();
 
 		struct Accum
 		{
