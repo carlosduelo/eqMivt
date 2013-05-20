@@ -71,6 +71,8 @@ bool cubeCache::push(visibleCube_t * visibleCubes, int num, int octreeLevel, int
 
 			}
 		}
+		else if  (visibleCubes[i].state != PAINTED)
+			notEnd = true;
 	}
 
 	return notEnd;

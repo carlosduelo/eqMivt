@@ -185,7 +185,7 @@ void Render::frameDraw(eq::Vector4f origin, eq::Vector4f LB, eq::Vector4f up, eq
     	std::cerr<<"Error cudaGraphicsResourceGetMappedPointer"<<std::endl;
     }
 
-	if (cudaSuccess != cudaMemsetAsync((void*)pixelBuffer, 1, num_bytes, _stream))
+	if (cudaSuccess != cudaMemsetAsync((void*)pixelBuffer, (int)1.0f, num_bytes, _stream))
 	{
 		std::cerr<<"Error initialize visible cubes"<<std::endl;
 	}
