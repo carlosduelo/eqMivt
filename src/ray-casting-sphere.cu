@@ -104,7 +104,7 @@ inline __device__ bool intersection(float3 ray, float3 posR, float r, float * t)
 }
 
 //__global__ void kernel_render_sphere(float3 pos, float3 LB, float3 up, float3 right, float w, float h, int pvpW, int pvpH)
-__global__ void kernel_render_sphere(float * buffer, int pvpW, int pvpH, float3 pos, float3 LB, float3 up, float3 right, float w, float h, float2 jitter)
+__global__ void kernel_render_sphere(float * buffer, int pvpW, int pvpH, float3 pos, float3 LB, float3 up, float3 right, float w, float h)
 {
     unsigned int tid = blockIdx.y * blockDim.x * gridDim.y + blockIdx.x * blockDim.x + threadIdx.x;
 
@@ -114,7 +114,7 @@ __global__ void kernel_render_sphere(float * buffer, int pvpW, int pvpH, float3 
 		int j = tid / pvpW;
 
 		float3 ray = LB - pos;
-		ray += (j*h*up+jitter.y) + (i*w+jitter.x)*right;
+		ray += (j*h*up) + (i*w)*right;
 		ray = normalize(ray);
 
 		float hit = 100.0f;
@@ -141,7 +141,7 @@ __global__ void kernel_render_sphere(float * buffer, int pvpW, int pvpH, float3 
 }
 
 
-	void render_sphere(GLuint pbo, int pvpW, int pvpH, float posx, float posy, float posz,  float LBx, float LBy, float LBz, float upx, float upy, float upz, float rightx, float righty, float rightz, float w, float h, float jitterX, float jitterY)
+	void render_sphere(GLuint pbo, int pvpW, int pvpH, float posx, float posy, float posz,  float LBx, float LBy, float LBz, float upx, float upy, float upz, float rightx, float righty, float rightz, float w, float h)
 {
     struct cudaGraphicsResource *cuda_pbo_resource;
     if (cudaSuccess != cudaGraphicsGLRegisterBuffer(&cuda_pbo_resource, pbo, cudaGraphicsMapFlagsWriteDiscard))
@@ -174,7 +174,7 @@ __global__ void kernel_render_sphere(float * buffer, int pvpW, int pvpH, float3 
 
     dim3 threads = getThreads(pvpW*pvpH);
     dim3 blocks = getBlocks(pvpW*pvpH);
-    kernel_render_sphere<<<blocks, threads, 0, stream>>>(d_output, pvpW, pvpH, make_float3(posx,posy,posz), make_float3(LBx, LBy, LBz), make_float3(upx,upy,upz),make_float3(rightx,righty,rightz), w, h, make_float2(jitterX, jitterY));
+    kernel_render_sphere<<<blocks, threads, 0, stream>>>(d_output, pvpW, pvpH, make_float3(posx,posy,posz), make_float3(LBx, LBy, LBz), make_float3(upx,upy,upz),make_float3(rightx,righty,rightz), w, h);
 
     if (cudaSuccess !=  cudaStreamSynchronize(stream))
     {

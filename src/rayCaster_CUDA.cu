@@ -140,7 +140,7 @@ inline __device__ float3 getNormal(float3 pos, float * data, int3 minBox, int3 m
 			        (getElementInterpolate(make_float3(pos.x,pos.y,pos.z-1.0f),data,minBox,maxBox) - getElementInterpolate(make_float3(pos.x,pos.y,pos.z+1.0f),data,minBox,maxBox))        /2.0f));
 }			
 
-__global__ void cuda_rayCaster(float3 origin, float3  LB, float3 up, float3 right, float w, float h, int pvpW, int pvpH, float2 jitter, int numRays, float iso, visibleCube_t * cube, int3 dimCube, int3 cubeInc, int levelO, int levelC, int nLevel, float * screen)
+__global__ void cuda_rayCaster(float3 origin, float3  LB, float3 up, float3 right, float w, float h, int pvpW, int pvpH, int numRays, float iso, visibleCube_t * cube, int3 dimCube, int3 cubeInc, int levelO, int levelC, int nLevel, float * screen)
 {
 	unsigned int tid = blockIdx.y * blockDim.x * gridDim.y + blockIdx.x * blockDim.x + threadIdx.x;
 
@@ -167,7 +167,7 @@ __global__ void cuda_rayCaster(float3 origin, float3  LB, float3 up, float3 righ
 			int j = tid / pvpW;
 
 			float3 ray = LB - origin;
-			ray += (j*h + jitter.y)*up + (i*w + jitter.x)*right;
+			ray += (j*h)*up + (i*w)*right;
 			ray = normalize(ray);
 
 			if  (_cuda_RayAABB(origin, ray,  &tnear, &tfar, minBox, maxBox))
@@ -272,13 +272,13 @@ __global__ void cuda_rayCaster(float3 origin, float3  LB, float3 up, float3 righ
 	}
 }
 
-void rayCaster_CUDA(float3 origin, float3  LB, float3 up, float3 right, float w, float h, int pvpW, int pvpH, float2 jitter, int numRays, int levelO, int levelC, int nLevel, float iso, visibleCube_t * cube, int3 cubeDim, int3 cubeInc, float * pixelBuffer, cudaStream_t stream)
+void rayCaster_CUDA(float3 origin, float3  LB, float3 up, float3 right, float w, float h, int pvpW, int pvpH, int numRays, int levelO, int levelC, int nLevel, float iso, visibleCube_t * cube, int3 cubeDim, int3 cubeInc, float * pixelBuffer, cudaStream_t stream)
 {
 	dim3 threads = getThreads(numRays);
 	dim3 blocks = getBlocks(numRays);
 //	std::cerr<<"Launching kernek blocks ("<<blocks.x<<","<<blocks.y<<","<<blocks.z<<") threads ("<<threads.x<<","<<threads.y<<","<<threads.z<<") error: "<< cudaGetErrorString(cudaGetLastError())<<std::endl;
 
-	cuda_rayCaster<<<blocks, threads, 0, stream>>>(origin, LB, up, right, w, h, pvpW, pvpH, jitter, numRays, iso, cube, cubeDim, cubeInc, levelO, levelC, nLevel, pixelBuffer);
+	cuda_rayCaster<<<blocks, threads, 0, stream>>>(origin, LB, up, right, w, h, pvpW, pvpH, numRays, iso, cube, cubeDim, cubeInc, levelO, levelC, nLevel, pixelBuffer);
 //	std::cerr<<"Synchronizing rayCaster: " << cudaGetErrorString(cudaDeviceSynchronize()) << std::endl;
 	return;
 }

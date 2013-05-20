@@ -17,7 +17,6 @@ Notes:
 #define BOOL bool
 #include "FreeImage.h"
 #undef	BOOL
-#include <GL/glut.h>
 
 namespace eqMivt
 {
@@ -132,7 +131,9 @@ void Channel::frameDraw( const eq::uint128_t& frameID )
 
     const eq::Matrix4f model = getHeadTransform() * (positionM * rotation);
 
-    const eq::Frustumf& frustum = getFrustum();
+    eq::Frustumf frustum = getFrustum();
+	const eq::Vector2f jitter = getJitter();
+	frustum.apply_jitter(jitter);
     eq::Vector4f pos;
     pos.set(0.0f, 0.0f, 0.0f, 1.0f);
     pos = model*pos;
@@ -164,13 +165,12 @@ void Channel::frameDraw( const eq::uint128_t& frameID )
     float w = frustum.get_width()/(float)pvp.w;
     float h = frustum.get_height()/(float)pvp.h;
 
-	eq::Vector2f jitter = getJitter();
+    //render_sphere(_pbo, pvp.w, pvp.h, pos.x(), pos.y(), pos.z(), p4.x(), p4.y(), p4.z(), up.x(), up.y(), up.z(), right.x(), right.y(), right.z(), w, h);
 
-    //render_sphere(_pbo, pvp.w, pvp.h, pos.x(), pos.y(), pos.z(), p4.x(), p4.y(), p4.z(), up.x(), up.y(), up.z(), right.x(), right.y(), right.z(), w, h, jitter.x(), jitter.y());
-
-	render->frameDraw(pos, p4, up, right, w, h, pvp.w, pvp.h, jitter);
+	render->frameDraw(pos, p4, up, right, w, h, pvp.w, pvp.h);
 
     _draw();
+	//_drawCube();
 
 	//_saveFrameBuffer(frameID);
 
@@ -667,16 +667,20 @@ void Channel::_drawCube()
     const eq::Matrix4f& rotation = frameData.getCameraRotation();
     eq::Matrix4f positionM = eq::Matrix4f::IDENTITY;
     positionM.set_translation( frameData.getCameraPosition());
-	eq::Matrix4f model;
-    compute_inverse( getHeadTransform() * (positionM * rotation), model );
+	eq::Matrix4f model = eq::Matrix4f::IDENTITY;
+    //compute_inverse( getHeadTransform() * (positionM * rotation), model );
 
-#if 0
+#if 1
 	glMatrixMode( GL_PROJECTION );
 	glPushMatrix();
 	glLoadIdentity( );
 	glMatrixMode( GL_MODELVIEW );
 	glPushMatrix();
 	glLoadIdentity( );
+	const eq::Vector3f& position = frameData.getCameraPosition();
+
+	glMultMatrixf( frameData.getCameraRotation().array );
+	glTranslatef( position.x(), position.y(), position.z() );
 #endif
 
 	_dimCube.set(1,1,1);
@@ -717,7 +721,7 @@ void Channel::_drawCube()
 
 	//glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 	//glEnable( GL_DEPTH_TEST );
-#if 0
+#if 1
 	glMatrixMode( GL_PROJECTION );
 	glPopMatrix();
 
