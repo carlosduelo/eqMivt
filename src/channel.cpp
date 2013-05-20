@@ -166,9 +166,9 @@ void Channel::frameDraw( const eq::uint128_t& frameID )
 
 	eq::Vector2f jitter = getJitter();
 
-    render_sphere(_pbo, pvp.w, pvp.h, pos.x(), pos.y(), pos.z(), p4.x(), p4.y(), p4.z(), up.x(), up.y(), up.z(), right.x(), right.y(), right.z(), w, h, jitter.x(), jitter.y());
+    //render_sphere(_pbo, pvp.w, pvp.h, pos.x(), pos.y(), pos.z(), p4.x(), p4.y(), p4.z(), up.x(), up.y(), up.z(), right.x(), right.y(), right.z(), w, h, jitter.x(), jitter.y());
 
-	//render->frameDraw(pos, p4, up, right, w, h, pvp.w, pvp.h, jitter);
+	render->frameDraw(pos, p4, up, right, w, h, pvp.w, pvp.h, jitter);
 
     _draw();
 
@@ -249,16 +249,9 @@ void Channel::frameReadback( const eq::uint128_t& frameID )
 		// OPT: Drop alpha channel from all frames during network transport
 		frame->setAlphaUsage( false );
 
-		if( frameData.isIdle( ))
-			frame->setQuality( eq::Frame::BUFFER_COLOR, 1.f );
-		else
-			frame->setQuality( eq::Frame::BUFFER_COLOR, 1.f );
-			//frame->setQuality( eq::Frame::BUFFER_COLOR, frameData.getQuality());
+		frame->setQuality( eq::Frame::BUFFER_COLOR, 1.f );
 
-		//if( frameData.useCompression( ))
-			frame->useCompressor( eq::Frame::BUFFER_COLOR, EQ_COMPRESSOR_AUTO );
-		//else
-		//	frame->useCompressor( eq::Frame::BUFFER_COLOR, EQ_COMPRESSOR_NONE );
+		frame->useCompressor( eq::Frame::BUFFER_COLOR, EQ_COMPRESSOR_AUTO );
 	}
 
 	eq::Channel::frameReadback( frameID );
@@ -644,7 +637,7 @@ void Channel::_drawAxis()
 	eq::Vector4f orig;	orig.set(0.0f, 0.0f, 0.0f, 1.0f);
 	eq::Matrix4f trans = eq::Matrix4f::IDENTITY;
 	trans.scale(0.1f, 0.1f, 0.1f);
-	trans.set_translation(0.8f, 0.8f, 0.8f);
+	trans.set_translation(0.8f, 0.8f, 0.1f);
 	orig = trans * orig;
 	up = trans * up; 
 	right = trans * right; 
@@ -653,15 +646,15 @@ void Channel::_drawAxis()
 	glDisable(GL_DEPTH_TEST);
 	glLineWidth(2.25f);
 	glBegin(GL_LINES);
+		glColor3f(0.0f,0.0f,1.0f);    
+		glVertex3f(orig.x(), orig.y(), orig.z());
+		glVertex3f(look.x(), look.y(), look.z());
 		glColor3f(1.0f,0.0f,0.0f);    
 		glVertex3f(orig.x(), orig.y(), orig.z());
 		glVertex3f(up.x(), up.y(), up.z());
 		glColor3f(0.0f,1.0f,0.0f);    
 		glVertex3f(orig.x(), orig.y(), orig.z());
 		glVertex3f(right.x(), right.y(), right.z());
-		glColor3f(0.0f,0.0f,1.0f);    
-		glVertex3f(orig.x(), orig.y(), orig.z());
-		glVertex3f(look.x(), look.y(), look.z());
 	glEnd();
 	glEnable(GL_DEPTH_TEST);
 

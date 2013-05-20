@@ -303,6 +303,8 @@ void Render::frameDraw(eq::Vector4f origin, eq::Vector4f LB, eq::Vector4f up, eq
 
 	time = _unmapResourcesClock.getTimed();
 	_unmapResourcesAccum += time;
+	if (_statistics)
+		*_outputFile<<"Time to unmap cuda resources "<<time/1000.0 <<" seconds"<<std::endl;
 
 	time = _frameDrawClock.getTimed();
 	_frameDrawAccum += time;
