@@ -9,6 +9,7 @@ Notes:
 #include "config.h"
 
 #include "configEvent.h"
+#include "fileFactory.h"
 
 #include <boost/filesystem.hpp>
 
@@ -152,7 +153,7 @@ bool Config::handleEvent( const eq::ConfigEvent* event )
                   return true;
 
               case eq::PTR_BUTTON2:
-                  _frameData.moveCamera( 0.f, 0.f, _cameraStep );
+                  _frameData.moveCamera( 0.f, 0.f, _cameraStep*event->data.pointerMotion.dy );
                   _redraw = true;
                   return true;
 
@@ -250,7 +251,7 @@ bool Config::handleEvent( eq::EventICommand command )
                   return true;
 
               case eq::PTR_BUTTON2:
-                  _frameData.moveCamera( 0.f, 0.f, _cameraStep );
+                  _frameData.moveCamera( 0.f, 0.f, _cameraStep*event.pointerMotion.dy );
                   _redraw = true;
                   return true;
 
