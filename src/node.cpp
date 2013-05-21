@@ -45,6 +45,34 @@ namespace eqMivt
 	    for (std::map<int , eqMivt::cubeCache *>::iterator it = _caches.begin(); it!=_caches.end(); it++)
 	        delete it->second;
 	}
+	
+	vmml::vector<3, int>    Node::getVolumeDim()
+	{ 
+	    _lock.set();
+
+		if (!_initCubeCacheCPU)
+		{
+			// Init cpu Cache
+			Config* config = static_cast< Config* >( getConfig( ));
+			const InitData& initData = config->getInitData();
+
+			vmml::vector<3, int> cubeDim;
+			int nLevels = OctreeContainer::getnLevelsFromOctreeFile(initData.getOctreeFilename());
+			int cDim = exp2(nLevels - initData.getCubeLevelData());
+			cubeDim.set(cDim, cDim, cDim);
+
+			if (!_cubeCacheCPU.init(initData.getDataTypeFile(), initData.getDataFilename(), initData.getMaxCubesCacheCPU(), cubeDim, 2 ,initData.getCubeLevelData(), nLevels ))
+			{
+				setError( ERROR_EQ_MIVT_FAILED );
+				vmml::vector<3, int> erResul; erResul.set(-1,-1,-1);
+				return erResul;
+			}
+			_initCubeCacheCPU = true;
+		}
+	    _lock.unset();
+
+		return _cubeCacheCPU.getVolumeDim(); 
+	}
 
 	bool Node::registerPipeResources(int device)
 	{

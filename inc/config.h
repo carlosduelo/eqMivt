@@ -46,6 +46,7 @@ namespace eqMivt
         FrameData		_frameData;
         bool			_redraw;
 		int32_t			_numFramesAA;
+		float			_cameraStep;
 
         bool _handleKeyEvent( const eq::KeyEvent& event );
 		void _deregisterData();

@@ -36,6 +36,8 @@ class hdf5File : public FileManager
 		~hdf5File();
 
 		virtual void readCube(index_node_t index, float * cube);
+
+		virtual vmml::vector<3, int> getRealDimension() { vmml::vector<3, int> dim; dim.set(dims[0],dims[1],dims[2]); return dim; };
 };
 }
 

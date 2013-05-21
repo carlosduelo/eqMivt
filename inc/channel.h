@@ -50,6 +50,7 @@ namespace eqMivt
             { _frameRestart = lastFrameNumber + 1; }
     private:
         const FrameData& _getFrameData() const;
+		void _updateNearFar(eq::Matrix4f model);
 
 		GLuint _pbo;
 		GLuint _texture;
@@ -71,7 +72,7 @@ namespace eqMivt
 
 		void _saveFrameBuffer(const eq::uint128_t& frameID);
 
-		eq::Vector3i	_dimCube;
+		eq::Vector3i	_dimBox;
 		void _drawCube();
 		void _drawAxis();
 

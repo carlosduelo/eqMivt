@@ -33,10 +33,11 @@ namespace eqMivt
 		public:
 			Node( eq::Config* parent ) : eq::Node( parent ) {}
 
-			bool				registerPipeResources(int device);
-			OctreeContainer *	getOctreeContainer(int device);
-			cubeCache *			getCubeCache(int device);
-			int					getNewId();
+			bool					registerPipeResources(int device);
+			OctreeContainer *		getOctreeContainer(int device);
+			cubeCache *				getCubeCache(int device);
+			int						getNewId();
+			vmml::vector<3, int>    getVolumeDim();
 
 		protected:
 			virtual ~Node(){}

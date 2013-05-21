@@ -15,7 +15,8 @@ FrameData::FrameData()
         : _rotation( eq::Matrix4f::ZERO )
         , _position( eq::Vector3f::ZERO )
 		, _idle( false )
-		, _statistics(false)
+		, _statistics( false )
+		,_drawBox( true)
 {
     reset();
 }
@@ -26,7 +27,7 @@ void FrameData::serialize( co::DataOStream& os, const uint64_t dirtyBits )
     if( dirtyBits & DIRTY_CAMERA )
         os << _position << _rotation;
 	if( dirtyBits & DIRTY_FLAGS )
-		os << _idle << _statistics;
+		os << _idle << _statistics << _drawBox;
 	if( dirtyBits & DIRTY_VIEW )
 		os << _currentViewID;
 }
@@ -37,7 +38,7 @@ void FrameData::deserialize( co::DataIStream& is, const uint64_t dirtyBits )
     if( dirtyBits & DIRTY_CAMERA )
         is >> _position >> _rotation;
 	if( dirtyBits & DIRTY_FLAGS )
-		is >> _idle >> _statistics;
+		is >> _idle >> _statistics >> _drawBox;
 	if( dirtyBits & DIRTY_VIEW )
 		is >> _currentViewID;
 }
@@ -91,6 +92,13 @@ void FrameData::setStatistics()
 	setDirty( DIRTY_FLAGS );
 }
 
+
+void FrameData::setDrawBox()
+{
+	_drawBox = !_drawBox;
+	setDirty( DIRTY_FLAGS );
+}
+
 void FrameData::setCurrentViewID( const eq::uint128_t& id )
 {
 	_currentViewID = id;
@@ -111,7 +119,7 @@ void FrameData::reset()
     else
     {
         _position   = eq::Vector3f::ZERO;
-        _position.z() = -2.f;
+        _position.z() = -1024.f;
         _rotation      = eq::Matrix4f::IDENTITY;
     }
     setDirty( DIRTY_CAMERA );

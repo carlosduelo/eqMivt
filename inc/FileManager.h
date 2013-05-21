@@ -49,6 +49,8 @@ class FileManager
 		virtual void readCube(index_node_t index, float * cube) = 0;
 
 		virtual ~FileManager() { }
+
+		virtual vmml::vector<3, int> getRealDimension() = 0;
 };
 
 }

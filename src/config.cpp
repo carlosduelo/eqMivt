@@ -19,6 +19,7 @@ Config::Config( eq::ServerPtr parent )
         : eq::Config( parent )
         , _redraw( true )
 		, _numFramesAA( 0 )
+		, _cameraStep( 0.5f )
 {
 }
 
@@ -151,13 +152,13 @@ bool Config::handleEvent( const eq::ConfigEvent* event )
                   return true;
 
               case eq::PTR_BUTTON2:
-                  _frameData.moveCamera( 0.f, 0.f, .005f );
+                  _frameData.moveCamera( 0.f, 0.f, _cameraStep );
                   _redraw = true;
                   return true;
 
               case eq::PTR_BUTTON3:
-                  _frameData.moveCamera(  .0005f * event->data.pointerMotion.dx,
-                                         -.0005f * event->data.pointerMotion.dy,
+                  _frameData.moveCamera(  _cameraStep * event->data.pointerMotion.dx,
+                                         -_cameraStep * event->data.pointerMotion.dy,
                                           0.f );
                   _redraw = true;
                   return true;
@@ -167,9 +168,9 @@ bool Config::handleEvent( const eq::ConfigEvent* event )
 
         case eq::Event::CHANNEL_POINTER_WHEEL:
         {
-            _frameData.moveCamera( -0.05f * event->data.pointerWheel.yAxis,
+            _frameData.moveCamera( -_cameraStep * event->data.pointerWheel.yAxis,
                                    0.f,
-                                   0.05f * event->data.pointerWheel.xAxis );
+                                   _cameraStep * event->data.pointerWheel.xAxis );
             _redraw = true;
             return true;
         }
@@ -249,13 +250,13 @@ bool Config::handleEvent( eq::EventICommand command )
                   return true;
 
               case eq::PTR_BUTTON2:
-                  _frameData.moveCamera( 0.f, 0.f, .005f );
+                  _frameData.moveCamera( 0.f, 0.f, _cameraStep );
                   _redraw = true;
                   return true;
 
               case eq::PTR_BUTTON3:
-                  _frameData.moveCamera(  .0005f * event.pointerMotion.dx,
-                                         -.0005f * event.pointerMotion.dy,
+                  _frameData.moveCamera(  _cameraStep * event.pointerMotion.dx,
+                                         -_cameraStep * event.pointerMotion.dy,
                                           0.f );
                   _redraw = true;
                   return true;
@@ -266,9 +267,9 @@ bool Config::handleEvent( eq::EventICommand command )
         case eq::Event::CHANNEL_POINTER_WHEEL:
         {
 	    const eq::Event& event = command.get< eq::Event >();
-            _frameData.moveCamera( -0.05f * event.pointerWheel.yAxis,
+            _frameData.moveCamera( -_cameraStep * event.pointerWheel.yAxis,
                                    0.f,
-                                   0.05f * event.pointerWheel.xAxis );
+                                   _cameraStep * event.pointerWheel.xAxis );
             _redraw = true;
             return true;
         }
@@ -301,6 +302,16 @@ bool Config::_handleKeyEvent( const eq::KeyEvent& event )
 {
     switch( event.key )
     {
+		case 'b':
+		{
+			_frameData.setDrawBox();
+			return true;
+		}
+		case 'B':
+		{
+			_frameData.setDrawBox();
+			return true;
+		}
 		case 's':
 		{
 			_frameData.setStatistics();
@@ -323,7 +334,7 @@ bool Config::needRedraw()
 
 bool Config::isIdleAA()
 {
-    return ( !_redraw && _numFramesAA > 0 );
+    return ( !_redraw && _numFramesAA > 0 && !_frameData.isDrawBox());
 }
 
 co::uint128_t Config::sync( const co::uint128_t& version )

@@ -56,8 +56,9 @@ class cubeCacheCPU
 
 		vmml::vector<3, int>    getCubeDim(){ return cubeDim; }
 		vmml::vector<3, int>    getCubeInc(){ return cubeInc; }
-		int     		getLevelCube(){ return levelCube;}
-		int			getnLevels(){ return nLevels; }
+		int						getLevelCube(){ return levelCube;}
+		int						getnLevels(){ return nLevels; }
+		vmml::vector<3, int>    getVolumeDim(){ return fileManager->getRealDimension(); }
 
 		float *  push_cube(index_node_t  idCube);
 

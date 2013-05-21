@@ -29,7 +29,7 @@ set(MIVT_SOURCE
 set(MIVT_CUDA_SOURCE ray-casting-sphere.cu octreeContainer_GPU.cu octree_CUDA.cu rayCaster_CUDA.cu)
 
 # SETTING CUDA PARAMETERS
-list(APPEND CUDA_NVCC_FLAGS -arch=sm_20)
+list(APPEND CUDA_NVCC_FLAGS -arch=sm_13)
 
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
 	list(APPEND CUDA_NVCC_FLAGS -G)

@@ -11,6 +11,7 @@ Notes:
 #include "initData.h"
 #include "config.h"
 #include "pipe.h"
+#include "node.h"
 #include "view.h"
 #include "configEvent.h"
 
@@ -29,7 +30,7 @@ Channel::Channel( eq::Window* parent )
     _lastViewport.w = 0;
     _pbo = -1;
     _texture = -1;
-	_dimCube.set(512,512,512); 
+	_dimBox.set(1,1,1); 
 }
 
 bool Channel::configInit( const eq::uint128_t& initID )
@@ -37,7 +38,14 @@ bool Channel::configInit( const eq::uint128_t& initID )
     if( !eq::Channel::configInit( initID ))
         return false;
 
-    setNearFar( 0.1f, 10.0f );
+    setNearFar( 0.1f, 10000.0f );
+
+	Node* node = static_cast<Node*>( getNode( ));
+	vmml::vector<3, int> dimBox = node->getVolumeDim();
+	if (dimBox[0] <= 0 || dimBox[1] <= 0 || dimBox[2] <= 0)
+		return false;
+
+	_dimBox.set(dimBox[0], dimBox[1], dimBox[2]);
 
     return true;
 }
@@ -97,82 +105,87 @@ void Channel::frameDraw( const eq::uint128_t& frameID )
     applyViewport();
     applyBuffer();
 
-    Pipe* pipe = static_cast<Pipe*>( getPipe( ));
-	Render * render = pipe->getRender();
+	// Compute cull matrix
     const FrameData& frameData = _getFrameData();
+	const eq::Matrix4f& rotation = frameData.getCameraRotation();
+	eq::Matrix4f positionM = eq::Matrix4f::IDENTITY;
+	positionM.set_translation( frameData.getCameraPosition());
 
-    //std::cout<<getName()<<" Device: "<<pipe->getDevice()<<std::endl;
-    //std::cout<<getName()<<" Port: "<<pipe->getPort()<<std::endl;
-    
-	if (render == 0)
-		return;
+	const eq::Matrix4f model = getHeadTransform() * (positionM * rotation);
 
-	render->setStatistics(frameData.getStatistics());
-
-    // Check viewport
-    const eq::PixelViewport& pvp = getPixelViewport();
-    if (pvp.w != _lastViewport.w || pvp.h != _lastViewport.h)
-    {
-        _lastViewport.w = pvp.w;
-		_lastViewport.h = pvp.h;
-
-		_destroyPBO();
-		_destroyTexture();
-		_createPBO();
-		_createTexture();
-
-		render->resizeViewport(_lastViewport.w, _lastViewport.h, _pbo);
-    }
-
-    // Compute cull matrix
-    const eq::Matrix4f& rotation = frameData.getCameraRotation();
-    eq::Matrix4f positionM = eq::Matrix4f::IDENTITY;
-    positionM.set_translation( frameData.getCameraPosition());
-
-    const eq::Matrix4f model = getHeadTransform() * (positionM * rotation);
-
-    eq::Frustumf frustum = getFrustum();
+	eq::Frustumf frustum = getFrustum();
 	const eq::Vector2f jitter = getJitter();
 	frustum.apply_jitter(jitter);
-    eq::Vector4f pos;
-    pos.set(0.0f, 0.0f, 0.0f, 1.0f);
-    pos = model*pos;
 
-    eq::Vector4f p1; p1.set(frustum.right(),frustum.bottom(),frustum.near_plane(),1.0f); p1 = model * p1; 
-    eq::Vector4f p2; p2.set(frustum.right(),frustum.top(),frustum.near_plane(),1.0f);  p2 = model * p2;
-    eq::Vector4f p3; p3.set(frustum.left(),frustum.top(),frustum.near_plane(),1.0f);  p3 = model * p3;
-    eq::Vector4f p4; p4.set(frustum.left(),frustum.bottom(),frustum.near_plane(),1.0f);  p4 = model * p4;
-    /************************
-     *********FRUSTUM********
-     ****p3------------p2****
-     *****|             |****
-     *****|             |****
-     ****p4------------p1****
-     ************************
-    */
+	_updateNearFar(model);
 
-	#if 0
-	std::cout<<pos<<std::endl;
-	std::cout<<p4<<std::endl;
-	std::cout<<p3<<std::endl;
-	std::cout<<p1<<std::endl;
-	#endif
+	if (frameData.isDrawBox())
+	{
+		_drawCube();
+	}
+	else
+	{
+		Pipe* pipe = static_cast<Pipe*>( getPipe( ));
+		Render * render = pipe->getRender();
 
-    eq::Vector4f up = p3 - p4;
-    eq::Vector4f right = p1 - p4;
-    up.normalize();
-    right.normalize();
-    float w = frustum.get_width()/(float)pvp.w;
-    float h = frustum.get_height()/(float)pvp.h;
+		if (render == 0)
+			return;
 
-    //render_sphere(_pbo, pvp.w, pvp.h, pos.x(), pos.y(), pos.z(), p4.x(), p4.y(), p4.z(), up.x(), up.y(), up.z(), right.x(), right.y(), right.z(), w, h);
+		render->setStatistics(frameData.getStatistics());
 
-	render->frameDraw(pos, p4, up, right, w, h, pvp.w, pvp.h);
+		// Check viewport
+		const eq::PixelViewport& pvp = getPixelViewport();
+		if (pvp.w != _lastViewport.w || pvp.h != _lastViewport.h)
+		{
+			_lastViewport.w = pvp.w;
+			_lastViewport.h = pvp.h;
 
-    _draw();
-	//_drawCube();
+			_destroyPBO();
+			_destroyTexture();
+			_createPBO();
+			_createTexture();
 
-	//_saveFrameBuffer(frameID);
+			render->resizeViewport(_lastViewport.w, _lastViewport.h, _pbo);
+		}
+
+		eq::Vector4f pos;
+		pos.set(0.0f, 0.0f, 0.0f, 1.0f);
+		pos = model*pos;
+
+		eq::Vector4f p1; p1.set(frustum.right(),frustum.bottom(),frustum.near_plane(),1.0f); p1 = model * p1; 
+		eq::Vector4f p2; p2.set(frustum.right(),frustum.top(),frustum.near_plane(),1.0f);  p2 = model * p2;
+		eq::Vector4f p3; p3.set(frustum.left(),frustum.top(),frustum.near_plane(),1.0f);  p3 = model * p3;
+		eq::Vector4f p4; p4.set(frustum.left(),frustum.bottom(),frustum.near_plane(),1.0f);  p4 = model * p4;
+		/************************
+		 *********FRUSTUM********
+		 ****p3------------p2****
+		 *****|             |****
+		 *****|             |****
+		 ****p4------------p1****
+		 ************************
+		*/
+
+		#if 0
+		std::cout<<pos<<std::endl;
+		std::cout<<p4<<std::endl;
+		std::cout<<p3<<std::endl;
+		std::cout<<p1<<std::endl;
+		#endif
+
+		eq::Vector4f up = p3 - p4;
+		eq::Vector4f right = p1 - p4;
+		up.normalize();
+		right.normalize();
+		float w = frustum.get_width()/(float)pvp.w;
+		float h = frustum.get_height()/(float)pvp.h;
+
+		//render_sphere(_pbo, pvp.w, pvp.h, pos.x(), pos.y(), pos.z(), p4.x(), p4.y(), p4.z(), up.x(), up.y(), up.z(), right.x(), right.y(), right.z(), w, h);
+
+		render->frameDraw(pos, p4, up, right, w, h, pvp.w, pvp.h);
+
+		_draw();
+
+	}
 
 	Accum& accum = _accum[ lunchbox::getIndexOfLastBit( getEye()) ];
 	accum.stepsDone = LB_MAX( accum.stepsDone, getSubPixel().size * getPeriod( ));
@@ -334,7 +347,6 @@ void Channel::frameViewFinish( const eq::uint128_t& frameID )
 
 	applyViewport();
 
-	//_drawCube();
 	_drawAxis();
 
 	if( frameData.getStatistics())
@@ -662,73 +674,166 @@ void Channel::_drawAxis()
 
 void Channel::_drawCube()
 {
-
 	const FrameData& frameData = _getFrameData();
-    const eq::Matrix4f& rotation = frameData.getCameraRotation();
-    eq::Matrix4f positionM = eq::Matrix4f::IDENTITY;
-    positionM.set_translation( frameData.getCameraPosition());
-	eq::Matrix4f model = eq::Matrix4f::IDENTITY;
-    //compute_inverse( getHeadTransform() * (positionM * rotation), model );
 
-#if 1
 	glMatrixMode( GL_PROJECTION );
 	glPushMatrix();
 	glLoadIdentity( );
+	applyFrustum();
+
 	glMatrixMode( GL_MODELVIEW );
 	glPushMatrix();
 	glLoadIdentity( );
-	const eq::Vector3f& position = frameData.getCameraPosition();
+	applyHeadTransform();
 
+	const eq::Vector3f& position = frameData.getCameraPosition();
 	glMultMatrixf( frameData.getCameraRotation().array );
 	glTranslatef( position.x(), position.y(), position.z() );
-#endif
 
-	_dimCube.set(1,1,1);
+	eq::Vector4f p1; p1.set(0.0f, 0.0f, 0.0f, 1.0f);						
+	eq::Vector4f p2; p2.set(_dimBox.x(), 0.0f, 0.0f, 1.0f);				
+	eq::Vector4f p3; p3.set(_dimBox.x(), _dimBox.y(), 0.0f, 1.0f);		
+	eq::Vector4f p4; p4.set(0.0f, _dimBox.y(), 0.0f, 1.0f);				
+	eq::Vector4f p5; p5.set(0.0f, 0.0f, _dimBox.z(), 1.0f);				
+	eq::Vector4f p6; p6.set(_dimBox.x(), 0.0f, _dimBox.z(), 1.0f);		
+	eq::Vector4f p7; p7.set(_dimBox.x(), _dimBox.y(), _dimBox.z(), 1.0f);
+	eq::Vector4f p8; p8.set(0.0f, _dimBox.y(), _dimBox.z(), 1.0f);		
 
-	eq::Vector4f p1; p1.set(0.0f, 0.0f, 0.0f, 1.0f);							p1 = model * p1;
-	eq::Vector4f p2; p2.set(_dimCube.x(), 0.0f, 0.0f, 1.0f);					p2 = model * p2;
-	eq::Vector4f p3; p3.set(_dimCube.x(), _dimCube.y(), 0.0f, 1.0f);			p3 = model * p3;
-	eq::Vector4f p4; p4.set(0.0f, _dimCube.y(), 0.0f, 1.0f);					p4 = model * p4;
-	eq::Vector4f p5; p5.set(0.0f, 0.0f, _dimCube.z(), 1.0f);					p5 = model * p5;
-	eq::Vector4f p6; p6.set(_dimCube.x(), 0.0f, _dimCube.z(), 1.0f);			p6 = model * p6;
-	eq::Vector4f p7; p7.set(_dimCube.x(), _dimCube.y(), _dimCube.z(), 1.0f);	p7 = model * p7;
-	eq::Vector4f p8; p8.set(0.0f, _dimCube.y(), _dimCube.z(), 1.0f);			p8 = model * p8;
-
-#if 0
-	std::cout<<p1<<std::endl;
-	std::cout<<p2<<std::endl;
-	std::cout<<p3<<std::endl;
-	std::cout<<p4<<std::endl;
-	std::cout<<p5<<std::endl;
-	std::cout<<p6<<std::endl;
-	std::cout<<p7<<std::endl;
-	std::cout<<p8<<std::endl;
-#endif
-	//glDisable( GL_DEPTH_TEST );
-	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINES);
-    glBegin(GL_QUADS);
-	 glColor3f(0.0f,1.0f,0.0f);    
+    glBegin(GL_LINES);
+	 glColor3f(1.0f,0.0f,0.0f);    
 	glVertex3f( p1.x(), p1.y(), p1.z());    
 	glVertex3f( p2.x(), p2.y(), p2.z());    
-	glVertex3f( p3.x(), p3.y(), p3.z());    
+	glVertex3f( p1.x(), p1.y(), p1.z());    
 	glVertex3f( p4.x(), p4.y(), p4.z());    
-	 glColor3f(1.0f,0.0f,0.0f);    
+	glVertex3f( p4.x(), p4.y(), p4.z());    
+	glVertex3f( p3.x(), p3.y(), p3.z());    
+	glVertex3f( p2.x(), p2.y(), p2.z());    
+	glVertex3f( p3.x(), p3.y(), p3.z());    
+	 glColor3f(0.0f,1.0f,0.0f);    
 	glVertex3f( p5.x(), p5.y(), p5.z());    
 	glVertex3f( p6.x(), p6.y(), p6.z());    
+	glVertex3f( p5.x(), p5.y(), p5.z());    
+	glVertex3f( p8.x(), p8.y(), p8.z());    
 	glVertex3f( p7.x(), p7.y(), p7.z());    
 	glVertex3f( p8.x(), p8.y(), p8.z());    
+	glVertex3f( p7.x(), p7.y(), p7.z());    
+	glVertex3f( p6.x(), p6.y(), p6.z());    
+	 glColor3f(0.0f,0.0f,1.0f);    
+	glVertex3f( p1.x(), p1.y(), p1.z());    
+	glVertex3f( p5.x(), p5.y(), p5.z());    
+	glVertex3f( p8.x(), p8.y(), p8.z());    
+	glVertex3f( p4.x(), p4.y(), p4.z());    
+	 glColor3f(1.0f,1.0f,0.0f);    
+	glVertex3f( p2.x(), p2.y(), p2.z());    
+	glVertex3f( p6.x(), p6.y(), p6.z());    
+	glVertex3f( p7.x(), p7.y(), p7.z());    
+	glVertex3f( p3.x(), p3.y(), p3.z());    
     glEnd();
 
-	//glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-	//glEnable( GL_DEPTH_TEST );
-#if 1
 	glMatrixMode( GL_PROJECTION );
 	glPopMatrix();
 
 	glMatrixMode( GL_MODELVIEW );
 	glPopMatrix();
+}
+
+#if 0
+bool Channel::_intersectionBox(eq::Vector4f dir, eq::Vector4f origin, float * tnear, float *tfar)
+{
+	bool hit = true;
+
+	float tmin, tmax, tymin, tymax, tzmin, tzmax;
+	float divx = 1 / dir.x();
+	if (divx >= 0)
+	{
+		tmin = (0.0f - origin.x())*divx;
+		tmax = (_dimBox.x() - origin.x())*divx;
+	}
+	else
+	{
+		tmin = (_dimBox.x() - origin.x())*divx;
+		tmax = (0.0f - origin.x())*divx;
+	}
+	float divy = 1 / dir.y();
+	if (divy >= 0)
+	{
+		tymin = (0.0f - origin.y())*divy;
+		tymax = (_dimBox.y() - origin.y())*divy;
+	}
+	else
+	{
+		tymin = (_dimBox.y() - origin.y())*divy;
+		tymax = (0.0f - origin.y())*divy;
+	}
+
+	if ( (tmin > tymax) || (tymin > tmax) )
+	{
+		hit = false;
+	}
+
+	if (tymin > tmin)
+		tmin = tymin;
+	if (tymax < tmax)
+		tmax = tymax;
+
+	float divz = 1 / dir.z();
+	if (divz >= 0)
+	{
+		tzmin = (0.0f - origin.z())*divz;
+		tzmax = (_dimBox.z() - origin.z())*divz;
+	}
+	else
+	{
+		tzmin = (_dimBox.z() - origin.z())*divz;
+		tzmax = (0.0f - origin.z())*divz;
+	}
+
+	if ( (tmin > tzmax) || (tzmin > tmax) )
+	{
+		hit = false;
+	}
+	if (tzmin > tmin)
+		tmin = tzmin;
+	if (tzmax < tmax)
+		tmax = tzmax;
+
+	if (tmin<0.0)
+	 	*tnear=0.0;
+	else
+		*tnear=tmin;
+	*tfar=tmax;
+
+	return *tnear == *tfar ? false : hit;
+}
 #endif
-	glFlush();
+void Channel::_updateNearFar(eq::Matrix4f model)
+{
+        // estimate minimal value of near plane based on frustum size
+		const eq::Frustumf& frustum = getFrustum();
+        const float width  = fabs( frustum.right() - frustum.left() );
+        const float height = fabs( frustum.top() - frustum.bottom() );
+        const float size   = LB_MIN( width, height );
+        const float minNear = frustum.near_plane() / size * .001f;
+
+		eq::Vector4f pos;
+		pos.set(0.0f, 0.0f, 0.0f, 1.0f);
+		pos = model*pos;
+		eq::Vector4f ray; ray.set(model[2][0], model[2][1], model[2][2], 0.0f);
+
+		float nearPoint = 0.0f;
+		float farPoint = 0.0f;
+		//if (!_intersectionBox(ray, pos, &nearPoint, &farPoint))
+		{
+			//setNearFar(minNear, minNear * 2.f);
+			return;
+		}
+
+        const float zNear = LB_MAX( minNear, nearPoint );
+        const float zFar  = LB_MAX( zNear * 2.f, farPoint );
+
+		std::cout << pos + ray*zNear<< " " <<pos + ray*zFar<<std::endl;
+
+        //setNearFar( zNear, zFar );
 }
 
 }

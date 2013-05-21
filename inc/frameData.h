@@ -35,6 +35,9 @@ class FrameData : public co::Serializable
 		void setIdle( const bool idleMode );
 		bool isIdle() const { return _idle; }
 
+		void setDrawBox();
+		bool isDrawBox() const { return _drawBox; }
+
 		void setCurrentViewID( const eq::uint128_t& id );
 		eq::uint128_t getCurrentViewID() const { return _currentViewID; }
 
@@ -54,7 +57,8 @@ class FrameData : public co::Serializable
     private:
 		eq::Matrix4f	_rotation;
 		eq::Vector3f	_position;
-		bool             _idle;
+		bool            _idle;
+		bool			_drawBox;
 		eq::uint128_t	_currentViewID;
 
 		bool			_statistics;
