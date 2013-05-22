@@ -148,14 +148,14 @@ void Channel::frameDraw( const eq::uint128_t& frameID )
 			render->resizeViewport(_lastViewport.w, _lastViewport.h, _pbo);
 		}
 
-		eq::Vector4f pos;
+		eq::Vector4f pos; 
 		pos.set(0.0f, 0.0f, 0.0f, 1.0f);
 		pos = model*pos;
 
-		eq::Vector4f p1; p1.set(frustum.right(),frustum.bottom(),frustum.near_plane(),1.0f); p1 = model * p1; 
-		eq::Vector4f p2; p2.set(frustum.right(),frustum.top(),frustum.near_plane(),1.0f);  p2 = model * p2;
-		eq::Vector4f p3; p3.set(frustum.left(),frustum.top(),frustum.near_plane(),1.0f);  p3 = model * p3;
-		eq::Vector4f p4; p4.set(frustum.left(),frustum.bottom(),frustum.near_plane(),1.0f);  p4 = model * p4;
+		eq::Vector4f p1; p1.set(frustum.right(),	frustum.bottom(),	-frustum.near_plane(),1.0f); p1 = model * p1; 
+		eq::Vector4f p2; p2.set(frustum.right(),	frustum.top(),		-frustum.near_plane(),1.0f);  p2 = model * p2;
+		eq::Vector4f p3; p3.set(frustum.left(),		frustum.top(),		-frustum.near_plane(),1.0f);  p3 = model * p3;
+		eq::Vector4f p4; p4.set(frustum.left(),		frustum.bottom(),	-frustum.near_plane(),1.0f);  p4 = model * p4;
 		/************************
 		 *********FRUSTUM********
 		 ****p3------------p2****
@@ -642,7 +642,7 @@ void Channel::_saveFrameBuffer(const eq::uint128_t& frameID)
 void Channel::_drawAxis()
 {
 	const FrameData& frameData = _getFrameData();
-    eq::Matrix4f model = frameData.getCameraRotation();
+    eq::Matrix4f model; compute_inverse(frameData.getCameraRotation(), model);
 	eq::Vector4f right; right.set(model[0][0], model[0][1], model[0][2], 1.0f);
 	eq::Vector4f up;	up.set(model[1][0], model[1][1], model[1][2], 1.0f);
 	eq::Vector4f look;	look.set(model[2][0], model[2][1], model[2][2], 1.0f);
@@ -685,19 +685,19 @@ void Channel::_drawCube()
 	glPushMatrix();
 	glLoadIdentity( );
 	applyHeadTransform();
-
 	const eq::Vector3f& position = frameData.getCameraPosition();
-	glMultMatrixf( frameData.getCameraRotation().array );
-	glTranslatef( position.x(), position.y(), position.z() );
+	eq::Matrix4f invRot; compute_inverse(frameData.getCameraRotation(), invRot);
+	glMultMatrixf( invRot);
+	glTranslatef( -position.x(), -position.y(), -position.z() );
 
-	eq::Vector4f p1; p1.set(0.0f, 0.0f, 0.0f, 1.0f);						
-	eq::Vector4f p2; p2.set(_dimBox.x(), 0.0f, 0.0f, 1.0f);				
-	eq::Vector4f p3; p3.set(_dimBox.x(), _dimBox.y(), 0.0f, 1.0f);		
-	eq::Vector4f p4; p4.set(0.0f, _dimBox.y(), 0.0f, 1.0f);				
-	eq::Vector4f p5; p5.set(0.0f, 0.0f, _dimBox.z(), 1.0f);				
-	eq::Vector4f p6; p6.set(_dimBox.x(), 0.0f, _dimBox.z(), 1.0f);		
+	eq::Vector4f p1; p1.set(0.0f, 0.0f, 0.0f, 1.0f);
+	eq::Vector4f p2; p2.set(_dimBox.x(), 0.0f, 0.0f, 1.0f);
+	eq::Vector4f p3; p3.set(_dimBox.x(), _dimBox.y(), 0.0f, 1.0f);
+	eq::Vector4f p4; p4.set(0.0f, _dimBox.y(), 0.0f, 1.0f);
+	eq::Vector4f p5; p5.set(0.0f, 0.0f, _dimBox.z(), 1.0f);
+	eq::Vector4f p6; p6.set(_dimBox.x(), 0.0f, _dimBox.z(), 1.0f);
 	eq::Vector4f p7; p7.set(_dimBox.x(), _dimBox.y(), _dimBox.z(), 1.0f);
-	eq::Vector4f p8; p8.set(0.0f, _dimBox.y(), _dimBox.z(), 1.0f);		
+	eq::Vector4f p8; p8.set(0.0f, _dimBox.y(), _dimBox.z(), 1.0f);
 
     glBegin(GL_LINES);
 	 glColor3f(1.0f,0.0f,0.0f);    

@@ -212,14 +212,30 @@ void Render::frameDraw(eq::Vector4f origin, eq::Vector4f LB, eq::Vector4f up, eq
 
 		if (cudaSuccess != cudaStreamSynchronize(_stream))
 		{
-			std::cerr<<"Error cudaStreamSynchronize"<<std::endl;
+			std::cerr<<"Error cudaStreamSynchronize waiting octree"<<std::endl;
 		}
 
 		time = _octreeClock.getTimed();
 		_octreeAccum += time;
 		timeO += time;
+
+		_cachePushTimes++;
+		_cachePushClock.reset();
+
+		if(!_cache->push(_visibleCubesCPU, numPixels, _octree.getOctreeLevel(), _id, _stream))
+		{
+			break;
+		}
+
+		cudaMemcpyAsync((void*) _visibleCubesGPU, (const void*) _visibleCubesCPU, (_height*_width)*sizeof(visibleCube_t), cudaMemcpyHostToDevice, _stream);
+
 		if (_statistics)
 		{
+			if (cudaSuccess != cudaStreamSynchronize(_stream))
+			{
+				std::cerr<<"Error cudaStreamSynchronize waiting transfering visibleCubes to GPU"<<std::endl;
+			}
+
 			*_outputFile<<"Time octree: "<<time/1000.0 <<" seconds"<<std::endl;
 
 			int numP = 0;
@@ -243,19 +259,6 @@ void Render::frameDraw(eq::Vector4f origin, eq::Vector4f LB, eq::Vector4f up, eq
 			*_outputFile<<"Painted "<<(numP*100.0)/(float)numPixels<<" NOCACHED "<<(nocached*100.0)/(float)numPixels<<" cached "<<(cached*100.0)/(float)numPixels<<" nocube "<<(nocube*100.0)/(float)numPixels<<" cube "<<(cube*100.0)/(float)numPixels<<std::endl;
 		}
 
-		_cachePushTimes++;
-		_cachePushClock.reset();
-
-		if(!_cache->push(_visibleCubesCPU, numPixels, _octree.getOctreeLevel(), _id, _stream))
-		{
-			break;
-		}
-
-		cudaMemcpyAsync((void*) _visibleCubesGPU, (const void*) _visibleCubesCPU, (_height*_width)*sizeof(visibleCube_t), cudaMemcpyHostToDevice, _stream);
-
-		if (_statistics)
-			cudaStreamSynchronize(_stream);
-
 		time = _cachePushClock.getTimed();
 		_cachePushAccum += time;
 		timeCP += time;
@@ -271,7 +274,10 @@ void Render::frameDraw(eq::Vector4f origin, eq::Vector4f LB, eq::Vector4f up, eq
 		_raycaster.render(origin, LB, up, right, w, h, pvpW, pvpH, (_height*_width), _octree.getOctreeLevel(), _cache->getCacheLevel(), _octree.getnLevels(), _visibleCubesGPU,  make_int3(cDim.x(), cDim.y(), cDim.z()), make_int3(cInc.x(), cInc.y(), cInc.z()), pixelBuffer, _stream);
 
 		if (_statistics)
-			cudaStreamSynchronize(_stream);
+			if (cudaSuccess != cudaStreamSynchronize(_stream))
+			{
+				std::cerr<<"Error cudaStreamSynchronize waiting ray casting"<<std::endl;
+			}
 
 		time = _rayCastingClock.getTimed();
 		_rayCastingAccum += time;
@@ -291,6 +297,7 @@ void Render::frameDraw(eq::Vector4f origin, eq::Vector4f LB, eq::Vector4f up, eq
 			*_outputFile<<"Time cache pop: "<<time/1000.0 <<" seconds"<<std::endl;
 		
 		iterations++;
+		std::cout<<iterations<<std::endl;
 	}
 
 	_unmapResourcesTimes++;
