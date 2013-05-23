@@ -298,7 +298,6 @@ void Render::frameDraw(eq::Vector4f origin, eq::Vector4f LB, eq::Vector4f up, eq
 			*_outputFile<<"Time cache pop: "<<time/1000.0 <<" seconds"<<std::endl;
 		
 		iterations++;
-		std::cout<<iterations<<std::endl;
 	}
 
 	_unmapResourcesTimes++;
