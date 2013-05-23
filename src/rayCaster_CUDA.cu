@@ -78,7 +78,7 @@ inline __device__ bool _cuda_RayAABB(float3 origin, float3 dir,  float * tnear, 
 		*tnear=tmin;
 	*tfar=tmax;
 
-	return hit;
+	return *tnear >= *tfar ? false : hit;
 
 }
 

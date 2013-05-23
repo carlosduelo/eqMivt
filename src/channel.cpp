@@ -699,6 +699,8 @@ void Channel::_drawCube()
 	eq::Vector4f p7; p7.set(_dimBox.x(), _dimBox.y(), _dimBox.z(), 1.0f);
 	eq::Vector4f p8; p8.set(0.0f, _dimBox.y(), _dimBox.z(), 1.0f);
 
+	glDisable(GL_LIGHTING);
+
     glBegin(GL_LINES);
 	 glColor3f(1.0f,0.0f,0.0f);    
 	glVertex3f( p1.x(), p1.y(), p1.z());    

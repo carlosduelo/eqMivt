@@ -9,6 +9,8 @@ Notes:
 #include "render.h"
 #include <iostream>
 
+#define MAX_ITERATIONS 250
+
 namespace eqMivt
 {
 
@@ -160,7 +162,6 @@ void Render::frameDraw(eq::Vector4f origin, eq::Vector4f LB, eq::Vector4f up, eq
 	_frameDrawClock.reset();
 
 
-	bool notEnd		= true;
 	int numPixels	= pvpW*pvpH;
 	int	iterations = 0;
 
@@ -203,7 +204,7 @@ void Render::frameDraw(eq::Vector4f origin, eq::Vector4f LB, eq::Vector4f up, eq
 	double timeR = 0.0;
 	double timeCp = 0.0;
 
-	while(notEnd)
+	while(iterations < MAX_ITERATIONS)
 	{
 		_octreeTimes++;
 		_octreeClock.reset();
@@ -212,7 +213,7 @@ void Render::frameDraw(eq::Vector4f origin, eq::Vector4f LB, eq::Vector4f up, eq
 
 		if (cudaSuccess != cudaStreamSynchronize(_stream))
 		{
-			std::cerr<<"Error cudaStreamSynchronize waiting octree"<<std::endl;
+			std::cerr<<"Error cudaStreamSynchronize waiting octree: "<<cudaGetErrorString(cudaGetLastError()) <<std::endl;
 		}
 
 		time = _octreeClock.getTimed();
@@ -233,7 +234,7 @@ void Render::frameDraw(eq::Vector4f origin, eq::Vector4f LB, eq::Vector4f up, eq
 		{
 			if (cudaSuccess != cudaStreamSynchronize(_stream))
 			{
-				std::cerr<<"Error cudaStreamSynchronize waiting transfering visibleCubes to GPU"<<std::endl;
+				std::cerr<<"Error cudaStreamSynchronize waiting transfering visibleCubes to GPU: "<<cudaGetErrorString(cudaGetLastError()) <<std::endl;
 			}
 
 			*_outputFile<<"Time octree: "<<time/1000.0 <<" seconds"<<std::endl;
@@ -276,7 +277,7 @@ void Render::frameDraw(eq::Vector4f origin, eq::Vector4f LB, eq::Vector4f up, eq
 		if (_statistics)
 			if (cudaSuccess != cudaStreamSynchronize(_stream))
 			{
-				std::cerr<<"Error cudaStreamSynchronize waiting ray casting"<<std::endl;
+				std::cerr<<"Error cudaStreamSynchronize waiting ray casting: "<<cudaGetErrorString(cudaGetLastError()) <<std::endl;
 			}
 
 		time = _rayCastingClock.getTimed();

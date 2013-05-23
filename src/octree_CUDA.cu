@@ -16,8 +16,6 @@ Notes:
 #include <iostream>
 #include <fstream>
 
-#define STACK_DIM 32
-
 namespace eqMivt
 {
 /*
@@ -172,7 +170,7 @@ __device__ bool _cuda_RayAABB(index_node_t index, float3 origin, float3 dir,  fl
 		*tnear=tmin;
 	*tfar=tmax;
 
-	return *tnear == *tfar ? false : hit;
+	return *tnear >= *tfar ? false : hit;
 }
 
 __device__ bool _cuda_RayAABB2(float3 origin, float3 dir,  float * tnear, float * tfar, int nLevels, int3 minBox, int level)
@@ -246,7 +244,7 @@ __device__ bool _cuda_RayAABB2(float3 origin, float3 dir,  float * tnear, float 
 
 	*tfar=tmax;
 
-	return *tnear == *tfar ? false : hit;
+	return *tnear >= *tfar ? false : hit;
 
 }
 
@@ -514,7 +512,7 @@ __global__ void cuda_getFirtsVoxel(index_node_t ** octree, int * sizes, int nLev
 			int				currentLevel	= 0;
 			
 			// Update tnear and tfar
-			if (!_cuda_RayAABB(current, origin, ray,  &currentTnear, &currentTfar, nLevels) || currentTnear < 0.0f)
+			if (!_cuda_RayAABB(current, origin, ray,  &currentTnear, &currentTfar, nLevels) || currentTfar < 0.0f)
 			{
 				// NO CUBE FOUND
 				indexNode->id 	= 0;
