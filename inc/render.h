@@ -41,6 +41,9 @@ namespace eqMivt
 	  
         visibleCube_t * _visibleCubesGPU;
         visibleCube_t * _visibleCubesCPU;
+		int	*			_indexVisibleCubesGPU;
+		int	*			_indexVisibleCubesCPU;
+
 
   	    struct cudaGraphicsResource * _cuda_pbo_resource;
     

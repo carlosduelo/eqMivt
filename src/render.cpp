@@ -23,8 +23,10 @@ Render::Render()
 
     _visibleCubesGPU = 0;
     _visibleCubesCPU = 0;
+	_indexVisibleCubesGPU = 0;
+	_indexVisibleCubesCPU = 0;
 
-    _cuda_pbo_resource = 0;
+	_cuda_pbo_resource = 0;
 	_stream = 0;
 
 	_name = "no-name";
@@ -328,12 +330,22 @@ void Render::_CreateVisibleCubes()
 {
     if (cudaSuccess != (cudaMalloc(&_visibleCubesGPU, (_height*_width)*sizeof(visibleCube_t))))
     {
-    	std::cerr<< "Octree: error allocating octree in the gpu\n";
+    	std::cerr<< "Render: error creating visible cubes in gpu"<<std::endl;
     }
 
 	if (cudaSuccess != cudaHostAlloc((void**)&_visibleCubesCPU, _height*_width*sizeof(visibleCube_t),cudaHostAllocDefault))
 	{
-		std::cerr<<"Cube Cache CPU: Error creating cpu cache"<<std::endl;
+		std::cerr<<"Render: error creating visible cubes in cpu"<<std::endl;
+	}
+
+    if (cudaSuccess != (cudaMalloc(&_indexVisibleCubesGPU, (_height*_width)*sizeof(int))))
+    {
+    	std::cerr<< "Render: error creating visible cubes in gpu"<<std::endl;
+    }
+
+	if (cudaSuccess != cudaHostAlloc((void**)&_indexVisibleCubesCPU, _height*_width*sizeof(int),cudaHostAllocDefault))
+	{
+		std::cerr<<"Render: error creating visible cubes in cpu"<<std::endl;
 	}
 }
 
@@ -344,6 +356,12 @@ void Render::_DestroyVisibleCubes()
 
     if (_visibleCubesCPU != 0)
 		cudaFreeHost(_visibleCubesCPU);
+
+    if (_indexVisibleCubesGPU!= 0)
+        cudaFree(_indexVisibleCubesGPU);
+
+    if (_indexVisibleCubesCPU!= 0)
+		cudaFreeHost(_indexVisibleCubesCPU);
 }
 
 }
