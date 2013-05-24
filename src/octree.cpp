@@ -31,10 +31,10 @@ void Octree::setOctree(OctreeContainer * oc)
 }
 
 
-void Octree::getBoxIntersected(eq::Vector4f origin, eq::Vector4f  LB, eq::Vector4f up, eq::Vector4f right, float w, float h, int pvpW, int pvpH, visibleCube_t * visibleGPU, visibleCube_t * visibleCPU, cudaStream_t stream)
+void Octree::getBoxIntersected(eq::Vector4f origin, eq::Vector4f  LB, eq::Vector4f up, eq::Vector4f right, float w, float h, int pvpW, int pvpH, visibleCube_t * visibleGPU, visibleCube_t * visibleCPU, int numRays, int * indexVisibleCubesGPU, int * indexVisibleCubesCPU, cudaStream_t stream)
 {
 	
-	getBoxIntersectedOctree(_octree, _sizes, _nLevels, VectorToFloat3(origin), VectorToFloat3(LB), VectorToFloat3(up), VectorToFloat3(right), w, h, pvpW, pvpH,  _currentLevel, pvpW*pvpH, visibleGPU, visibleCPU, stream);
+	getBoxIntersectedOctree(_octree, _sizes, _nLevels, VectorToFloat3(origin), VectorToFloat3(LB), VectorToFloat3(up), VectorToFloat3(right), w, h, pvpW, pvpH,  _currentLevel, numRays, visibleGPU, visibleCPU, indexVisibleCubesGPU, indexVisibleCubesCPU, stream);
 }
 
 }

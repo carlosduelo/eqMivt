@@ -175,6 +175,9 @@ void Render::frameDraw(eq::Vector4f origin, eq::Vector4f LB, eq::Vector4f up, eq
 	{
 		std::cerr<<"Error initialize visible cubes"<<std::endl;
 	}
+	for(int i=0; i<numPixels; i++)
+		_indexVisibleCubesCPU[i] = i;
+	cudaMemcpyAsync((void*) _indexVisibleCubesGPU, (const void*) _indexVisibleCubesCPU, numPixels*sizeof(int), cudaMemcpyHostToDevice, _stream);
 	
 	float * pixelBuffer;
     if (cudaSuccess != cudaGraphicsMapResources(1, &_cuda_pbo_resource, _stream))
@@ -211,7 +214,9 @@ void Render::frameDraw(eq::Vector4f origin, eq::Vector4f LB, eq::Vector4f up, eq
 		_octreeTimes++;
 		_octreeClock.reset();
 
-		_octree.getBoxIntersected(origin, LB, up, right, w, h, pvpW, pvpH, _visibleCubesGPU, _visibleCubesCPU, _stream);
+		_octree.getBoxIntersected(origin, LB, up, right, w, h, pvpW, pvpH, _visibleCubesGPU, _visibleCubesCPU, numPixels, _indexVisibleCubesGPU, _indexVisibleCubesCPU, _stream);
+
+		cudaMemcpyAsync((void*) _visibleCubesCPU, (const void*) _visibleCubesGPU, pvpW*pvpH*sizeof(visibleCube_t), cudaMemcpyDeviceToHost, _stream);
 
 		if (cudaSuccess != cudaStreamSynchronize(_stream))
 		{
@@ -225,12 +230,13 @@ void Render::frameDraw(eq::Vector4f origin, eq::Vector4f LB, eq::Vector4f up, eq
 		_cachePushTimes++;
 		_cachePushClock.reset();
 
-		if(!_cache->push(_visibleCubesCPU, numPixels, _octree.getOctreeLevel(), _id, _stream))
+		if(!_cache->push(_visibleCubesCPU, _indexVisibleCubesCPU, &numPixels, _octree.getOctreeLevel(), _id, _stream))
 		{
 			break;
 		}
 
-		cudaMemcpyAsync((void*) _visibleCubesGPU, (const void*) _visibleCubesCPU, (_height*_width)*sizeof(visibleCube_t), cudaMemcpyHostToDevice, _stream);
+		cudaMemcpyAsync((void*) _visibleCubesGPU, (const void*) _visibleCubesCPU, pvpW*pvpH*sizeof(visibleCube_t), cudaMemcpyHostToDevice, _stream);
+		cudaMemcpyAsync((void*) _indexVisibleCubesGPU, (const void*) _indexVisibleCubesCPU, numPixels*sizeof(int), cudaMemcpyHostToDevice, _stream);
 
 		if (_statistics)
 		{
@@ -274,7 +280,7 @@ void Render::frameDraw(eq::Vector4f origin, eq::Vector4f LB, eq::Vector4f up, eq
 		vmml::vector<3, int> cDim = _cache->getCubeDim();
 		vmml::vector<3, int> cInc = _cache->getCubeInc();
 
-		_raycaster.render(origin, LB, up, right, w, h, pvpW, pvpH, (_height*_width), _octree.getOctreeLevel(), _cache->getCacheLevel(), _octree.getnLevels(), _visibleCubesGPU,  make_int3(cDim.x(), cDim.y(), cDim.z()), make_int3(cInc.x(), cInc.y(), cInc.z()), pixelBuffer, _stream);
+		_raycaster.render(origin, LB, up, right, w, h, pvpW, pvpH, numPixels, _octree.getOctreeLevel(), _cache->getCacheLevel(), _octree.getnLevels(), _visibleCubesGPU,  _indexVisibleCubesGPU, make_int3(cDim.x(), cDim.y(), cDim.z()), make_int3(cInc.x(), cInc.y(), cInc.z()), pixelBuffer, _stream);
 
 		if (_statistics)
 			if (cudaSuccess != cudaStreamSynchronize(_stream))
@@ -291,8 +297,7 @@ void Render::frameDraw(eq::Vector4f origin, eq::Vector4f LB, eq::Vector4f up, eq
 		_cachePopTimes++;
 		_cachePopClock.reset();
 
-		_cache->pop(_visibleCubesCPU, numPixels, _octree.getOctreeLevel(), _id, _stream);
-
+		_cache->pop(_visibleCubesCPU, _indexVisibleCubesCPU, numPixels, _octree.getOctreeLevel(), _id, _stream);
 		time = _cachePopClock.getTimed();
 		_cachePopAccum += time;
 		timeCp += time;
@@ -300,6 +305,7 @@ void Render::frameDraw(eq::Vector4f origin, eq::Vector4f LB, eq::Vector4f up, eq
 			*_outputFile<<"Time cache pop: "<<time/1000.0 <<" seconds"<<std::endl;
 		
 		iterations++;
+		//std::cout<<iterations<<std::endl;
 	}
 
 	_unmapResourcesTimes++;

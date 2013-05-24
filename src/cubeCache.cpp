@@ -29,7 +29,7 @@ cubeCache::~cubeCache()
 	delete[] insertedCubes;
 }
 
-bool cubeCache::push(visibleCube_t * visibleCubes, int num, int octreeLevel, int threadID, cudaStream_t stream)
+bool cubeCache::push(visibleCube_t * visibleCubes, int *indexCube, int * num, int octreeLevel, int threadID, cudaStream_t stream)
 {
 #ifdef _BUNORDER_MAP_
 	boost::unordered_map<index_node_t, cacheElement_t>::iterator it;
@@ -37,49 +37,54 @@ bool cubeCache::push(visibleCube_t * visibleCubes, int num, int octreeLevel, int
 	std::map<index_node_t, cacheElement_t>::iterator it;
 #endif
 
-	bool notEnd = false;
+	int nextIndex	= 0;
 
 	// For each visible cube push into the cache
-	for(int i=0; i<num; i++)
+	for(int i=0; i<(*num); i++)
 	{
-		if (visibleCubes[i].state == NOCACHED || visibleCubes[i].state == CUBE)
+		int index = indexCube[i];
+		if (visibleCubes[index].state != PAINTED)
 		{
-			notEnd = true;
-			index_node_t idCube = visibleCubes[i].id >> (3*(octreeLevel - cache.getLevelCube()));
-
-			it = insertedCubes[threadID].find(idCube);
-			if (it == insertedCubes[threadID].end()) // If does not exist, do not push again
+			if (visibleCubes[index].state == NOCACHED || visibleCubes[index].state == CUBE)
 			{
-				float * cubeData = cache.push_cube(idCube, stream);
+				index_node_t idCube = visibleCubes[index].id >> (3*(octreeLevel - cache.getLevelCube()));
 
-				visibleCubes[i].cubeID  = idCube;
-				visibleCubes[i].state   = cubeData == 0 ? NOCACHED : CACHED;
-				visibleCubes[i].data    = cubeData;
+				it = insertedCubes[threadID].find(idCube);
+				if (it == insertedCubes[threadID].end()) // If does not exist, do not push again
+				{
+					float * cubeData = cache.push_cube(idCube, stream);
 
-				cacheElement_t newCube;
-				newCube.cubeID = idCube;
-				newCube.state = cubeData == 0 ? NOCACHED : CACHED;
-				newCube.data = cubeData;
+					visibleCubes[index].cubeID  = idCube;
+					visibleCubes[index].state   = cubeData == 0 ? NOCACHED : CACHED;
+					visibleCubes[index].data    = cubeData;
 
-				insertedCubes[threadID].insert(std::pair<index_node_t, cacheElement_t>(idCube, newCube));
+					cacheElement_t newCube;
+					newCube.cubeID = idCube;
+					newCube.state = cubeData == 0 ? NOCACHED : CACHED;
+					newCube.data = cubeData;
+
+					insertedCubes[threadID].insert(std::pair<index_node_t, cacheElement_t>(idCube, newCube));
+				}
+				else
+				{
+					visibleCubes[index].cubeID  = it->second.cubeID;
+					visibleCubes[index].state   = it->second.state;
+					visibleCubes[index].data    = it->second.data;
+
+				}
+
 			}
-			else
-			{
-				visibleCubes[i].cubeID  = it->second.cubeID;
-				visibleCubes[i].state   = it->second.state;
-				visibleCubes[i].data    = it->second.data;
-
-			}
+			indexCube[nextIndex] = index;
+			nextIndex++;
 		}
-		else if  (visibleCubes[i].state != PAINTED)
-			notEnd = true;
 	}
 
-	return notEnd;
+	*num = nextIndex;
+	return nextIndex != 0;
 
 }
 
-void cubeCache::pop(visibleCube_t * visibleCubes, int num, int octreeLevel, int threadID, cudaStream_t stream)
+void cubeCache::pop(visibleCube_t * visibleCubes, int * indexCube, int num, int octreeLevel, int threadID, cudaStream_t stream)
 {
 #ifdef _BUNORDER_MAP_
 	boost::unordered_map<index_node_t, cacheElement_t>::iterator it;
