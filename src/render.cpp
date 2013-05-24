@@ -254,16 +254,19 @@ void Render::frameDraw(eq::Vector4f origin, eq::Vector4f LB, eq::Vector4f up, eq
 			int cached = 0;
 			int nocube = 0;
 			for(int i=0; i<numPixels; i++)
-				if (_visibleCubesCPU[i].state == PAINTED)
+			{
+				int index  = _indexVisibleCubesCPU[i];
+				if (_visibleCubesCPU[index].state == PAINTED)
 					numP++;
-				else if (_visibleCubesCPU[i].state == NOCACHED)
+				else if (_visibleCubesCPU[index].state == NOCACHED)
 					nocached++;
-				else if (_visibleCubesCPU[i].state == CACHED)
+				else if (_visibleCubesCPU[index].state == CACHED)
 					cached++;
-				else if (_visibleCubesCPU[i].state == NOCUBE)
+				else if (_visibleCubesCPU[index].state == NOCUBE)
 					nocube++;
-				else if (_visibleCubesCPU[i].state == CUBE)
+				else if (_visibleCubesCPU[index].state == CUBE)
 					cube++;
+			}
 
 			*_outputFile<<"Painted "<<(numP*100.0)/(float)numPixels<<" NOCACHED "<<(nocached*100.0)/(float)numPixels<<" cached "<<(cached*100.0)/(float)numPixels<<" nocube "<<(nocube*100.0)/(float)numPixels<<" cube "<<(cube*100.0)/(float)numPixels<<std::endl;
 		}
