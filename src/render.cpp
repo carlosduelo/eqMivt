@@ -331,7 +331,10 @@ void Render::_CreateVisibleCubes()
     	std::cerr<< "Octree: error allocating octree in the gpu\n";
     }
 
-    _visibleCubesCPU = new visibleCube_t[_height*_width];
+	if (cudaSuccess != cudaHostAlloc((void**)&_visibleCubesCPU, _height*_width*sizeof(visibleCube_t),cudaHostAllocDefault))
+	{
+		std::cerr<<"Cube Cache CPU: Error creating cpu cache"<<std::endl;
+	}
 }
 
 void Render::_DestroyVisibleCubes()
@@ -340,7 +343,7 @@ void Render::_DestroyVisibleCubes()
         cudaFree(_visibleCubesGPU);
 
     if (_visibleCubesCPU != 0)
-    	delete[] _visibleCubesCPU;
+		cudaFreeHost(_visibleCubesCPU);
 }
 
 }
