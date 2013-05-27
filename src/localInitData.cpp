@@ -56,11 +56,19 @@ bool LocalInitData::parseArguments( const int argc, char** argv )
 	("size-gpu-cache,g", boost::program_options::value<int>(), "set size in cubes gpu cache")
     ;
 
-    boost::program_options::variables_map vm;
-    boost::program_options::store(boost::program_options::parse_command_line(argc, argv, desc), vm);
-    boost::program_options::notify(vm);    
+	boost::program_options::variables_map vm;
+	try
+	{
+		boost::program_options::store(boost::program_options::parse_command_line(argc, argv, desc), vm);
+		boost::program_options::notify(vm);
+	}
+	catch( ... )
+	{
+        std::cout << desc << "\n";
+		return false;
+	}
 
-    if (vm.count("help"))
+    if (argc == 1 || vm.count("help"))
     {
         std::cout << desc << "\n";
 		return false;
