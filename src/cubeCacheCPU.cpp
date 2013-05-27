@@ -35,7 +35,7 @@ bool cubeCacheCPU::init(std::string type_file, std::vector<std::string> file_par
 	}
 
 	// Allocating memory
-	std::cerr<<"Creating cache in CPU: "<< maxElements*offsetCube*sizeof(float)/1024/1024<<" MB: "<<std::endl;
+	std::cerr<<"Creating cache in CPU: "<< maxElements*offsetCube*sizeof(float)/1024.0f/1024.0f<<" MB: "<<std::endl;
 	if (cudaSuccess != cudaHostAlloc((void**)&cacheData, maxElements*offsetCube*sizeof(float),cudaHostAllocDefault))
 	{
 		LBERROR<<"Cube Cache CPU: Error creating cpu cache"<<std::endl;
