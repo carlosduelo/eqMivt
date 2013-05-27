@@ -158,9 +158,7 @@ int main( const int argc, char ** argv)
 	for (std::vector<float>::iterator it = isosurfaceList.begin() ; it != isosurfaceList.end(); ++it)
 	    std::cout << ' ' << *it<<std::endl;
 
-	eqMivt::octreeConstructor octree;
-
-	if (!octree.createOctree(type_file, file_params, maxLevel, isosurfaceList, octree_file_name))
+	if (!eqMivt::createOctree(type_file, file_params, maxLevel, isosurfaceList, octree_file_name))
 		return 0;
 
 	return 0;

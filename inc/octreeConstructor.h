@@ -12,14 +12,11 @@ Notes:
 #include <vector> 
 #include <string>
 
+
 namespace eqMivt
 {
 
-class octreeConstructor
-{	
-	public:
-		bool createOctree(std::string type_file, std::vector<std::string> file_params, int maxLevel, std::vector<float> isosurfaceList, std::string octree_file);
-};
+ bool createOctree(std::string type_file, std::vector<std::string> file_params, int maxLevel, std::vector<float> isosurfaceList, std::string octree_file);
 
 }
 
