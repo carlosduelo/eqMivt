@@ -10,6 +10,8 @@ Notes:
 
 #include "fileFactory.h"
 
+#define posToIndex(i,j,k,d) ((k)+(j)*(d)+(i)*(d)*(d))
+
 namespace eqMivt
 {
 	class octree
@@ -18,7 +20,7 @@ namespace eqMivt
 			std::vector<index_node_t> *	_octree;
 			int		*					_numCubes;
 			int							_maxLevel;
-			int							_nLevel;
+			int							_nLevels;
 
 			void _addElement(index_node_t id, int level)
 			{
@@ -38,11 +40,11 @@ namespace eqMivt
 				}
 				else if(_octree[level].back() == id)
 				{
-					std::cout<<"repetido"<<std::endl;
+					//std::cout<<"repetido in level "<<level<<" "<< id <<std::endl;
 				}
-				else if(_octree[level].back() < id)
+				else if(_octree[level].back() > id)
 				{
-					std::cout<<"error"<<std::endl;
+					std::cout<<"=======>   ERROR: insert index in order "<< id <<" (in level "<<level<<") last inserted "<<_octree[level].back()<<std::endl;
 					throw;
 				}
 				else
@@ -56,11 +58,12 @@ namespace eqMivt
 		public:
 			octree(int nLevels, int maxLevel)
 			{
+
 				_octree		= new std::vector<index_node_t>[maxLevel + 1];
 				_numCubes	= new int[maxLevel + 1];	
 
 				_maxLevel = maxLevel;
-				nLevels = nLevels;
+				_nLevels = nLevels;
 			}
 
 			~octree()
@@ -77,6 +80,22 @@ namespace eqMivt
 					id >>= 3;
 				}
 
+			}
+
+			void printTree()
+			{
+				for(int i=_maxLevel; i>=0; i--)
+				{
+					std::vector<index_node_t>::iterator it;
+
+					std::cout<<"Level: "<<i<<std::endl;
+					for ( it=_octree[i].begin() ; it != _octree[i].end(); it++ )
+					{
+						std::cout << "From " << *it;
+						it++;
+						std::cout << " to " << *it<<std::endl;
+					}
+				}
 			}
 	};
 
@@ -136,22 +155,95 @@ namespace eqMivt
 
 	}
 
-	void _checkCube(std::vector<octree*> octrees, int nLevels, int nodeLevel, int dimNode, index_node_t idCube, int cubeLevel, int cubeDim, float * cube)
+	bool _checkIso(float * voxel, float isosurface)
+	{
+			bool has = false; 
+			bool sign = (voxel[0] - isosurface) < 0;
+			for (int i = 1; i < 8 && !has; ++i)
+				if (((voxel[i] - isosurface) < 0) != sign)
+					has = true;
+
+			return has;
+	}
+
+
+	void _getVoxel(int x, int y, int z, int dim, float * cube, float * voxel)
+	{
+		voxel[0]	= cube[posToIndex(x, y, z, dim)];
+		voxel[1]	= cube[posToIndex(x, y, z+1, dim)];
+		voxel[2]	= cube[posToIndex(x, y+1, z, dim)];
+		voxel[3]	= cube[posToIndex(x, y+1, z+1, dim)];
+		voxel[4]	= cube[posToIndex(x+1, y, z, dim)];
+		voxel[5]	= cube[posToIndex(x+1, y, z+1, dim)];
+		voxel[6]	= cube[posToIndex(x+1, y+1, z, dim)];
+		voxel[7]	= cube[posToIndex(x+1, y+1, z+1, dim)];
+	}
+
+
+	void _checkCube(std::vector<octree*> octrees, std::vector<float> isos, int nLevels, int nodeLevel, int dimNode, index_node_t idCube, int cubeLevel, int cubeDim, float * cube)
 	{
 		vmml::vector<3, int> coorCubeStart = getMinBoxIndex(idCube, cubeLevel, nLevels);
-		vmml::vector<3, int> coorCubeFinish = coorCubeStart + cubeDim;
+		vmml::vector<3, int> coorCubeFinish = coorCubeStart + cubeDim - 1;
 
 		std::cout<<"       "<<coorCubeStart<<" "<<coorCubeFinish<<std::endl;
-		index_node_t start = idCube >> 3*(nodeLevel - cubeLevel); 
+		index_node_t start = idCube << 3*(nodeLevel - cubeLevel); 
 		index_node_t finish = coordinateToIndex(coorCubeFinish, nodeLevel, nLevels);
 
 		std::cout<<"       "<<idCube<<" "<<start<<" "<<finish<<std::endl;
 
+		float voxel[8];
+		int		nodesToCheck = octrees.size();
+		bool *  checkNode = new bool[octrees.size()];
+
 		while(start<=finish)
 		{
-			std::cout<<"      "<<getMinBoxIndex(start, nodeLevel, nLevels) <<std::endl;
+
+			vmml::vector<3, int> coorNodeStart = getMinBoxIndex(start, nodeLevel, nLevels);
+			vmml::vector<3, int> coorNodeFinish = coorNodeStart + dimNode - 1;
+			#if 0
+			std::cout<<"--------------------------"<<std::endl;
+			std::cout<<start<<"      "<< coorNodeStart<< " "<<coorNodeFinish<<std::endl;
+			std::cout<<start<<"      "<< coorNodeStart-coorCubeStart<< " "<<coorNodeFinish-coorCubeStart<<std::endl;
+			std::cout<<"--------------------------"<<std::endl;
+			#endif
+			coorNodeStart = coorNodeStart-coorCubeStart;
+			coorNodeFinish = coorNodeFinish-coorCubeStart;
+
+			int     nodesToCheck = octrees.size();
+			for(int i=0; i<octrees.size(); i++)
+				checkNode[i] = true;
+
+			for(int x=coorNodeStart.x(); x<coorNodeFinish.x(); x++)
+				for(int y=coorNodeStart.y(); y<coorNodeFinish.y(); y++)
+					for(int z=coorNodeStart.z(); z<coorNodeFinish.z(); z++)
+					{	
+						if (nodesToCheck==0)
+						{
+							x = coorNodeFinish.x();
+							y = coorNodeFinish.y();
+							z = coorNodeFinish.z();
+							break;
+						}
+
+						_getVoxel(x, y, z, cubeDim, cube, voxel);
+
+						for(int i=0; i<octrees.size(); i++)
+						{
+
+							if (checkNode[i] && _checkIso(voxel, isos[i]))
+							{
+								checkNode[i] = false;
+								nodesToCheck--;
+								octrees[i]->addVoxel(start);
+								//std::cout<<start<<" :) "<< isos[i]<<std::endl;
+							}
+						}
+					}
+
 			start++;
 		}
+
+		delete[] checkNode;
 	}
 
 	bool createOctree(std::string type_file, std::vector<std::string> file_params, int maxLevel, std::vector<float> isosurfaceList, std::string octree_file)
@@ -192,12 +284,12 @@ namespace eqMivt
 		std::cout<<"Octree dimension "<<dimension<<"x"<<dimension<<"x"<<dimension<<" levels "<<nLevels<<std::endl;
 		std::cout<<"Octree maximum level "<<maxLevel<<" dimension "<<pow(2, nLevels - maxLevel)<<"x"<<pow(2, nLevels - maxLevel)<<"x"<<pow(2, nLevels - maxLevel)<<std::endl;
 		std::cout<<"Reading in block "<<cubeDim<<" level of cube "<<levelCube<<std::endl;
-		file = eqMivt::CreateFileManage(type_file, file_params, maxLevel, nLevels, cubeDim, cubeInc); 
+		file = eqMivt::CreateFileManage(type_file, file_params, levelCube, nLevels, cubeDim, cubeInc); 
 
 		float * dataCube = new float[dimCube*dimCube*dimCube];
 
-		std::vector<octree*> octrees(maxLevel);
-		for(int i=0; i<maxLevel; i++)
+		std::vector<octree*> octrees(isosurfaceList.size());
+		for(int i=0; i<isosurfaceList.size(); i++)
 			octrees[i] = new octree(nLevels, maxLevel);
 
 		index_node_t idStart = coordinateToIndex(vmml::vector<3, int>(0,0,0), levelCube, nLevels);
@@ -210,19 +302,21 @@ namespace eqMivt
 			vmml::vector<3, int> currentBox = getMinBoxIndex(idStart, levelCube, nLevels);
 			if (currentBox.x() < realDim[0] && currentBox.y() < realDim[1] && currentBox.z() < realDim[2])
 			{
-				//file->readCube(idStart, dataCube);
+				file->readCube(idStart, dataCube);
 				std::cout<<currentBox<<std::endl;
-				_checkCube(octrees, nLevels, maxLevel, pow(2,nLevels-maxLevel), idStart, levelCube, dimCube, dataCube);
+				_checkCube(octrees, isosurfaceList, nLevels, maxLevel, pow(2,nLevels-maxLevel), idStart, levelCube, dimCube, dataCube);
 			}
 
-			idStart = idFinish;
 			idStart++;
 		}
 
 		delete[] dataCube;
 
-		for(int i=0; i<maxLevel; i++)
+		for(int i=0; i<octrees.size(); i++)
+		{
+			octrees[i]->printTree();
 			delete octrees[i];
+		}
 
 		delete file;
 
