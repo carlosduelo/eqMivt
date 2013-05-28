@@ -53,6 +53,9 @@ int main( const int argc, char ** argv)
 	file.read((char*)&_realDim[2], 	sizeof(_realDim[2]));
 	file.read((char*)&_nLevels, 	sizeof(int));
 
+	std::cout<<"Dimension "<<_realDim[0]<<"x"<<_realDim[0]<<"x"<<_realDim[2]<<" levels "<<_nLevels<<std::endl;
+	std::cout<<"Isosurface "<<_isosurface<<std::endl;
+
 	for(int i=_nLevels; i>=0; i--)
 	{
 		std::cout<<"Level "<<i<<std::endl;

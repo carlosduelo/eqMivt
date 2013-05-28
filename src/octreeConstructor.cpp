@@ -183,7 +183,7 @@ namespace eqMivt
 	void _checkCube(std::vector<octree*> octrees, std::vector<float> isos, int nLevels, int nodeLevel, int dimNode, index_node_t idCube, int cubeLevel, int cubeDim, float * cube)
 	{
 		vmml::vector<3, int> coorCubeStart = getMinBoxIndex(idCube, cubeLevel, nLevels);
-		vmml::vector<3, int> coorCubeFinish = coorCubeStart + cubeDim - 1;
+		vmml::vector<3, int> coorCubeFinish = coorCubeStart + cubeDim - 2;
 
 		std::cout<<"       "<<coorCubeStart<<" "<<coorCubeFinish<<std::endl;
 		index_node_t start = idCube << 3*(nodeLevel - cubeLevel); 
@@ -213,9 +213,12 @@ namespace eqMivt
 			for(int i=0; i<octrees.size(); i++)
 				checkNode[i] = true;
 
-			for(int x=coorNodeStart.x(); x<coorNodeFinish.x(); x++)
-				for(int y=coorNodeStart.y(); y<coorNodeFinish.y(); y++)
-					for(int z=coorNodeStart.z(); z<coorNodeFinish.z(); z++)
+
+			for(int x=coorNodeStart.x(); x<=coorNodeFinish.x(); x++)
+			{
+				for(int y=coorNodeStart.y(); y<=coorNodeFinish.y(); y++)
+				{
+					for(int z=coorNodeStart.z(); z<=coorNodeFinish.z(); z++)
 					{	
 						if (nodesToCheck==0)
 						{
@@ -224,7 +227,6 @@ namespace eqMivt
 							z = coorNodeFinish.z();
 							break;
 						}
-
 						_getVoxel(x, y, z, cubeDim, cube, voxel);
 
 						for(int i=0; i<octrees.size(); i++)
@@ -239,6 +241,8 @@ namespace eqMivt
 							}
 						}
 					}
+				}
+			}
 
 			start++;
 		}
@@ -277,7 +281,7 @@ namespace eqMivt
 		}
 
 		int levelCube = nLevels >= 9 ? ((nLevels-9) > maxLevel ? maxLevel : ((nLevels-9))): maxLevel;
-		int dimCube = pow(2, nLevels - levelCube);
+		int dimCube = pow(2, nLevels - levelCube) + 1;
 		cubeDim.set(dimCube, dimCube, dimCube);
 
 		std::cout<<"Creating octree in file "<<octree_file<<std::endl;
