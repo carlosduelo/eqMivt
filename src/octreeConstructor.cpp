@@ -10,6 +10,9 @@ Notes:
 
 #include "fileFactory.h"
 
+#include <lunchbox/clock.h>
+#include <boost/progress.hpp>
+
 #define posToIndex(i,j,k,d) ((k)+(j)*(d)+(i)*(d)*(d))
 
 namespace eqMivt
@@ -19,8 +22,10 @@ namespace eqMivt
 		private: 
 			std::vector<index_node_t> *	_octree;
 			int		*					_numCubes;
+			int							_maxHeight;
 			int							_maxLevel;
 			int							_nLevels;
+			float						_iso;
 
 			void _addElement(index_node_t id, int level)
 			{
@@ -56,14 +61,16 @@ namespace eqMivt
 			}
 
 		public:
-			octree(int nLevels, int maxLevel)
+			octree(int nLevels, int maxLevel, float iso)
 			{
 
 				_octree		= new std::vector<index_node_t>[maxLevel + 1];
 				_numCubes	= new int[maxLevel + 1];	
 
-				_maxLevel = maxLevel;
-				_nLevels = nLevels;
+				_iso		= iso;
+				_maxLevel	= maxLevel;
+				_nLevels	= nLevels;
+				_maxHeight	= 0;
 			}
 
 			~octree()
@@ -82,13 +89,22 @@ namespace eqMivt
 
 			}
 
+			void reportHeight(int height)
+			{
+				if (_maxHeight < height)
+					_maxHeight = height;
+			}
+
 			void printTree()
 			{
+				std::cout<<"Isosurface "<<_iso<<std::endl;
+				std::cout<<"Maximum height "<<_maxHeight<<std::endl;
 				for(int i=_maxLevel; i>=0; i--)
 				{
 					std::vector<index_node_t>::iterator it;
 
-					std::cout<<"Level: "<<i<<std::endl;
+					std::cout	<<"Level: "<<i<<" num cubes "<<_numCubes[i]<<" size "<<_octree[i].size()<<" porcentaje "<<100.0f - ((_octree[i].size()*100.0f)/(float)_numCubes[i])
+								<<" cube dimension "<<pow(2,_nLevels-i)<<"^3 "<<" memory needed for level "<< (_numCubes[i]*pow(pow(2,_nLevels-i),3)*sizeof(float))/1024.0f/1024.0f<<" MB"<<std::endl;
 					for ( it=_octree[i].begin() ; it != _octree[i].end(); it++ )
 					{
 						std::cout << "From " << *it;
@@ -155,57 +171,48 @@ namespace eqMivt
 
 	}
 
-	bool _checkIso(float * voxel, float isosurface)
+	bool _checkIsosurface(int x, int y, int z, int dim, float * cube, float isosurface)
 	{
-			bool has = false; 
-			bool sign = (voxel[0] - isosurface) < 0;
-			for (int i = 1; i < 8 && !has; ++i)
-				if (((voxel[i] - isosurface) < 0) != sign)
-					has = true;
+		bool sign = (cube[posToIndex(x, y, z, dim)] -isosurface) < 0;
 
-			return has;
+		if (((cube[posToIndex(x, y, z+1, dim)] - isosurface) < 0) != sign)
+			return true;
+		if (((cube[posToIndex(x, y+1, z, dim)] - isosurface) < 0) != sign)
+			return true;
+		if (((cube[posToIndex(x, y+1, z+1, dim)] - isosurface) < 0) != sign)
+			return true;
+		if (((cube[posToIndex(x+1, y, z, dim)] - isosurface) < 0) != sign)
+			return true;
+		if (((cube[posToIndex(x+1, y, z+1, dim)] - isosurface) < 0) != sign)
+			return true;
+		if (((cube[posToIndex(x+1, y+1, z, dim)] - isosurface) < 0) != sign)
+			return true;
+		if (((cube[posToIndex(x+1, y+1, z+1, dim)] - isosurface) < 0) != sign)
+			return true;
+
+		return false;
 	}
 
 
-	void _getVoxel(int x, int y, int z, int dim, float * cube, float * voxel)
-	{
-		voxel[0]	= cube[posToIndex(x, y, z, dim)];
-		voxel[1]	= cube[posToIndex(x, y, z+1, dim)];
-		voxel[2]	= cube[posToIndex(x, y+1, z, dim)];
-		voxel[3]	= cube[posToIndex(x, y+1, z+1, dim)];
-		voxel[4]	= cube[posToIndex(x+1, y, z, dim)];
-		voxel[5]	= cube[posToIndex(x+1, y, z+1, dim)];
-		voxel[6]	= cube[posToIndex(x+1, y+1, z, dim)];
-		voxel[7]	= cube[posToIndex(x+1, y+1, z+1, dim)];
-	}
-
-
-	void _checkCube(std::vector<octree*> octrees, std::vector<float> isos, int nLevels, int nodeLevel, int dimNode, index_node_t idCube, int cubeLevel, int cubeDim, float * cube)
+	void _checkCube(std::vector<octree*> octrees, std::vector<float> isos, int nLevels, int nodeLevel, int dimNode, index_node_t idCube, int cubeLevel, int cubeDim, float * cube, boost::progress_display * progress)
 	{
 		vmml::vector<3, int> coorCubeStart = getMinBoxIndex(idCube, cubeLevel, nLevels);
 		vmml::vector<3, int> coorCubeFinish = coorCubeStart + cubeDim - 2;
 
-		std::cout<<"       "<<coorCubeStart<<" "<<coorCubeFinish<<std::endl;
 		index_node_t start = idCube << 3*(nodeLevel - cubeLevel); 
 		index_node_t finish = coordinateToIndex(coorCubeFinish, nodeLevel, nLevels);
 
-		std::cout<<"       "<<idCube<<" "<<start<<" "<<finish<<std::endl;
-
-		float voxel[8];
 		int		nodesToCheck = octrees.size();
 		bool *  checkNode = new bool[octrees.size()];
+
+
+		lunchbox::Clock		completeCreation;
 
 		while(start<=finish)
 		{
 
 			vmml::vector<3, int> coorNodeStart = getMinBoxIndex(start, nodeLevel, nLevels);
 			vmml::vector<3, int> coorNodeFinish = coorNodeStart + dimNode - 1;
-			#if 0
-			std::cout<<"--------------------------"<<std::endl;
-			std::cout<<start<<"      "<< coorNodeStart<< " "<<coorNodeFinish<<std::endl;
-			std::cout<<start<<"      "<< coorNodeStart-coorCubeStart<< " "<<coorNodeFinish-coorCubeStart<<std::endl;
-			std::cout<<"--------------------------"<<std::endl;
-			#endif
 			coorNodeStart = coorNodeStart-coorCubeStart;
 			coorNodeFinish = coorNodeFinish-coorCubeStart;
 
@@ -227,23 +234,23 @@ namespace eqMivt
 							z = coorNodeFinish.z();
 							break;
 						}
-						_getVoxel(x, y, z, cubeDim, cube, voxel);
 
 						for(int i=0; i<octrees.size(); i++)
 						{
 
-							if (checkNode[i] && _checkIso(voxel, isos[i]))
+							if (checkNode[i] && _checkIsosurface(x, y, z, cubeDim, cube, isos[i]))
 							{
 								checkNode[i] = false;
 								nodesToCheck--;
 								octrees[i]->addVoxel(start);
-								//std::cout<<start<<" :) "<< isos[i]<<std::endl;
+								octrees[i]->reportHeight(coorNodeFinish.y());
 							}
 						}
 					}
 				}
 			}
 
+			++(*progress);
 			start++;
 		}
 
@@ -294,25 +301,41 @@ namespace eqMivt
 
 		std::vector<octree*> octrees(isosurfaceList.size());
 		for(int i=0; i<isosurfaceList.size(); i++)
-			octrees[i] = new octree(nLevels, maxLevel);
+			octrees[i] = new octree(nLevels, maxLevel, isosurfaceList[i]);
 
 		index_node_t idStart = coordinateToIndex(vmml::vector<3, int>(0,0,0), levelCube, nLevels);
-		index_node_t idFinish = coordinateToIndex(vmml::vector<3, int>(dimension-1, dimension-1, dimension-1), levelCube, nLevels);;
+		index_node_t idFinish = coordinateToIndex(vmml::vector<3, int>(dimension-1, dimension-1, dimension-1), levelCube, nLevels);
 
-		std::cout<<"Start id "<<idStart<<" finish id "<<idFinish<<std::endl;
+		boost::progress_display show_progress(coordinateToIndex(vmml::vector<3, int>(dimension-1, dimension-1, dimension-1), maxLevel, nLevels) - coordinateToIndex(vmml::vector<3, int>(0,0,0), maxLevel, nLevels));
+		index_node_t incProgress = coordinateToIndex(vmml::vector<3, int>(pow(2, nLevels - maxLevel)-1, pow(2, nLevels - maxLevel)-1, pow(2, nLevels - maxLevel)-1), maxLevel, nLevels) - coordinateToIndex(vmml::vector<3, int>(0,0,0), maxLevel, nLevels);
+
+		lunchbox::Clock		completeCreationClock;
+		lunchbox::Clock		readingClock;
+		lunchbox::Clock		computinhClock;
+		double				readingTime = 0.0;
+		double				computingTime = 0.0;
+		completeCreationClock.reset();
 
 		while(idStart <= idFinish)
 		{
 			vmml::vector<3, int> currentBox = getMinBoxIndex(idStart, levelCube, nLevels);
 			if (currentBox.x() < realDim[0] && currentBox.y() < realDim[1] && currentBox.z() < realDim[2])
 			{
+				readingClock.reset();
 				file->readCube(idStart, dataCube);
-				std::cout<<currentBox<<std::endl;
-				_checkCube(octrees, isosurfaceList, nLevels, maxLevel, pow(2,nLevels-maxLevel), idStart, levelCube, dimCube, dataCube);
+				readingTime += readingClock.getTimed();
+				computinhClock.reset();
+				_checkCube(octrees, isosurfaceList, nLevels, maxLevel, pow(2,nLevels-maxLevel), idStart, levelCube, dimCube, dataCube, &show_progress);
+				computingTime += computinhClock.getTimed();
 			}
+			else
+				show_progress+=incProgress;
 
 			idStart++;
 		}
+	
+		double time = completeCreationClock.getTimed();
+		std::cout<<"Time: "<<time/1000.0<<" seconds"<<" hard disk reading time :"<<readingTime/1000.0<<" seconds computing time "<<computingTime/1000.0<<" seconds"<<std::endl;
 
 		delete[] dataCube;
 
