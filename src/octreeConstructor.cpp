@@ -10,6 +10,7 @@ Notes:
 
 #include "fileFactory.h"
 
+#include <algorithm>
 #include <lunchbox/clock.h>
 #include <boost/progress.hpp>
 
@@ -20,6 +21,7 @@ namespace eqMivt
 	class octree
 	{
 		private: 
+			std::vector<index_node_t> 	_lastLevel;
 			std::vector<index_node_t> *	_octree;
 			int		*					_numCubes;
 			int							_maxHeight;
@@ -27,7 +29,7 @@ namespace eqMivt
 			int							_nLevels;
 			float						_iso;
 
-			void _addElement(index_node_t id, int level)
+			bool _addElement(index_node_t id, int level)
 			{
 				int size = _octree[level].size();
 
@@ -46,6 +48,7 @@ namespace eqMivt
 				else if(_octree[level].back() == id)
 				{
 					//std::cout<<"repetido in level "<<level<<" "<< id <<std::endl;
+					return true;
 				}
 				else if(_octree[level].back() > id)
 				{
@@ -58,6 +61,8 @@ namespace eqMivt
 					_octree[level].push_back(id);
 					_octree[level].push_back(id);
 				}
+
+				return false;
 			}
 
 		public:
@@ -81,12 +86,22 @@ namespace eqMivt
 
 			void addVoxel(index_node_t id)
 			{
-				for(int i=_maxLevel; i>=0; i--)
-				{
-					_addElement(id, i);
-					id >>= 3;
-				}
+				_lastLevel.push_back(id);
+			}
 
+			void completeOctree()
+			{
+				std::sort(_lastLevel.begin(), _lastLevel.end());
+				for (std::vector<index_node_t>::iterator it=_lastLevel.begin(); it!=_lastLevel.end(); ++it)
+				{
+					index_node_t id = *it;
+					for(int i=_maxLevel; i>=0; i--)
+					{
+						if (_addElement(id, i))
+							break;
+						id >>= 3;
+					}
+				}
 			}
 
 			void reportHeight(int height)
@@ -334,8 +349,13 @@ namespace eqMivt
 			idStart++;
 		}
 	
+		computinhClock.reset();
+		for(int i=0; i<octrees.size(); i++)
+			octrees[i]->completeOctree();
+		double completeTime = computinhClock.getTimed();	
+
 		double time = completeCreationClock.getTimed();
-		std::cout<<"Time: "<<time/1000.0<<" seconds"<<" hard disk reading time :"<<readingTime/1000.0<<" seconds computing time "<<computingTime/1000.0<<" seconds"<<std::endl;
+		std::cout<<"Time: "<<time/1000.0<<" seconds"<<" hard disk reading time :"<<readingTime/1000.0<<" seconds computing time "<<computingTime/1000.0<<" seconds "<<"time in complete octree "<<completeTime/1000.0<<" seconds "<<std::endl;
 
 		delete[] dataCube;
 
