@@ -10,8 +10,10 @@ Notes:
 
 #include "fileFactory.h"
 
+#include <omp.h>
 #include <algorithm>
 #include <lunchbox/clock.h>
+#include <lunchbox/lock.h>
 #include <boost/progress.hpp>
 
 #define posToIndex(i,j,k,d) ((k)+(j)*(d)+(i)*(d)*(d))
@@ -21,6 +23,7 @@ namespace eqMivt
 	class octree
 	{
 		private: 
+			lunchbox::Lock				_lock;
 			std::vector<index_node_t> 	_lastLevel;
 			std::vector<index_node_t> *	_octree;
 			int		*					_numCubes;
@@ -86,7 +89,9 @@ namespace eqMivt
 
 			void addVoxel(index_node_t id)
 			{
+				_lock.set();
 				_lastLevel.push_back(id);
+				_lock.unset();
 			}
 
 			void completeOctree()
@@ -209,7 +214,7 @@ namespace eqMivt
 	}
 
 
-	void _checkCube(std::vector<octree*> octrees, std::vector<float> isos, int nLevels, int nodeLevel, int dimNode, index_node_t idCube, int cubeLevel, int cubeDim, float * cube, boost::progress_display * progress)
+	void _checkCube(std::vector<octree*> octrees, std::vector<float> isos, int nLevels, int nodeLevel, int dimNode, index_node_t idCube, int cubeLevel, int cubeDim, float * cube)
 	{
 		vmml::vector<3, int> coorCubeStart = getMinBoxIndex(idCube, cubeLevel, nLevels);
 		vmml::vector<3, int> coorCubeFinish = coorCubeStart + cubeDim - 2;
@@ -217,21 +222,19 @@ namespace eqMivt
 		index_node_t start = idCube << 3*(nodeLevel - cubeLevel); 
 		index_node_t finish = coordinateToIndex(coorCubeFinish, nodeLevel, nLevels);
 
-		int		nodesToCheck = octrees.size();
-		bool *  checkNode = new bool[octrees.size()];
-
-
 		lunchbox::Clock		completeCreation;
 
-		while(start<=finish)
+		#pragma omp parallel for
+		for(index_node_t id=start; id<=finish; id++)
 		{
 
-			vmml::vector<3, int> coorNodeStart = getMinBoxIndex(start, nodeLevel, nLevels);
+			vmml::vector<3, int> coorNodeStart = getMinBoxIndex(id, nodeLevel, nLevels);
 			vmml::vector<3, int> coorNodeFinish = coorNodeStart + dimNode - 1;
 			coorNodeStart = coorNodeStart-coorCubeStart;
 			coorNodeFinish = coorNodeFinish-coorCubeStart;
 
 			int     nodesToCheck = octrees.size();
+			bool *  checkNode = new bool[nodesToCheck];
 			for(int i=0; i<octrees.size(); i++)
 				checkNode[i] = true;
 
@@ -247,6 +250,7 @@ namespace eqMivt
 							x = coorNodeFinish.x();
 							y = coorNodeFinish.y();
 							z = coorNodeFinish.z();
+							delete[] checkNode;
 							break;
 						}
 
@@ -257,19 +261,16 @@ namespace eqMivt
 							{
 								checkNode[i] = false;
 								nodesToCheck--;
-								octrees[i]->addVoxel(start);
+								octrees[i]->addVoxel(id);
 								octrees[i]->reportHeight(coorNodeFinish.y());
 							}
 						}
 					}
 				}
 			}
-
-			++(*progress);
-			start++;
+			delete[] checkNode;
 		}
 
-		delete[] checkNode;
 	}
 
 	bool createOctree(std::string type_file, std::vector<std::string> file_params, int maxLevel, std::vector<float> isosurfaceList, std::string octree_file)
@@ -321,8 +322,7 @@ namespace eqMivt
 		index_node_t idStart = coordinateToIndex(vmml::vector<3, int>(0,0,0), levelCube, nLevels);
 		index_node_t idFinish = coordinateToIndex(vmml::vector<3, int>(dimension-1, dimension-1, dimension-1), levelCube, nLevels);
 
-		boost::progress_display show_progress(coordinateToIndex(vmml::vector<3, int>(dimension-1, dimension-1, dimension-1), maxLevel, nLevels) - coordinateToIndex(vmml::vector<3, int>(0,0,0), maxLevel, nLevels));
-		index_node_t incProgress = coordinateToIndex(vmml::vector<3, int>(pow(2, nLevels - maxLevel)-1, pow(2, nLevels - maxLevel)-1, pow(2, nLevels - maxLevel)-1), maxLevel, nLevels) - coordinateToIndex(vmml::vector<3, int>(0,0,0), maxLevel, nLevels);
+		boost::progress_display show_progress(idFinish - idStart + 1);
 
 		lunchbox::Clock		completeCreationClock;
 		lunchbox::Clock		readingClock;
@@ -331,25 +331,23 @@ namespace eqMivt
 		double				computingTime = 0.0;
 		completeCreationClock.reset();
 
-		while(idStart <= idFinish)
+		for(index_node_t id=idStart; id<= idFinish; id++)
 		{
-			vmml::vector<3, int> currentBox = getMinBoxIndex(idStart, levelCube, nLevels);
+			vmml::vector<3, int> currentBox = getMinBoxIndex(id, levelCube, nLevels);
 			if (currentBox.x() < realDim[0] && currentBox.y() < realDim[1] && currentBox.z() < realDim[2])
 			{
 				readingClock.reset();
-				file->readCube(idStart, dataCube);
+				file->readCube(id, dataCube);
 				readingTime += readingClock.getTimed();
 				computinhClock.reset();
-				_checkCube(octrees, isosurfaceList, nLevels, maxLevel, pow(2,nLevels-maxLevel), idStart, levelCube, dimCube, dataCube, &show_progress);
+				_checkCube(octrees, isosurfaceList, nLevels, maxLevel, pow(2,nLevels-maxLevel), id, levelCube, dimCube, dataCube);
 				computingTime += computinhClock.getTimed();
 			}
-			else
-				show_progress+=incProgress;
-
-			idStart++;
+			++show_progress;
 		}
 	
 		computinhClock.reset();
+		#pragma omp parallel for
 		for(int i=0; i<octrees.size(); i++)
 			octrees[i]->completeOctree();
 		double completeTime = computinhClock.getTimed();	
@@ -361,7 +359,7 @@ namespace eqMivt
 
 		for(int i=0; i<octrees.size(); i++)
 		{
-			octrees[i]->printTree();
+			//octrees[i]->printTree();
 			delete octrees[i];
 		}
 
