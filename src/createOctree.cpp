@@ -21,6 +21,7 @@ std::vector<std::string>	file_params;
 int							maxLevel;
 std::vector<float>			isosurfaceList;
 std::string					octree_file_name;
+bool						bigBuffer;
 
 bool checkParameters(const int argc, char ** argv)
 {
@@ -28,6 +29,7 @@ bool checkParameters(const int argc, char ** argv)
     desc.add_options()
     ("version,v", "print version")
     ("help", "produce help message")
+    ("big-buffer,b", "activate big buffer, by default buffer is 512 MB, if this flags is activated then buffer will be 4096 MB")
     ("data-file,d", boost::program_options::value< std::vector<std::string> >()->multitoken(), "type-data-file data-file-path level-cube-data\nType file supported:\nhdf5_file file-path:data-set-name level-cube-data")
 	("list-isosurfaces,l", boost::program_options::value< std::vector<float> >()->multitoken(), "list isosurfaces: iso0<float> iso1<float> iso2<float> ...")
 	("range-isosurfaces,r", boost::program_options::value< std::vector<float> >()->multitoken(), "set by range [isoA, isoB] chunk: isoA<float> isoB<float> chunk<float>")
@@ -55,6 +57,12 @@ bool checkParameters(const int argc, char ** argv)
         std::cout << "Version eqMivt: "<<CREATE_OCTREE_VERSION<< "\n";
 		return false;
     }
+    if (vm.count("big-buffer"))
+    {
+		bigBuffer = true;
+    }
+	else
+		bigBuffer = false;
 	if (vm.count("data-file"))
 	{
 		std::vector<std::string> dataParam = vm["data-file"].as< std::vector<std::string> >();
@@ -158,7 +166,7 @@ int main( const int argc, char ** argv)
 	for (std::vector<float>::iterator it = isosurfaceList.begin() ; it != isosurfaceList.end(); ++it)
 	    std::cout << ' ' << *it<<std::endl;
 
-	if (!eqMivt::createOctree(type_file, file_params, maxLevel, isosurfaceList, octree_file_name))
+	if (!eqMivt::createOctree(type_file, file_params, maxLevel, isosurfaceList, octree_file_name, bigBuffer))
 		return 0;
 
 	return 0;

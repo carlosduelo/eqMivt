@@ -251,6 +251,7 @@ namespace eqMivt
 							y = coorNodeFinish.y();
 							z = coorNodeFinish.z();
 							delete[] checkNode;
+							checkNode = 0;
 							break;
 						}
 
@@ -268,12 +269,13 @@ namespace eqMivt
 					}
 				}
 			}
-			delete[] checkNode;
+			if (checkNode != 0)
+				delete[] checkNode;
 		}
 
 	}
 
-	bool createOctree(std::string type_file, std::vector<std::string> file_params, int maxLevel, std::vector<float> isosurfaceList, std::string octree_file)
+	bool createOctree(std::string type_file, std::vector<std::string> file_params, int maxLevel, std::vector<float> isosurfaceList, std::string octree_file, bool bigCube)
 	{
 		vmml::vector<3, int> cubeDim(2,2,2);
 		vmml::vector<3, int> cubeInc(0,0,0);
@@ -303,7 +305,12 @@ namespace eqMivt
 			return false;
 		}
 
-		int levelCube = nLevels >= 9 ? ((nLevels-9) > maxLevel ? maxLevel : ((nLevels-9))): maxLevel;
+		int levelCube = 0; 
+		if (bigCube && nLevels >= 10)
+			levelCube = nLevels >= 10 ? ((nLevels-10) > maxLevel ? maxLevel : ((nLevels-10))): maxLevel;
+		else
+			levelCube = nLevels >= 9 ? ((nLevels-9) > maxLevel ? maxLevel : ((nLevels-9))): maxLevel;
+
 		int dimCube = pow(2, nLevels - levelCube) + 1;
 		cubeDim.set(dimCube, dimCube, dimCube);
 
