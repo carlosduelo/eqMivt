@@ -49,3 +49,16 @@ set(LIBS_NEEDED ${EQUALIZER_LIBRARIES} ${CUDA_LIBRARIES} ${Boost_LIBRARIES} ${HD
 
 add_executable(mivt ${MIVT_SOURCE} ${MIVT_CUDA_OBJECTS} main.cpp) 
 target_link_libraries(mivt ${LIBS_NEEDED}) 
+
+
+set(OCTREE_CONSTRUCTOR_SOURCE 
+		fileFactory.cpp
+		hdf5File.cpp
+		octreeConstructor.cpp
+	)
+
+add_executable(octreeConstructor ${OCTREE_CONSTRUCTOR_SOURCE} createOctree.cpp) 
+target_link_libraries(octreeConstructor ${LIBS_NEEDED}) 
+
+add_executable(printOctree  printOctree.cpp) 
+target_link_libraries(printOctree ${LIBS_NEEDED}) 

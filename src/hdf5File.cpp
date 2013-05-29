@@ -93,13 +93,16 @@ void hdf5File::readCube(index_node_t index, float * cube)
 	// The data required is completly outside of the dataset
 	if (s.x() >= (int)this->dims[0] || s.y() >= (int)this->dims[1] || s.z() >= (int)this->dims[2] || e.x() < 0 || e.y() < 0 || e.z() < 0)
 	{
-		#if DEBUG
 		LBERROR<<"Warning: reading cube outsite the volume "<<std::endl;
-		LBERROR<<"Dimension valume "<<this->dims[0]<<" "<<this->dims[1]<<" "<<this->dims[2]<<std::endl;
+		LBERROR<<"Dimension volume "<<this->dims[0]<<" "<<this->dims[1]<<" "<<this->dims[2]<<std::endl;
+		LBERROR<<"Cube dimension "<<cubeDim<<" in level "<<levelCube<<std::endl;
+		LBERROR<<"Cube inc "<<cubeInc<<std::endl;
+		LBERROR<<"Dimension volume "<<this->dims[0]<<" "<<this->dims[1]<<" "<<this->dims[2]<<std::endl;
+		LBERROR<<"Index "<<index<<" Coordinate "<<coord<<std::endl;
 		LBERROR<<"start "<<s.x()<<" "<<s.y()<<" "<<s.z()<<std::endl;
 		LBERROR<<"end "<<e.x()<<" "<<e.y()<<" "<<e.z()<<std::endl;
 		LBERROR<<"Dimension cube "<<dim[0]<<" "<<dim[1]<<" "<<dim[2]<<std::endl;
-		#endif
+
 		return;
 	}
 
@@ -111,14 +114,13 @@ void hdf5File::readCube(index_node_t index, float * cube)
 				   e.y() > (int)this->dims[1] ? this->dims[1] - offset[1] : e.y() - offset[1],
 				   e.z() > (int)this->dims[2] ? this->dims[2] - offset[2] : e.z() - offset[2]};
 
-	#if DEBUG 
-	std::cout<<"Dimension cube "<<dim[0]<<" "<<dim[1]<<" "<<dim[2]<<std::endl;
-	std::cout<<"Dimension hyperSlab "<<dimR[0]<<" "<<dimR[1]<<" "<<dimR[2]<<std::endl;
-	std::cout<<"Offset in "<<offset[0]<<" "<<offset[1]<<" "<<offset[2]<<std::endl;
-	std::cout<<"Offset out "<<offset_out[0]<<" "<<offset_out[1]<<" "<<offset_out[2]<<std::endl;
+	#ifdef NDEBUG
+	LBINFO<<"Dimension cube "<<dim[0]<<" "<<dim[1]<<" "<<dim[2]<<std::endl;
+	LBINFO<<"Dimension hyperSlab "<<dimR[0]<<" "<<dimR[1]<<" "<<dimR[2]<<std::endl;
+	LBINFO<<"Offset in "<<offset[0]<<" "<<offset[1]<<" "<<offset[2]<<std::endl;
+	LBINFO<<"Offset out "<<offset_out[0]<<" "<<offset_out[1]<<" "<<offset_out[2]<<std::endl;
 	#endif
-
-
+    
 	/* 
 	* Define hyperslab in the dataset. 
 	*/
