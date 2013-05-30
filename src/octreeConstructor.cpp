@@ -217,7 +217,7 @@ namespace eqMivt
 	}
 
 
-	void _checkCube_cuda(std::vector<octree*> octrees, std::vector<float> isos, int nLevels, int nodeLevel, int dimNode, index_node_t idCube, int cubeLevel, int cubeDim, float * cube, float * cubeGPU)
+	void _checkCube_cuda(std::vector<octree*> octrees, std::vector<float> isos, int nLevels, int nodeLevel, int dimNode, index_node_t idCube, int cubeLevel, int cubeDim, float * cube)
 	{
 		vmml::vector<3, int> coorCubeStart = getMinBoxIndex(idCube, cubeLevel, nLevels);
 		vmml::vector<3, int> coorCubeFinish = coorCubeStart + cubeDim - 2;
@@ -453,7 +453,7 @@ namespace eqMivt
 						std::cerr<<"Error copying cube to cuda device"<<std::endl;
 						throw;
 					}
-					_checkCube_cuda(octrees, isosurfaceList, nLevels, maxLevel, pow(2,nLevels-maxLevel), id, levelCube, dimCube, dataCube, dataCubeGPU);
+					_checkCube_cuda(octrees, isosurfaceList, nLevels, maxLevel, pow(2,nLevels-maxLevel), id, levelCube, dimCube, dataCubeGPU);
 				}
 				else
 				{
@@ -478,7 +478,7 @@ namespace eqMivt
 
 		for(int i=0; i<octrees.size(); i++)
 		{
-			//octrees[i]->printTree();
+			octrees[i]->printTree();
 			delete octrees[i];
 		}
 
