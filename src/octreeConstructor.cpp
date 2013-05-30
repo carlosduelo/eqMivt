@@ -221,26 +221,18 @@ namespace eqMivt
 	{
 		vmml::vector<3, int> coorCubeStart = getMinBoxIndex(idCube, cubeLevel, nLevels);
 		vmml::vector<3, int> coorCubeFinish = coorCubeStart + cubeDim - 2;
-		int coordCubeStartV[3] = {coorCubeStart.x(), coorCubeStart.y(), coorCubeStart.z()};
+		int coorCubeStartV[3] = {coorCubeStart.x(), coorCubeStart.y(), coorCubeStart.z()};
 
 		index_node_t start = idCube << 3*(nodeLevel - cubeLevel); 
 		index_node_t finish = coordinateToIndex(coorCubeFinish, nodeLevel, nLevels);
 
 		double freeMemory = octreeConstructorGetFreeMemory();
-		int inc = finish - start;
+		int inc = finish - start + 1;
 		int rest = inc / 10;
-		if (finish == start)
+		while(inc*sizeof(index_node_t) > freeMemory)
 		{
-			inc = 1;
+			inc = inc - rest;
 		}
-		else
-		{
-			while(inc*sizeof(index_node_t) > freeMemory)
-			{
-				inc = inc - rest;
-			}
-		}
-		std::cout<<"=====>"<<inc<<std::endl;
 		index_node_t * resultCPU = new index_node_t[inc];
 		index_node_t * resultGPU = 0;
 		resultGPU = octreeConstructorCreateResult(inc);
@@ -254,7 +246,7 @@ namespace eqMivt
 		{
 			for(int i=0; i<octrees.size(); i++)
 			{
-				octreeConstructorComputeCube(resultGPU, inc, id, isos[i], cube, nodeLevel, nLevels, dimNode, cubeDim, coorCubeStart.array);
+				octreeConstructorComputeCube(resultGPU, inc, id, isos[i], cube, nodeLevel, nLevels, dimNode, cubeDim, coorCubeStartV);
 				if (!octreeConstructorCopyResult(resultCPU, resultGPU, inc))
 				{
 					std::cerr<<"Error copying structures from a cuda device"<<std::endl;
@@ -272,27 +264,7 @@ namespace eqMivt
 				}
 			}
 		}
-#if 0
-			vmml::vector<3, int> coorNodeStart = getMinBoxIndex(id, nodeLevel, nLevels);
-			vmml::vector<3, int> coorNodeFinish = coorNodeStart + dimNode - 1;
-			coorNodeStart = coorNodeStart-coorCubeStart;
-			coorNodeFinish = coorNodeFinish-coorCubeStart;
 
-			for(int x=coorNodeStart.x(); x<=coorNodeFinish.x(); x++)
-			{
-				for(int y=coorNodeStart.y(); y<=coorNodeFinish.y(); y++)
-				{
-					for(int z=coorNodeStart.z(); z<=coorNodeFinish.z(); z++)
-					{	
-							if ( _checkIsosurface(x, y, z, cubeDim, cube, isos[i]))
-							{
-								octrees[i]->addVoxel(id);
-								octrees[i]->reportHeight(coorNodeFinish.y());
-							}
-					}
-				}
-			}
-#endif
 		delete[] resultCPU;
 		octreeConstructorDestroyResult(resultGPU);
 	}
