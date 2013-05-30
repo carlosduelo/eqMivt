@@ -256,7 +256,7 @@ namespace eqMivt
 				{
 					if (resultCPU[j] != (index_node_t)0)
 					{
-						vmml::vector<3, int> coorNodeStart = getMinBoxIndex(id+j, nodeLevel, nLevels);
+						vmml::vector<3, int> coorNodeStart = getMinBoxIndex(resultCPU[j], nodeLevel, nLevels);
 						vmml::vector<3, int> coorNodeFinish = coorNodeStart + dimNode - 1;
 						octrees[i]->addVoxel(resultCPU[j]);
 						octrees[i]->reportHeight(coorNodeFinish.y());
