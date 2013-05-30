@@ -55,9 +55,13 @@ set(OCTREE_CONSTRUCTOR_SOURCE
 		fileFactory.cpp
 		hdf5File.cpp
 		octreeConstructor.cpp
+		memoryCheck.cpp
 	)
 
-add_executable(octreeConstructor ${OCTREE_CONSTRUCTOR_SOURCE} createOctree.cpp) 
+# COMPILING CUDA OBJECTS
+set(MIVT_OC_CUDA_SOURCE octreeConstructor_CUDA.cu)
+cuda_compile(MIVT_OC_CUDA_OBJECTS ${MIVT_OC_CUDA_SOURCE})
+add_executable(octreeConstructor ${OCTREE_CONSTRUCTOR_SOURCE} ${MIVT_OC_CUDA_OBJECTS} createOctree.cpp) 
 target_link_libraries(octreeConstructor ${LIBS_NEEDED}) 
 
 add_executable(printOctree  printOctree.cpp) 

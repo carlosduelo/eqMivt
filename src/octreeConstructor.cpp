@@ -7,8 +7,11 @@ Notes:
  */
 
 #include "octreeConstructor.h"
+#include "octreeConstructor_CUDA.h"
 
 #include "fileFactory.h"
+
+#include "memoryCheck.h"
 
 #include <omp.h>
 #include <algorithm>
@@ -214,6 +217,86 @@ namespace eqMivt
 	}
 
 
+	void _checkCube_cuda(std::vector<octree*> octrees, std::vector<float> isos, int nLevels, int nodeLevel, int dimNode, index_node_t idCube, int cubeLevel, int cubeDim, float * cube, float * cubeGPU)
+	{
+		vmml::vector<3, int> coorCubeStart = getMinBoxIndex(idCube, cubeLevel, nLevels);
+		vmml::vector<3, int> coorCubeFinish = coorCubeStart + cubeDim - 2;
+		int coordCubeStartV[3] = {coorCubeStart.x(), coorCubeStart.y(), coorCubeStart.z()};
+
+		index_node_t start = idCube << 3*(nodeLevel - cubeLevel); 
+		index_node_t finish = coordinateToIndex(coorCubeFinish, nodeLevel, nLevels);
+
+		double freeMemory = octreeConstructorGetFreeMemory();
+		int inc = finish - start;
+		int rest = inc / 10;
+		if (finish == start)
+		{
+			inc = 1;
+		}
+		else
+		{
+			while(inc*sizeof(index_node_t) > freeMemory)
+			{
+				inc = inc - rest;
+			}
+		}
+		std::cout<<"=====>"<<inc<<std::endl;
+		index_node_t * resultCPU = new index_node_t[inc];
+		index_node_t * resultGPU = 0;
+		resultGPU = octreeConstructorCreateResult(inc);
+		if (resultGPU == 0)
+		{
+			std::cerr<<"Error creating a structure in a cuda device"<<std::endl;
+			throw;
+		}
+
+		for(index_node_t id=start; id<=finish; id+=inc)
+		{
+			for(int i=0; i<octrees.size(); i++)
+			{
+				octreeConstructorComputeCube(resultGPU, inc, id, isos[i], cube, nodeLevel, nLevels, dimNode, cubeDim, coorCubeStart.array);
+				if (!octreeConstructorCopyResult(resultCPU, resultGPU, inc))
+				{
+					std::cerr<<"Error copying structures from a cuda device"<<std::endl;
+					throw;
+				}
+				for(int j=0; j<inc; j++)
+				{
+					if (resultCPU[j] != (index_node_t)0)
+					{
+						vmml::vector<3, int> coorNodeStart = getMinBoxIndex(id+j, nodeLevel, nLevels);
+						vmml::vector<3, int> coorNodeFinish = coorNodeStart + dimNode - 1;
+						octrees[i]->addVoxel(resultCPU[j]);
+						octrees[i]->reportHeight(coorNodeFinish.y());
+					}
+				}
+			}
+		}
+#if 0
+			vmml::vector<3, int> coorNodeStart = getMinBoxIndex(id, nodeLevel, nLevels);
+			vmml::vector<3, int> coorNodeFinish = coorNodeStart + dimNode - 1;
+			coorNodeStart = coorNodeStart-coorCubeStart;
+			coorNodeFinish = coorNodeFinish-coorCubeStart;
+
+			for(int x=coorNodeStart.x(); x<=coorNodeFinish.x(); x++)
+			{
+				for(int y=coorNodeStart.y(); y<=coorNodeFinish.y(); y++)
+				{
+					for(int z=coorNodeStart.z(); z<=coorNodeFinish.z(); z++)
+					{	
+							if ( _checkIsosurface(x, y, z, cubeDim, cube, isos[i]))
+							{
+								octrees[i]->addVoxel(id);
+								octrees[i]->reportHeight(coorNodeFinish.y());
+							}
+					}
+				}
+			}
+#endif
+		delete[] resultCPU;
+		octreeConstructorDestroyResult(resultGPU);
+	}
+
 	void _checkCube(std::vector<octree*> octrees, std::vector<float> isos, int nLevels, int nodeLevel, int dimNode, index_node_t idCube, int cubeLevel, int cubeDim, float * cube)
 	{
 		vmml::vector<3, int> coorCubeStart = getMinBoxIndex(idCube, cubeLevel, nLevels);
@@ -221,8 +304,6 @@ namespace eqMivt
 
 		index_node_t start = idCube << 3*(nodeLevel - cubeLevel); 
 		index_node_t finish = coordinateToIndex(coorCubeFinish, nodeLevel, nLevels);
-
-		lunchbox::Clock		completeCreation;
 
 		#pragma omp parallel for
 		for(index_node_t id=start; id<=finish; id++)
@@ -275,8 +356,9 @@ namespace eqMivt
 
 	}
 
-	bool createOctree(std::string type_file, std::vector<std::string> file_params, int maxLevel, std::vector<float> isosurfaceList, std::string octree_file, bool bigCube)
+	bool createOctree(std::string type_file, std::vector<std::string> file_params, int maxLevel, std::vector<float> isosurfaceList, std::string octree_file, bool useCUDA)
 	{
+
 		vmml::vector<3, int> cubeDim(2,2,2);
 		vmml::vector<3, int> cubeInc(0,0,0);
 		FileManager * file = eqMivt::CreateFileManage(type_file, file_params, maxLevel, maxLevel, cubeDim, cubeInc); 
@@ -306,10 +388,44 @@ namespace eqMivt
 		}
 
 		int levelCube = 0; 
-		if (bigCube && nLevels >= 10)
-			levelCube = nLevels >= 10 ? ((nLevels-10) > maxLevel ? maxLevel : ((nLevels-10))): maxLevel;
-		else
+		double memoryCPU = getMemorySize();
+		if (memoryCPU == 0)
+		{
+			std::cerr<<"Not possible, check memory aviable (the call failed due to OS limitations)"<<std::endl;
 			levelCube = nLevels >= 9 ? ((nLevels-9) > maxLevel ? maxLevel : ((nLevels-9))): maxLevel;
+		}
+		else
+		{
+			if (useCUDA)
+			{
+				double memoryGPU = octreeConstructorGetFreeMemory();
+				for(int l=10; l>0; l--)
+				{
+					double bigCubeDim = pow(pow(2, l) + 1, 3)*(float)sizeof(float);
+					if ((2.0*bigCubeDim) < memoryGPU)
+					{
+						levelCube = nLevels >= l ? ((nLevels-l) > maxLevel ? maxLevel : ((nLevels-l))): maxLevel;
+						break;
+					}
+				}
+			}
+			else if (nLevels <= 9)
+			{
+					levelCube = nLevels >= 9 ? ((nLevels-9) > maxLevel ? maxLevel : ((nLevels-9))): maxLevel;
+			}
+			else
+			{
+				for(int l=10; l>0; l--)
+				{
+					double bigCubeDim = pow(pow(2, l) + 1, 3)*(float)sizeof(float);
+					if ((2.0*bigCubeDim) < memoryCPU)
+					{
+						levelCube = nLevels >= l ? ((nLevels-l) > maxLevel ? maxLevel : ((nLevels-l))): maxLevel;
+						break;
+					}
+				}
+			}
+		}
 
 		int dimCube = pow(2, nLevels - levelCube) + 1;
 		cubeDim.set(dimCube, dimCube, dimCube);
@@ -321,6 +437,17 @@ namespace eqMivt
 		file = eqMivt::CreateFileManage(type_file, file_params, levelCube, nLevels, cubeDim, cubeInc); 
 
 		float * dataCube = new float[dimCube*dimCube*dimCube];
+		float * dataCubeGPU = 0;
+		if (useCUDA)
+		{
+			//Create CUDA memory
+			dataCubeGPU = octreeConstructorCreateCube(dimCube);
+			if (dataCubeGPU == 0)
+			{
+				std::cerr<<"Error allocating memory in a cuda device"<<std::endl;
+				throw;
+			}
+		}
 
 		std::vector<octree*> octrees(isosurfaceList.size());
 		for(int i=0; i<isosurfaceList.size(); i++)
@@ -347,7 +474,20 @@ namespace eqMivt
 				file->readCube(id, dataCube);
 				readingTime += readingClock.getTimed();
 				computinhClock.reset();
-				_checkCube(octrees, isosurfaceList, nLevels, maxLevel, pow(2,nLevels-maxLevel), id, levelCube, dimCube, dataCube);
+				if (useCUDA)
+				{
+					if(!octreeConstructorCopyCube(dataCubeGPU, dataCube, dimCube))
+					{
+						std::cerr<<"Error copying cube to cuda device"<<std::endl;
+						throw;
+					}
+					_checkCube_cuda(octrees, isosurfaceList, nLevels, maxLevel, pow(2,nLevels-maxLevel), id, levelCube, dimCube, dataCube, dataCubeGPU);
+				}
+				else
+				{
+					_checkCube(octrees, isosurfaceList, nLevels, maxLevel, pow(2,nLevels-maxLevel), id, levelCube, dimCube, dataCube);
+				}
+
 				computingTime += computinhClock.getTimed();
 			}
 			++show_progress;
@@ -371,6 +511,9 @@ namespace eqMivt
 		}
 
 		delete file;
+
+		if (useCUDA)
+			octreeConstructorDestroyCube(dataCubeGPU);
 
 		return true;
 	}

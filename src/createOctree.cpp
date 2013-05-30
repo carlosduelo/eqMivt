@@ -21,7 +21,7 @@ std::vector<std::string>	file_params;
 int							maxLevel;
 std::vector<float>			isosurfaceList;
 std::string					octree_file_name;
-bool						bigBuffer;
+bool						useCUDA;
 
 bool checkParameters(const int argc, char ** argv)
 {
@@ -29,7 +29,7 @@ bool checkParameters(const int argc, char ** argv)
     desc.add_options()
     ("version,v", "print version")
     ("help", "produce help message")
-    ("big-buffer,b", "activate big buffer, by default buffer is 512 MB, if this flags is activated then buffer will be 4096 MB")
+    ("use-CUDA,c", "activate CUDA acceleration, by default CUDA acceleration disable")
     ("data-file,d", boost::program_options::value< std::vector<std::string> >()->multitoken(), "type-data-file data-file-path level-cube-data\nType file supported:\nhdf5_file file-path:data-set-name level-cube-data")
 	("list-isosurfaces,l", boost::program_options::value< std::vector<float> >()->multitoken(), "list isosurfaces: iso0<float> iso1<float> iso2<float> ...")
 	("range-isosurfaces,r", boost::program_options::value< std::vector<float> >()->multitoken(), "set by range [isoA, isoB] chunk: isoA<float> isoB<float> chunk<float>")
@@ -57,12 +57,6 @@ bool checkParameters(const int argc, char ** argv)
         std::cout << "Version eqMivt: "<<CREATE_OCTREE_VERSION<< "\n";
 		return false;
     }
-    if (vm.count("big-buffer"))
-    {
-		bigBuffer = true;
-    }
-	else
-		bigBuffer = false;
 	if (vm.count("data-file"))
 	{
 		std::vector<std::string> dataParam = vm["data-file"].as< std::vector<std::string> >();
@@ -110,48 +104,59 @@ bool checkParameters(const int argc, char ** argv)
 			std::cerr <<"data-file option: type-file-data<string> file-path<string> level-cube<int>" << std::endl;
 			return  false;
 		}
-	}
-	else
-		return false;
 
-	bool setIso = false;
-	if (vm.count("list-isosurfaces"))
-	{
-		setIso = true;
-
-		isosurfaceList = vm["list-isosurfaces"].as< std::vector<float> >();
-	}
-	if (vm.count("range-isosurfaces"))
-	{
-		if (setIso)
+		if (vm.count("use-CUDA"))
 		{
-			std::cout << desc << "\n";
-			return false;
+			useCUDA = true;
 		}
 		else
+			useCUDA = false;
+
+		bool setIso = false;
+		if (vm.count("list-isosurfaces"))
+		{
 			setIso = true;
 
-		std::vector<float> ranges = vm["range-isosurfaces"].as< std::vector<float> >();
+			isosurfaceList = vm["list-isosurfaces"].as< std::vector<float> >();
+		}
+		if (vm.count("range-isosurfaces"))
+		{
+			if (setIso)
+			{
+				std::cout << desc << "\n";
+				return false;
+			}
+			else
+				setIso = true;
 
-		if (ranges.size() != 3 || ranges[0] > ranges[1] || (ranges[1]-ranges[0]) < ranges[2])
+			std::vector<float> ranges = vm["range-isosurfaces"].as< std::vector<float> >();
+
+			if (ranges.size() != 3 || ranges[0] > ranges[1] || (ranges[1]-ranges[0]) < ranges[2])
+			{
+				std::cout << desc << "\n";
+				return false;
+			}
+
+			float iso = ranges[0];
+			while(iso <= ranges[1])
+			{
+				isosurfaceList.push_back(iso);
+				iso += ranges[2];
+			}
+		}
+
+		if (!setIso)
 		{
 			std::cout << desc << "\n";
 			return false;
 		}
-
-		float iso = ranges[0];
-		while(iso <= ranges[1])
-		{
-			isosurfaceList.push_back(iso);
-			iso += ranges[2];
-		}
 	}
-
-	if (!setIso)
+	else
 	{
 		std::cout << desc << "\n";
 		return false;
 	}
+
 
 
 	return true;
@@ -166,7 +171,7 @@ int main( const int argc, char ** argv)
 	for (std::vector<float>::iterator it = isosurfaceList.begin() ; it != isosurfaceList.end(); ++it)
 	    std::cout << ' ' << *it<<std::endl;
 
-	if (!eqMivt::createOctree(type_file, file_params, maxLevel, isosurfaceList, octree_file_name, bigBuffer))
+	if (!eqMivt::createOctree(type_file, file_params, maxLevel, isosurfaceList, octree_file_name, useCUDA))
 		return 0;
 
 	return 0;
