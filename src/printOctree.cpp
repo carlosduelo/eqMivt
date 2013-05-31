@@ -33,10 +33,6 @@ int main( const int argc, char ** argv)
 	}
 
 	int magicWord;
-	float _isosurface;
-	int _realDim[3];
-	int _nLevels;
-	int _dimension;
 
 	file.read((char*)&magicWord, sizeof(magicWord));
 
@@ -45,34 +41,68 @@ int main( const int argc, char ** argv)
 		std::cerr<<"Octree: error invalid file format "<<magicWord<<std::endl;
 		return false;
 	}
+	
+	int nLevels = 0;
+	int maxLevel = 0;
+	int dimension = 0;
+	int realDim[3] = {0, 0, 0};
+	int numOctrees = 0;
 
-	file.read((char*)&_isosurface, 	sizeof(_isosurface));
-	file.read((char*)&_dimension, 	sizeof(_dimension));
-	file.read((char*)&_realDim[0], 	sizeof(_realDim[0]));
-	file.read((char*)&_realDim[1], 	sizeof(_realDim[1]));
-	file.read((char*)&_realDim[2], 	sizeof(_realDim[2]));
-	file.read((char*)&_nLevels, 	sizeof(int));
+	file.read((char*)&nLevels,sizeof(nLevels));
+	file.read((char*)&maxLevel,sizeof(maxLevel));
+	file.read((char*)&dimension,sizeof(dimension));
+	file.read((char*)&realDim[0],sizeof(realDim[0]));
+	file.read((char*)&realDim[1],sizeof(realDim[1]));
+	file.read((char*)&realDim[2],sizeof(realDim[2]));
+	file.read((char*)&numOctrees,sizeof(numOctrees));
 
-	std::cout<<"Dimension "<<_realDim[0]<<"x"<<_realDim[0]<<"x"<<_realDim[2]<<" levels "<<_nLevels<<std::endl;
-	std::cout<<"Isosurface "<<_isosurface<<std::endl;
+	std::cout<<"Real dimension: "<<realDim[0]<<"x"<<realDim[1]<<"x"<<realDim[2]<<std::endl;
+	std::cout<<"Dimension octree: "<<dimension<<"x"<<dimension<<"x"<<dimension<<" levels "<<nLevels<<std::endl;
+	std::cout<<"Max level: "<<maxLevel<<std::endl;
+	std::cout<<"Num octrees: "<<numOctrees<<std::endl;
 
-	for(int i=_nLevels; i>=0; i--)
+	std::cout<<"Isosurfaces availables:"<<std::endl;
+	float * isos = new float[numOctrees];
+	file.read((char*)isos, numOctrees*sizeof(float));
+	for(int i=0; i<numOctrees; i++)
+		std::cout<<i<<". "<<isos[i]<<std::endl; 
+
+	int * desp	= new int[numOctrees];
+	file.read((char*)desp, numOctrees*sizeof(int));
+
+	int ** numCubes = new int*[numOctrees];
+	int ** sizes = new int*[numOctrees];
+	int	* maxHeight = new int[numOctrees];
+	for(int i=0; i<numOctrees; i++)
 	{
-		std::cout<<"Level "<<i<<std::endl;
-		int numElem = 0;
-		file.read((char*)&numElem, sizeof(numElem));
-		for(int j=0; j<numElem; j+=2)
-		{
-			eqMivt::index_node_t node = 0;
-			file.read((char*) &node, sizeof(eqMivt::index_node_t));
-			std::cout << "From "<<node;
-			file.read((char*) &node, sizeof(eqMivt::index_node_t));
-			std::cout << " to " << node<<std::endl;
-		}
+		numCubes[i] = new int[maxLevel + 1];
+		sizes[i] = new int[maxLevel + 1];
+		std::cout<<desp[i]<<std::endl;
+		file.seekg(desp[0], std::ios_base::beg);
+		for(int d=1; d<=i; d++)
+			file.seekg(desp[d], std::ios_base::cur);
+		file.read((char*)&maxHeight[i], sizeof(int));
+		std::cout<<i<<" ------> Max Height "<<maxHeight[i]<<std::endl;
+		file.read((char*)numCubes[i], (maxLevel+1)*sizeof(int));
+		file.read((char*)sizes[i], (maxLevel+1)*sizeof(int));
+		for(int j=0; j<=maxLevel; j++)
+			std::cout<<"Level: "<<j<<" "<<numCubes[i][j]<<" "<<sizes[i][j]<<std::endl;
 	}
+
 
 	file.close();
 	/* end reading octree from file */
+
+	delete[] isos;
+	delete[] desp;
+	delete[] maxHeight;
+	for(int i=0; i<numOctrees; i++)
+	{
+		delete[] numCubes[i];
+		delete[] sizes[i];
+	}
+	delete[] sizes;
+	delete[] numCubes;
 
 	return 0;
 }

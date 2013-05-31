@@ -18,6 +18,8 @@ Notes:
 #include <lunchbox/clock.h>
 #include <lunchbox/lock.h>
 #include <boost/progress.hpp>
+#include <iostream>
+#include <fstream>
 
 #define posToIndex(i,j,k,d) ((k)+(j)*(d)+(i)*(d)*(d))
 
@@ -116,6 +118,37 @@ namespace eqMivt
 			{
 				if (_maxHeight < height)
 					_maxHeight = height;
+			}
+
+			int getMaxHeight()
+			{
+				return _maxHeight; 
+			}
+
+			int getSize()
+			{
+				int size = (2*(_maxLevel+1) + 1)*sizeof(int);
+
+				for(int i=0; i<=_maxLevel; i++)
+					size +=_octree[i].size()*sizeof(index_node_t); 
+
+				return size;
+			}
+
+			void writeToFile(std::ofstream * file)
+			{
+				file->write((char*)&_maxHeight, sizeof(int));
+				file->write((char*)_numCubes, (_maxLevel+1)*sizeof(int));
+				for(int i=0; i<=_maxLevel; i++)
+				{
+					int s = _octree[i].size();
+					file->write((char*)&s, sizeof(int));
+				}
+
+				for(int i=0; i<=_maxLevel; i++)
+				{
+					file->write((char*)_octree[i].data(), _octree[i].size()*sizeof(index_node_t));
+				}
 			}
 
 			void printTree()
@@ -328,6 +361,51 @@ namespace eqMivt
 
 	}
 
+	void _writeToFile(std::vector<octree*> octrees, std::vector<float> isos, int nLevels, int maxLevel, int dimension, vmml::vector<3, int> realDim, std::string octree_file)
+	{
+		std::ofstream file(octree_file.c_str(), std::ofstream::binary);
+
+		int magicWord = 919278872;
+
+		int numO = octrees.size();
+		int x = realDim.x(); 
+		int y = realDim.y(); 
+		int z = realDim.z(); 
+
+		file.write((char*)&magicWord,  sizeof(magicWord));
+		file.write((char*)&nLevels,sizeof(nLevels));
+		file.write((char*)&maxLevel,sizeof(maxLevel));
+		file.write((char*)&dimension,sizeof(dimension));
+		file.write((char*)&x,sizeof(x));
+		file.write((char*)&y,sizeof(y));
+		file.write((char*)&z,sizeof(z));
+		file.write((char*)&numO,sizeof(numO));
+
+		std::vector<float>::iterator it;
+		for (it=isos.begin() ; it !=isos.end(); it++ )
+		{
+			float iso = *it;
+			file.write((char*)&iso,sizeof(float));
+		}
+
+		// offset from start
+		int desp = 8*sizeof(int) + 2*numO*sizeof(float);
+		for(int i =0; i<numO; i++)
+		{
+			file.write((char*)&desp,sizeof(desp));
+			desp = octrees[i]->getSize(); 
+		}
+
+		for(int i =0; i<numO; i++)
+		{
+			octrees[i]->writeToFile(&file);
+		}
+
+
+		file.close();	
+		return;
+	}
+
 	bool createOctree(std::string type_file, std::vector<std::string> file_params, int maxLevel, std::vector<float> isosurfaceList, std::string octree_file, bool useCUDA)
 	{
 
@@ -464,21 +542,28 @@ namespace eqMivt
 			}
 			++show_progress;
 		}
+
+		delete[] dataCube;
 	
 		computinhClock.reset();
 		#pragma omp parallel for
 		for(int i=0; i<octrees.size(); i++)
 			octrees[i]->completeOctree();
-		double completeTime = computinhClock.getTimed();	
+		double completeTime = computinhClock.getTimed();
+
+		computinhClock.reset();
+		_writeToFile(octrees, isosurfaceList, nLevels, maxLevel, dimension, realDim, octree_file);
+		double writeFileTime = computinhClock.getTimed();
 
 		double time = completeCreationClock.getTimed();
-		std::cout<<"Time: "<<time/1000.0<<" seconds"<<" hard disk reading time :"<<readingTime/1000.0<<" seconds computing time "<<computingTime/1000.0<<" seconds "<<"time in complete octree "<<completeTime/1000.0<<" seconds "<<std::endl;
-
-		delete[] dataCube;
+		std::cout<<"Toltal time: "<<time/1000.0<<" seconds."<<std::endl;
+		std::cout<<"Hard disk reading time: "<<readingTime/1000.0<<" seconds."<<std::endl;
+		std::cout<<"Computing time: "<<computingTime/1000.0<<" seconds, "<<"time in complete octree "<<completeTime/1000.0<<" seconds."<<std::endl;
+		std::cout<<"Time writing file "<<writeFileTime/1000.0<<" seconds."<<std::endl;
 
 		for(int i=0; i<octrees.size(); i++)
 		{
-			octrees[i]->printTree();
+			//octrees[i]->printTree();
 			delete octrees[i];
 		}
 
