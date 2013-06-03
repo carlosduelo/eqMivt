@@ -11,6 +11,33 @@ Notes:
 #include <iostream>
 #include <fstream>
 
+void readOctree(std::ifstream * file, int numO, int * desp, int * sizes, eqMivt::index_node_t ** octree, int maxLevel)
+{
+	file->seekg(desp[0], std::ios_base::beg);
+	for(int d=1; d<=numO; d++)
+		file->seekg(desp[d], std::ios_base::cur);
+
+	file->seekg(((2*(maxLevel+1))+1)*sizeof(int), std::ios_base::cur);
+	for(int i=0; i<=maxLevel; i++)
+	{
+		octree[i] = new eqMivt::index_node_t[sizes[i]];
+		file->read((char*)octree[i], sizes[i]*sizeof(eqMivt::index_node_t));
+	}
+	
+}
+
+void printOctree(eqMivt::index_node_t ** octree, int * sizes, int maxLevel)
+{
+	for(int i=0; i<=maxLevel; i++)
+	{
+		std::cout	<<"Level: "<<i<<std::endl;
+		for(int j=0; j<sizes[i]; j+=2)
+		{
+			std::cout << "From " <<octree[i][j]<<" to " << octree[i][j+1]<<std::endl;
+		}
+	}
+}
+
 int main( const int argc, char ** argv)
 {
 	if (argc < 2)
@@ -77,18 +104,27 @@ int main( const int argc, char ** argv)
 	{
 		numCubes[i] = new int[maxLevel + 1];
 		sizes[i] = new int[maxLevel + 1];
-		std::cout<<desp[i]<<std::endl;
 		file.seekg(desp[0], std::ios_base::beg);
 		for(int d=1; d<=i; d++)
 			file.seekg(desp[d], std::ios_base::cur);
 		file.read((char*)&maxHeight[i], sizeof(int));
-		std::cout<<i<<" ------> Max Height "<<maxHeight[i]<<std::endl;
 		file.read((char*)numCubes[i], (maxLevel+1)*sizeof(int));
 		file.read((char*)sizes[i], (maxLevel+1)*sizeof(int));
-		for(int j=0; j<=maxLevel; j++)
-			std::cout<<"Level: "<<j<<" "<<numCubes[i][j]<<" "<<sizes[i][j]<<std::endl;
 	}
 
+	int selection = -1;
+	while(selection < 0 || selection >= numOctrees) 
+	{
+		std::cout<<"Select octree to print [0,"<<numOctrees-1<<"] ";
+		std::cin>>selection;
+	}
+
+	eqMivt::index_node_t ** octree;
+	octree = new eqMivt::index_node_t*[maxLevel+1];
+
+	readOctree(&file, selection, desp, sizes[selection], octree, maxLevel);
+
+	printOctree(octree, sizes[selection], maxLevel);
 
 	file.close();
 	/* end reading octree from file */
@@ -103,6 +139,8 @@ int main( const int argc, char ** argv)
 	}
 	delete[] sizes;
 	delete[] numCubes;
+	for(int i=0; i<=maxLevel; i++)
+		delete[] octree[i];
 
 	return 0;
 }
