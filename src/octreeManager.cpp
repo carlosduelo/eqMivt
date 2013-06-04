@@ -11,7 +11,7 @@ Notes:
 
 namespace eqMivt
 {
-		OctreeManaer::OctreeManager()
+		OctreeManager::OctreeManager()
 		{
 			_nLevels = 0;
 			_maxLevel = 0;
@@ -29,12 +29,10 @@ namespace eqMivt
 			_currentOctree = 0;
 		}
 
-		OctreeManaer::~OctreeManager()
+		OctreeManager::~OctreeManager()
 		{
 			if (_isosurfaces!=0)
 				delete[] _isosurfaces;
-			if (_numCubes!=0)
-				delete[] _numCubes;
 			if (_desp!=0)
 				delete[] _desp;
 			if (_cubeCacheLevel!=0)
@@ -44,6 +42,12 @@ namespace eqMivt
 				for(int i=0; i<_numOctrees; i++)
 					delete[] _sizes[i];
 				delete[] _sizes;
+			}
+			if (_numCubes!=0)
+			{
+				for(int i=0; i<_numOctrees; i++)
+					delete[] _numCubes[i];
+				delete[] _numCubes;
 			}
 			if (_octreeData!=0)
 			{
@@ -55,36 +59,31 @@ namespace eqMivt
 			_file.close();
 		}
 
-		bool OctreeManager::_checkOctreeFileValid(std::ifstream * file)
-		{
-			int magicWord;
-
-			file->read((char*)&magicWord, sizeof(magicWord));
-
-			if (magicWord != 919278872)
-			{
-				std::cerr<<"Octree: error invalid file format "<<magicWord<<std::endl;
-				return false;
-			}
-			return true;
-		}
-
 		void OctreeManager::_readCurrentOctree()
 		{
 			_file.seekg(_desp[0], std::ios_base::beg);
-			for(int d=1; d<=_numOctrees; d++)
+			for(int d=1; d<=_currentOctree; d++)
 				_file.seekg(_desp[d], std::ios_base::cur);
 
-			file->seekg(((2*(maxLevel+1))+1)*sizeof(int), std::ios_base::cur);
-			for(int i=0; i<=maxLevel; i++)
+			_file.seekg(((2*(_maxLevel+1))+1)*sizeof(int), std::ios_base::cur);
+			if (_octreeData == 0)
 			{
-				_octreeData[i] = new eqMivt::index_node_t[_sizes[i]];
-				_file.read((char*)_octreeData[i], _sizes[i]*sizeof(eqMivt::index_node_t));
+				_octreeData = new index_node_t*[_maxLevel+1];
+				for(int i=0; i<=_maxLevel; i++)
+					_octreeData[i] = 0;
+			}
+
+			for(int i=0; i<=_maxLevel; i++)
+			{
+				if (_octreeData[i] != 0)
+					delete[] _octreeData[i];
+				_octreeData[i] = new index_node_t[_sizes[_currentOctree][i]];
+				_file.read((char*)_octreeData[i], _sizes[_currentOctree][i]*sizeof(index_node_t));
 			}
 
 		}
 
-		int OctreeManaer::readNLevelsFromFile(std::string file_name)
+		int OctreeManager::readNLevelsFromFile(std::string file_name)
 		{
 			std::ifstream file;
 
@@ -97,10 +96,17 @@ namespace eqMivt
 				std::cerr<<"Octree: error opening octree file"<<std::endl;
 				return -1;
 			}
-			if (!_checkOctreeFileValid(&file))
+
+			int magicWord;
+
+			file.read((char*)&magicWord, sizeof(magicWord));
+
+			if (magicWord != 919278872)
 			{
+				std::cerr<<"Octree: error invalid file format "<<magicWord<<std::endl;
 				return -1;
 			}
+
 			int nLevels = 0;
 
 			file.read((char*)&nLevels,sizeof(nLevels));
@@ -108,7 +114,7 @@ namespace eqMivt
 			return nLevels;
 
 		}
-		int OctreeManaer::readMaxLevelsFromFile(std::string file_name)
+		int OctreeManager::readMaxLevelsFromFile(std::string file_name)
 		{
 			std::ifstream file;
 
@@ -121,8 +127,14 @@ namespace eqMivt
 				std::cerr<<"Octree: error opening octree file"<<std::endl;
 				return -1;
 			}
-			if (!_checkOctreeFileValid(&file))
+
+			int magicWord;
+
+			file.read((char*)&magicWord, sizeof(magicWord));
+
+			if (magicWord != 919278872)
 			{
+				std::cerr<<"Octree: error invalid file format "<<magicWord<<std::endl;
 				return -1;
 			}
 			int maxLevel = 0;
@@ -133,7 +145,7 @@ namespace eqMivt
 			return maxLevel;
 
 		}
-		int OctreeManaer::readDimensionFromFile(std::string file_name)
+		int OctreeManager::readDimensionFromFile(std::string file_name)
 		{
 			std::ifstream file;
 
@@ -146,8 +158,14 @@ namespace eqMivt
 				std::cerr<<"Octree: error opening octree file"<<std::endl;
 				return -1;
 			}
-			if (!_checkOctreeFileValid(&file))
+
+			int magicWord;
+
+			file.read((char*)&magicWord, sizeof(magicWord));
+
+			if (magicWord != 919278872)
 			{
+				std::cerr<<"Octree: error invalid file format "<<magicWord<<std::endl;
 				return -1;
 			}
 
@@ -160,7 +178,7 @@ namespace eqMivt
 
 		}
 
-		vmml::vector<3, int> OctreeManaer::readRealDimFromFile(std::string file_name)
+		vmml::vector<3, int> OctreeManager::readRealDimFromFile(std::string file_name)
 		{
 			std::ifstream file;
 
@@ -171,21 +189,29 @@ namespace eqMivt
 			catch(...)
 			{
 				std::cerr<<"Octree: error opening octree file"<<std::endl;
-				return -1;
+				vmml::vector<3, int> r(-1,-1,-1);
+				return r;
 			}
-			if (!_checkOctreeFileValid(&file))
+
+			int magicWord;
+
+			file.read((char*)&magicWord, sizeof(magicWord));
+
+			if (magicWord != 919278872)
 			{
-				return -1;
+				std::cerr<<"Octree: error invalid file format "<<magicWord<<std::endl;
+				vmml::vector<3, int> r(-1,-1,-1);
+				return r;
 			}
 			vmml::vector<3, int> realDim(0, 0, 0);
 
 			file.seekg(3*sizeof(int), std::ios_base::cur);
-			file.read((char*)realDim.array(),3*sizeof(int));
+			file.read((char*)realDim.array,3*sizeof(int));
 
 			return realDim;
 
 		}
-		int OctreeManaer::readNumOctreesFromFile(std::string file_name)
+		int OctreeManager::readNumOctreesFromFile(std::string file_name)
 		{
 			std::ifstream file;
 
@@ -198,8 +224,14 @@ namespace eqMivt
 				std::cerr<<"Octree: error opening octree file"<<std::endl;
 				return -1;
 			}
-			if (!_checkOctreeFileValid(&file))
+
+			int magicWord;
+
+			file.read((char*)&magicWord, sizeof(magicWord));
+
+			if (magicWord != 919278872)
 			{
+				std::cerr<<"Octree: error invalid file format "<<magicWord<<std::endl;
 				return -1;
 			}
 			int numOctrees = 0;
@@ -210,7 +242,7 @@ namespace eqMivt
 			return numOctrees;
 		}
 
-		bool OctreeManaer::init(std::string file_name);
+		bool OctreeManager::init(std::string file_name)
 		{
 			try
 			{
@@ -221,21 +253,26 @@ namespace eqMivt
 				std::cerr<<"Octree: error opening octree file"<<std::endl;
 				return false;
 			}
-			if (!_checkOctreeFileValid(&file))
+			int magicWord;
+
+			_file.read((char*)&magicWord, sizeof(magicWord));
+
+			if (magicWord != 919278872)
 			{
+				std::cerr<<"Octree: error invalid file format "<<magicWord<<std::endl;
 				return false;
 			}
 
-			_file.read((char*)&_nLevels,sizeof(nLevels));
-			_file.read((char*)&_maxLevel,sizeof(maxLevel));
-			_file.read((char*)&_dimension,sizeof(dimension));
+			_file.read((char*)&_nLevels,sizeof(_nLevels));
+			_file.read((char*)&_maxLevel,sizeof(_maxLevel));
+			_file.read((char*)&_dimension,sizeof(_dimension));
 			_file.read((char*)_realDim.array,3*sizeof(int));
-			_file.read((char*)&_numOctrees,sizeof(numOctrees));
+			_file.read((char*)&_numOctrees,sizeof(_numOctrees));
 
 			_isosurfaces = new float[_numOctrees];	
-			_file.read((char*)_isosurfaces, numOctrees*sizeof(float));
+			_file.read((char*)_isosurfaces, _numOctrees*sizeof(float));
 			_desp = new int[_numOctrees];
-			_file.read((char*)_desp, numOctrees*sizeof(int));
+			_file.read((char*)_desp, _numOctrees*sizeof(int));
 
 			_numCubes = new int*[_numOctrees];
 			_sizes = new int*[_numOctrees];
@@ -256,8 +293,8 @@ namespace eqMivt
 
 		}
 #if 0
-		void OctreeManaer::setCurrentOctree(int currentOctree);
+		void OctreeManager::setCurrentOctree(int currentOctree);
 
-		void OctreeManaer::cpyOctreeToDevice(int device);
+		void OctreeManager::cpyOctreeToDevice(int device);
 #endif
 }

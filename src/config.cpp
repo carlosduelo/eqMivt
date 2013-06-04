@@ -91,7 +91,7 @@ bool Config::loadData( const eq::uint128_t& initDataID )
     }
 
 	// Set camera step
-	vmml::vector<3, int> dimensionVolume = OctreeManager::readDimensionFromFile(_initData.getOctreeFilename());
+	vmml::vector<3, int> dimensionVolume = OctreeManager::readRealDimFromFile(_initData.getOctreeFilename());
 	if (dimensionVolume.x() == 0 || dimensionVolume.z() == 0 || dimensionVolume.y() == 0)
 	{
 		return false;

@@ -11,6 +11,8 @@ Notes:
 
 #include <typedef.h>
 
+#include <eq/eq.h>
+
 #include <string>
 #include <iostream>
 #include <fstream>
@@ -32,14 +34,13 @@ class OctreeManager
 		float * _isosurfaces;
 		int ** _sizes;
 		int * _desp;
-		int * _numCubes;
+		int ** _numCubes;
 		int * _maxHeight;
 		int * _cubeCacheLevel;
-		float ** _octreeData;
+		index_node_t ** _octreeData;
 		int _currentOctree;
 
 		/* private methods */
-		bool _checkOctreeFileValid(std::ifstream * file);
 		void _readCurrentOctree();
 	public:
 		OctreeManager();
@@ -48,8 +49,8 @@ class OctreeManager
 
 		static int readNLevelsFromFile(std::string file_name);
 		static int readMaxLevelsFromFile(std::string file_name);
-		static vmml::vector<3, int> readDimensionFromFile(std::string file_name);
-		static int readRealDimFromFile(std::string file_name);
+		static int readDimensionFromFile(std::string file_name);
+		static vmml::vector<3, int> readRealDimFromFile(std::string file_name);
 		static int readNumOctreesFromFile(std::string file_name);
 
 		bool init(std::string file_name);

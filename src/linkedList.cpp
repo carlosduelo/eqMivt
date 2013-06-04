@@ -81,7 +81,7 @@ NodeLinkedList * LinkedList::getFirstFreePosition(index_node_t newIDcube, index_
 		return first;
 	}
 
-	return NULL;
+	return 0;
 }
 
 NodeLinkedList * LinkedList::moveToLastPosition(NodeLinkedList * node)
