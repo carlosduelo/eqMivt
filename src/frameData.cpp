@@ -17,6 +17,8 @@ FrameData::FrameData()
 		, _idle( false )
 		, _statistics( false )
 		,_drawBox( false )
+		,_currentOctree( 0 )
+		,_numOctrees( 0 )
 {
     reset();
 }
@@ -30,6 +32,8 @@ void FrameData::serialize( co::DataOStream& os, const uint64_t dirtyBits )
 		os << _idle << _statistics << _drawBox;
 	if( dirtyBits & DIRTY_VIEW )
 		os << _currentViewID;
+	if( dirtyBits & DIRTY_MODEL )
+		os << _currentOctree << _numOctrees; 
 }
 
 void FrameData::deserialize( co::DataIStream& is, const uint64_t dirtyBits )
@@ -41,6 +45,34 @@ void FrameData::deserialize( co::DataIStream& is, const uint64_t dirtyBits )
 		is >> _idle >> _statistics >> _drawBox;
 	if( dirtyBits & DIRTY_VIEW )
 		is >> _currentViewID;
+	if( dirtyBits & DIRTY_MODEL )
+		is >> _currentOctree >> _numOctrees; 
+}
+
+void FrameData::setNumOctrees(const int numOctrees)
+{
+	_numOctrees = numOctrees;
+    setDirty( DIRTY_MODEL);
+}
+
+void FrameData::setCurrentOctree(const int octree)
+{
+	_currentOctree = octree;
+    setDirty( DIRTY_MODEL);
+}
+
+void FrameData::setNextOctree()
+{
+	if (_currentOctree < (_numOctrees-1))
+		_currentOctree++;
+    setDirty( DIRTY_MODEL);
+}
+
+void FrameData::setPreviusOctree()
+{
+	if (_currentOctree > 0)
+		_currentOctree--;
+    setDirty( DIRTY_MODEL);
 }
 
 void FrameData::spinCamera( const float x, const float y )

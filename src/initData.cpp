@@ -22,12 +22,12 @@ InitData::~InitData()
 
 void InitData::getInstanceData( co::DataOStream& os )
 {
-    os << _frameDataID << _octreeFilename << _maxLevelOctree;
+    os << _frameDataID << _octreeFilename << _dataTypeFile << _dataFilename;
 }
 
 void InitData::applyInstanceData( co::DataIStream& is )
 {
-    is >> _frameDataID >> _octreeFilename >> _maxLevelOctree;
+    is >> _frameDataID >> _octreeFilename >> _dataTypeFile >> _dataFilename;
  
     LBASSERT( _frameDataID != 0 );
 }

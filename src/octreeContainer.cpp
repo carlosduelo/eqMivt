@@ -30,27 +30,54 @@ int OctreeContainer::getnLevelsFromOctreeFile(std::string file_name)
 		LBERROR<<"Octree: error opening octree file"<<std::endl;
 		return 0;
 	}
-
 	int magicWord;
 
 	file.read((char*)&magicWord, sizeof(magicWord));
 
 	if (magicWord != 919278872)
 	{
-		LBERROR<<"Octree: error invalid file format"<<std::endl;
-		return 0;
+		std::cerr<<"Octree: error invalid file format "<<magicWord<<std::endl;
+		return false;
 	}
 
-	int   no;
-	float no1;
 	int nLevels;
 
-	file.read((char*)&no1, 	sizeof(float));
-	file.read((char*)&no, 	sizeof(int));
-	file.read((char*)&no, 	sizeof(int));
-	file.read((char*)&no, 	sizeof(int));
-	file.read((char*)&no, 	sizeof(int));
-	file.read((char*)&nLevels, 	sizeof(int));
+	file.read((char*)&nLevels,sizeof(nLevels));
+
+	file.close();
+
+	return nLevels;
+}
+
+int getmaxLevelFromOctreeFile(std::string file_name)
+{
+	/* Read octree from file */
+	std::ifstream file;
+
+	try
+	{
+		file.open(file_name.c_str(), std::ifstream::binary);
+	}
+	catch(...)
+	{
+		LBERROR<<"Octree: error opening octree file"<<std::endl;
+		return 0;
+	}
+	int magicWord;
+
+	file.read((char*)&magicWord, sizeof(magicWord));
+
+	if (magicWord != 919278872)
+	{
+		std::cerr<<"Octree: error invalid file format "<<magicWord<<std::endl;
+		return false;
+	}
+
+	int nLevels;
+
+	file.read((char*)&nLevels,sizeof(nLevels));
+
+	file.close();
 
 	return nLevels;
 }
@@ -83,20 +110,18 @@ eq::Vector3f  OctreeContainer::getRealDimFromOctreeFile(std::string file_name)
 	int   x;
 	int   y;
 	int   z;
-	float no1;
-	int no;
 	eq::Vector3f dim;
 
-	file.read((char*)&no1,	sizeof(float));
-	file.read((char*)&no, 	sizeof(int));
+	file.seekg(3*sizeof(int), std::ios_base::cur);
 	file.read((char*)&x, 	sizeof(int));
 	file.read((char*)&y, 	sizeof(int));
 	file.read((char*)&z, 	sizeof(int));
-	file.read((char*)&no, 	sizeof(int));
 
 	dim[0] = (float) x;
 	dim[1] = (float) y;
 	dim[2] = (float) z;
+
+	file.close();
 
 	return dim;
 }

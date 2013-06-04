@@ -3,6 +3,18 @@
 # to the root binary directory of the project as ${mivt_BINARY_DIR}. 
 
 set(MIVT_SOURCE 
+		hdf5File.cpp
+		fileFactory.cpp
+		cubeCacheCPU.cpp
+		cubeCacheGPU.cpp
+		cubeCache.cpp
+		cacheManager.cpp
+		octreeManager.cpp
+		octreeContainer.cpp
+		octree.cpp
+		render.cpp
+		linkedList.cpp
+		rayCaster.cpp
 		error.cpp
 		initData.cpp
 		localInitData.cpp
@@ -14,16 +26,6 @@ set(MIVT_SOURCE
 		view.cpp
 		window.cpp
 		eqMivt.cpp
-		octreeContainer.cpp
-		render.cpp
-		octree.cpp
-		fileFactory.cpp
-		hdf5File.cpp
-		linkedList.cpp
-		cubeCacheCPU.cpp
-		cubeCacheGPU.cpp
-		cubeCache.cpp
-		rayCaster.cpp
 )
 
 set(MIVT_CUDA_SOURCE ray-casting-sphere.cu octreeContainer_GPU.cu octree_CUDA.cu rayCaster_CUDA.cu)
@@ -45,7 +47,7 @@ endif()
 cuda_compile(MIVT_CUDA_OBJECTS ${MIVT_CUDA_SOURCE})
 #message(STATUS ${MIVT_CUDA_OBJECTS})
 
-set(LIBS_NEEDED ${EQUALIZER_LIBRARIES} ${CUDA_LIBRARIES} ${Boost_LIBRARIES} ${HDF5_LIBRARIES} ${FREEIMAGE_LIBRARIES} ${OPENGL_gl_LIBRARY}) 
+set(LIBS_NEEDED ${EQUALIZER_LIBRARIES} ${CUDA_LIBRARIES} ${Boost_LIBRARIES} ${HDF5_LIBRARIES} ${FREEIMAGE_LIBRARIES} ${OPENGL_gl_LIBRARY} dl GL) 
 
 add_executable(mivt ${MIVT_SOURCE} ${MIVT_CUDA_OBJECTS} main.cpp) 
 target_link_libraries(mivt ${LIBS_NEEDED}) 

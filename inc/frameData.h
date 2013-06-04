@@ -44,6 +44,14 @@ class FrameData : public co::Serializable
 		void setStatistics();
 		bool getStatistics() const { return _statistics; }
 
+		void setNumOctrees(const int numOctrees);
+
+		void setCurrentOctree(const int octree);
+		void setNextOctree();
+		void setPreviusOctree();
+
+		int getCurrentOctree() const { return _currentOctree; }
+
     protected:
 		virtual void serialize( co::DataOStream& os, const uint64_t dirtyBits );
 		virtual void deserialize( co::DataIStream& is, const uint64_t dirtyBits );
@@ -53,6 +61,7 @@ class FrameData : public co::Serializable
 			DIRTY_CAMERA = co::Serializable::DIRTY_CUSTOM << 0,
 			DIRTY_FLAGS   = co::Serializable::DIRTY_CUSTOM << 1,
 			DIRTY_VIEW    = co::Serializable::DIRTY_CUSTOM << 3,
+			DIRTY_MODEL	= co::Serializable::DIRTY_CUSTOM << 4,
 		};
     private:
 		eq::Matrix4f	_rotation;
@@ -60,6 +69,9 @@ class FrameData : public co::Serializable
 		bool            _idle;
 		bool			_drawBox;
 		eq::uint128_t	_currentViewID;
+
+		int				_currentOctree;
+		int				_numOctrees;
 
 		bool			_statistics;
 };

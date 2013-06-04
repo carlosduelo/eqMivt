@@ -19,25 +19,19 @@ class hdf5File : public FileManager
 {
 	private:
 		// HDF5 stuff
-		hid_t           file_id;
-		hid_t           dataset_id;
-		hid_t           spaceid;
-		int             ndim;
-		hsize_t         dims[3];
+		hid_t           _file_id;
+		hid_t           _dataset_id;
+		hid_t           _spaceid;
+		int             _ndim;
+		hsize_t         _dims[3];
 
 	public:
 
-		hdf5File()
-		{
-		}
-
-		virtual bool init(std::vector<std::string> file_params, int p_levelCube, int p_nLevels, vmml::vector<3, int> p_cubeDim, vmml::vector<3, int> p_cubeInc);
+		virtual bool init(std::vector<std::string> file_params);
 
 		~hdf5File();
 
-		virtual void readCube(index_node_t index, float * cube);
-
-		virtual vmml::vector<3, int> getRealDimension() { vmml::vector<3, int> dim; dim.set(dims[0],dims[1],dims[2]); return dim; };
+		virtual void readCube(index_node_t index, float * cube, int levelCube, int nLevels, vmml::vector<3, int>    cubeDim, vmml::vector<3, int> cubeInc, vmml::vector<3, int> realCubeDim);
 };
 }
 

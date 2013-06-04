@@ -9,96 +9,149 @@ Notes:
 #include <cubeCacheCPU.h>
 
 #include <cuda_runtime.h>
+#include "memoryCheck.h"
+
+#define MAX_SIZE 512*1024*1024
 
 namespace eqMivt
 {
-bool cubeCacheCPU::init(std::string type_file, std::vector<std::string> file_params, int p_maxElements, vmml::vector<3, int> p_cubeDim, int p_cubeInc, int p_levelCube, int p_nLevels)
-{
-	// cube size
-	cubeDim 	= p_cubeDim;
-	cubeInc.set(p_cubeInc,p_cubeInc,p_cubeInc);
-	realcubeDim	= p_cubeDim + 2 * p_cubeInc;
-	levelCube	= p_levelCube;
-	nLevels		= p_nLevels;
-	offsetCube	= (cubeDim.x()+2*cubeInc.x())*(cubeDim.y()+2*cubeInc.y())*(cubeDim.z()+2*cubeInc.z());
 
-	// Creating caches
-	maxElements	= p_maxElements;
-	queuePositions	= new LinkedList(maxElements);
+cubeCacheCPU::cubeCacheCPU()
+{
+		_cubeDim.set(0,0,0);
+		_cubeInc.set(0,0,0);
+		_realcubeDim.set(0,0,0);
+		_offsetCube = 0;
+		_levelCube = 0;
+		_nLevels = 0;
+
+		_indexStored;
+		_queuePositions = 0;
+
+		_maxElements = 0;
+		_cacheData = 0;
+		
+		_fileManager = 0;
+}
+
+cubeCacheCPU::~cubeCacheCPU()
+{
+	if (_fileManager != 0)
+		delete _fileManager;
+	if (_queuePositions != 0)
+		delete _queuePositions;
+	if (_cacheData != 0)
+		cudaFreeHost(_cacheData);
+}
+
+bool cubeCacheCPU::init(std::string type_file, std::vector<std::string> file_params, int nLevels)
+{
+	_nLevels = nLevels;
 
 	// OpenFile
-	fileManager = eqMivt::CreateFileManage(type_file, file_params, levelCube, nLevels, cubeDim, cubeInc);
-	if (fileManager == 0)
+	_fileManager = eqMivt::CreateFileManage(type_file, file_params);
+	if (_fileManager == 0)
 	{
-		LBERROR<<"Cube Cache CPU: error initialization file"<<std::endl;
-		return false;
-	}
-
-	// Allocating memory
-	std::cerr<<"Creating cache in CPU: "<< maxElements*offsetCube*sizeof(float)/1024.0f/1024.0f<<" MB: "<<std::endl;
-	if (cudaSuccess != cudaHostAlloc((void**)&cacheData, maxElements*offsetCube*sizeof(float),cudaHostAllocDefault))
-	{
-		LBERROR<<"Cube Cache CPU: Error creating cpu cache"<<std::endl;
+		LBERROR<<"Cache CPU: error initialization file"<<std::endl;
 		return false;
 	}
 
 	return true;
 }
 
-cubeCacheCPU::~cubeCacheCPU()
+bool cubeCacheCPU::reSize(vmml::vector<3, int> cubeDim, int cubeInc, int levelCube, int numElements)
 {
-	delete fileManager;
-	delete queuePositions;
-	cudaFreeHost(cacheData);
+	if (levelCube == _levelCube)
+		return true;
+
+	// cube size
+	_cubeDim 	= cubeDim;
+	_cubeInc.set(cubeInc,cubeInc,cubeInc);
+	_realcubeDim	= cubeDim + 2 * cubeInc;
+	_levelCube	= levelCube;
+	_offsetCube	= (_cubeDim.x()+2*_cubeInc.x())*(_cubeDim.y()+2*_cubeInc.y())*(_cubeDim.z()+2*_cubeInc.z());
+
+	if (numElements == 0)
+	{
+		double memoryCPU = getMemorySize();
+		if (memoryCPU == 0)
+		{
+			LBERROR<<"Not possible, check memory aviable (the call failed due to OS limitations)"<<std::endl;
+			memoryCPU = MAX_SIZE; 
+		}
+		else
+		{
+			memoryCPU /= 2;
+		}
+		_maxElements = memoryCPU/_offsetCube;
+	}
+	else
+	{
+		_maxElements = numElements;
+	}
+
+	_indexStored.clear();
+
+	if (_queuePositions != 0)
+		delete _queuePositions;
+	_queuePositions	= new LinkedList(_maxElements);
+
+	if (_cacheData != 0)
+		cudaFreeHost(_cacheData);
+		
+	LBINFO<<"Creating cache in CPU: "<< _maxElements*_offsetCube*sizeof(float)/1024.0f/1024.0f<<" MB: "<<std::endl;
+	if (cudaSuccess != cudaHostAlloc((void**)&_cacheData, _maxElements*_offsetCube*sizeof(float),cudaHostAllocDefault))
+	{
+		LBERROR<<"Cache CPU: Error creating cpu cache"<<std::endl;
+		return false;
+	}
 }
+
 
 float * cubeCacheCPU::push_cube(index_node_t idCube)
 {
-#ifdef _BUNORDER_MAP_
 	boost::unordered_map<index_node_t, NodeLinkedList *>::iterator it;
-#else
-	std::map<index_node_t, NodeLinkedList *>::iterator it;
-#endif
-	lock.set();
+
+	_lock.set();
 	
 	// Find the cube in the CPU cache
-	it = indexStored.find(idCube);
-	if ( it != indexStored.end() ) // If exist
+	it = _indexStored.find(idCube);
+	if ( it != _indexStored.end() ) // If exist
 	{
 		NodeLinkedList * node = it->second;
 
-		queuePositions->moveToLastPosition(node);
-		queuePositions->addReference(node);
+		_queuePositions->moveToLastPosition(node);
+		_queuePositions->addReference(node);
 
-		lock.unset();
-		return cacheData + it->second->element*offsetCube;
+		_lock.unset();
+		return _cacheData + it->second->element*_offsetCube;
 			
 	}
 	else // If not exists
 	{
 		index_node_t 	 removedCube = (index_node_t)0;
-		NodeLinkedList * node = queuePositions->getFirstFreePosition(idCube, &removedCube);
+		NodeLinkedList * node = _queuePositions->getFirstFreePosition(idCube, &removedCube);
 
 		if (node != NULL)
 		{
-			indexStored.insert(std::pair<int, NodeLinkedList *>(idCube, node));
+			_indexStored.insert(std::pair<int, NodeLinkedList *>(idCube, node));
 			if (removedCube!= (index_node_t)0)
-				indexStored.erase(indexStored.find(removedCube));
+				_indexStored.erase(_indexStored.find(removedCube));
 
 			unsigned pos   = node->element;
 
-			queuePositions->moveToLastPosition(node);
-			queuePositions->addReference(node);
+			_queuePositions->moveToLastPosition(node);
+			_queuePositions->addReference(node);
 
-			fileManager->readCube(idCube, cacheData+ pos*offsetCube);
+			_fileManager->readCube(idCube, _cacheData+ pos*_offsetCube, _levelCube, _nLevels, _cubeDim, _cubeInc, _realcubeDim);
 
-			lock.unset();
+			_lock.unset();
 
-			return cacheData+ pos*offsetCube;
+			return _cacheData+ pos*_offsetCube;
 		}
 		else // there is no free slot
 		{
-			lock.unset();
+			_lock.unset();
 			return NULL; 
 		}
 	}
@@ -106,26 +159,23 @@ float * cubeCacheCPU::push_cube(index_node_t idCube)
 
 void cubeCacheCPU::pop_cube(index_node_t idCube)
 {
-#ifdef _BUNORDER_MAP_
 	boost::unordered_map<index_node_t, NodeLinkedList *>::iterator it;
-#else
-	std::map<index_node_t, NodeLinkedList *>::iterator it;
-#endif
-	lock.set();
+
+	_lock.set();
 
 	// Find the cube in the CPU cache
-	it = indexStored.find(idCube);
-	if ( it != indexStored.end() ) // If exist remove reference
+	it = _indexStored.find(idCube);
+	if ( it != _indexStored.end() ) // If exist remove reference
 	{
 		NodeLinkedList * node = it->second;
-		queuePositions->removeReference(node);
+		_queuePositions->removeReference(node);
 	}
 	else
 	{
-		lock.unset();
-		std::cerr<<"Cache is unistable"<<std::endl;
+		_lock.unset();
+		LBERROR<<"Cache is unistable"<<std::endl;
 		throw;
 	}
-	lock.unset();
+	_lock.unset();
 }
 }

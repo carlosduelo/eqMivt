@@ -18,7 +18,7 @@ namespace eqMivt
 {
 LocalInitData::LocalInitData()
         : _maxFrames( 0xffffffffu )
-	, _isResident( false )
+		, _isResident( false )
 {
 }
 
@@ -28,14 +28,9 @@ const LocalInitData& LocalInitData::operator = ( const LocalInitData& from )
     _isResident  = from._isResident;
 
     setOctreeFilename(from.getOctreeFilename());
-    setOctreeMaxLevel(from.getOctreeMaxLevel());
 
 	setDataTypeFile(from.getDataTypeFile());
 	setDataFilename(from.getDataFilename());
-	setCubeLevelData(from.getCubeLevelData());
-
-	setMaxCubesCacheCPU(from.getMaxCubesCacheCPU());
-	setMaxCubesCacheGPU(from.getMaxCubesCacheGPU());
 
     return *this;
 }
@@ -50,10 +45,8 @@ bool LocalInitData::parseArguments( const int argc, char** argv )
     ("help", "produce help message")
     ("eq-config", "Select equalizer configuration file")
     ("eq-layout", "Select equalizer layout in configuration file")
-    ("octree-file,o", boost::program_options::value< std::vector<std::string> >()->multitoken(), "octree-file-path maximum-level")
-    ("data-file,d", boost::program_options::value< std::vector<std::string> >()->multitoken(), "type-data-file data-file-path level-cube-data\nType file supported: hdf5_file file-path:data-set-name level-cube-data")
-	("size-cpu-cache,c", boost::program_options::value<int>(), "set size in cubes cpu cache")
-	("size-gpu-cache,g", boost::program_options::value<int>(), "set size in cubes gpu cache")
+    ("octree-file,o", boost::program_options::value< std::vector<std::string> >()->multitoken(), "octree-file-path")
+    ("data-file,d", boost::program_options::value< std::vector<std::string> >()->multitoken(), "type-data-file data-file-path\nType file supported: hdf5_file file-path:data-set-name")
     ;
 
 	boost::program_options::variables_map vm;
@@ -64,89 +57,61 @@ bool LocalInitData::parseArguments( const int argc, char** argv )
 	}
 	catch( ... )
 	{
-        std::cout << desc << "\n";
+        std::cerr << desc << std::endl;
 		return false;
 	}
 
     if (argc == 1 || vm.count("help"))
     {
-        std::cout << desc << "\n";
+        std::cout << desc << std::endl;
 		return false;
     }
     if (vm.count("version"))
     {
-        std::cout << "Version eqMivt: "<<VERSION_EQ_MIVT << "\n";
+        std::cout << "Version eqMivt: "<<VERSION_EQ_MIVT << std::endl;
 		return false;
     }
 
+	bool printHelp = false;
     if (vm.count("octree-file"))
     {
         std::vector<std::string> octreefiles = vm["octree-file"].as< std::vector<std::string> >();
 
-		if (octreefiles.size() != 2)
-		{
-			std::cout <<"octree-file option: octree-file-path<string> maximum-level<int>" << std::endl;
-			return false;
-		}
-
-		setOctreeFilename(octreefiles[0]);
-
-		try
-		{
-			setOctreeMaxLevel(boost::lexical_cast<int>(octreefiles[1]));
-		} 
-		catch( boost::bad_lexical_cast const& )
-		{
-			std::cout <<"octree-file option: octree-file-path<string> maximum-level<int>" << std::endl;
-			return false;
-		}
+		if (octreefiles.size() != 1)
+			printHelp = true;
+		else
+			setOctreeFilename(octreefiles[0]);
     }
     // Parameter needed
     else
     {
 		setOctreeFilename("");
-		setOctreeMaxLevel(0);
-		return false;
+		printHelp = true;
     }
 
 	if (vm.count("data-file"))
 	{
 		std::vector<std::string> dataParam = vm["data-file"].as< std::vector<std::string> >();
 
-		if (dataParam.size() != 3)
+		if (dataParam.size() != 2)
+			printHelp = true;
+		else
 		{
-			LBERROR <<"data-file option: type-file-data<string> file-path<string> level-cube<int>" << std::endl;
-			return false;
-		}
+			setDataTypeFile(dataParam[0]);
 
-		setDataTypeFile(dataParam[0]);
+			std::vector<std::string> fileParams;
+			boost::char_separator<char> sep(":");
+			boost::tokenizer< boost::char_separator<char> > tokensO(dataParam[1], sep);
 
-		std::vector<std::string> fileParams;
-		boost::char_separator<char> sep(":");
-		boost::tokenizer< boost::char_separator<char> > tokensO(dataParam[1], sep);
+			BOOST_FOREACH (const std::string& t, tokensO)
+			{
+				fileParams.push_back(t);
+			}
 
-		BOOST_FOREACH (const std::string& t, tokensO)
-		{
-			fileParams.push_back(t);
-		}
-
-		if (dataParam[0] == "hdf5_file" && fileParams.size() != 2)
-		{
-			LBERROR <<"data-file option: hdf5_file  file-path:data-set-name<string> level-cube<int>" << std::endl;
-			return false;
-
-		}
-
-		setDataFilename(fileParams);
-
-		try
-		{
-			setCubeLevelData(boost::lexical_cast<int>(dataParam[2]));
-		} 
-		catch( boost::bad_lexical_cast const& )
-		{
-			LBERROR <<"data-file option: type-file-data<string> file-path<string> level-cube<int>" << std::endl;
-			return false;
+			if (dataParam[0] == "hdf5_file" && fileParams.size() != 2)
+				printHelp = true;
+			else
+				setDataFilename(fileParams);
 		}
 	}
     // Parameter needed
@@ -155,34 +120,12 @@ bool LocalInitData::parseArguments( const int argc, char** argv )
 		setDataTypeFile("");
 		std::vector<std::string> fileParams;
 		setDataFilename(fileParams);
-		setCubeLevelData(0);
-		return false;
+		printHelp = true;
     }
 
-	if (checkCubeLevels())
-	{
-		LBERROR<<"Cube level have to be <= max level octree"<<std::endl;
-		return false;
-	}
+	if (printHelp)
+        std::cerr << desc << std::endl;
 
-	if (vm.count("size-cpu-cache"))
-	{
-		setMaxCubesCacheCPU(vm["size-cpu-cache"].as<int>() <= 0 ? 1 : vm["size-cpu-cache"].as<int>());
-	}
-	else 
-	{
-		setMaxCubesCacheCPU(0);
-	}
-
-	if (vm.count("size-gpu-cache"))
-	{
-		setMaxCubesCacheGPU(vm["size-gpu-cache"].as<int>() <= 0 ? 1 : vm["size-gpu-cache"].as<int>());
-	}
-	else 
-	{
-		setMaxCubesCacheGPU(0);
-	}
-
-    return true;
+    return !printHelp;
 }
 }

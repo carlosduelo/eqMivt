@@ -9,8 +9,9 @@ Notes:
 #include "config.h"
 
 #include "configEvent.h"
-#include "fileFactory.h"
+#include "octreeManager.h"
 
+#include <math.h>
 #include <boost/filesystem.hpp>
 
 namespace eqMivt
@@ -80,14 +81,25 @@ bool Config::loadData( const eq::uint128_t& initDataID )
     // Check needed files exist
     if (!boost::filesystem::exists(_initData.getOctreeFilename()))
     {
-	    LBERROR << "Cannot open "<<_initData.getOctreeFilename()<< "in level "<<_initData.getOctreeMaxLevel()<<" file."<< std::endl;
+	    LBERROR << "Cannot open "<<_initData.getOctreeFilename()<<" file."<< std::endl;
 	    return false;
     }
     if (!boost::filesystem::exists(_initData.getDataFilename()[0]))
     {
-	    LBERROR << "Cannot open "<<_initData.getDataFilename()[0]<< "in level "<<_initData.getOctreeMaxLevel()<<" file."<< std::endl;
+	    LBERROR << "Cannot open "<<_initData.getDataFilename()[0]<<" file."<< std::endl;
 	    return false;
     }
+
+	// Set camera step
+	vmml::vector<3, int> dimensionVolume = OctreeManager::readDimensionFromFile(_initData.getOctreeFilename());
+	if (dimensionVolume.x() == 0 || dimensionVolume.z() == 0 || dimensionVolume.y() == 0)
+	{
+		return false;
+	}
+	else
+	{
+		_cameraStep = fmaxf(dimensionVolume.x(), fmaxf(dimensionVolume.y(),dimensionVolume.z())) / 1000;
+	}
 
     return true;
 }

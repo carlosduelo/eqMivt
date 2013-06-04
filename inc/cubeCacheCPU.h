@@ -15,50 +15,45 @@ Notes:
 
 #include <lunchbox/lock.h>
 
-#ifdef _BUNORDER_MAP_
-	#include <boost/unordered_map.hpp>
-#else
-	#include <map>
-#endif
+#include <boost/unordered_map.hpp>
 
 namespace eqMivt
 {
 class cubeCacheCPU 
 {
 	private:
-		lunchbox::Lock	lock;
+		lunchbox::Lock	_lock;
 
-		vmml::vector<3, int>	cubeDim;
-		vmml::vector<3, int>	cubeInc;
-		vmml::vector<3, int>	realcubeDim;
-		int	offsetCube;
-		int	levelCube;
-		int	nLevels;
+		vmml::vector<3, int>	_cubeDim;
+		vmml::vector<3, int>	_cubeInc;
+		vmml::vector<3, int>	_realcubeDim;
+		int	_offsetCube;
+		int	_levelCube;
+		int	_nLevels;
 
-		#ifdef _BUNORDER_MAP_
-			boost::unordered_map<index_node_t, NodeLinkedList *> indexStored;
-		#else
-			std::map<index_node_t, NodeLinkedList *> indexStored;
-		#endif
+		boost::unordered_map<index_node_t, NodeLinkedList *>	_indexStored;
+		LinkedList	*											_queuePositions;
 
-		LinkedList	*	queuePositions;
-
-		int			maxElements;
-		float		*	cacheData;
+		int				_maxElements;
+		float		*	_cacheData;
 
 		// Acces to file
-		FileManager	*	fileManager;
+		FileManager	*	_fileManager;
 
 	public:
 
-		bool init(std::string type_file, std::vector<std::string> file_params, int p_maxElements, vmml::vector<3, int> p_cubeDim, int p_cubeInc, int p_levelCube, int p_nLevels);
+		cubeCacheCPU();
 		~cubeCacheCPU();
 
-		vmml::vector<3, int>    getCubeDim(){ return cubeDim; }
-		vmml::vector<3, int>    getCubeInc(){ return cubeInc; }
-		int						getLevelCube(){ return levelCube;}
-		int						getnLevels(){ return nLevels; }
-		vmml::vector<3, int>    getVolumeDim(){ return fileManager->getRealDimension(); }
+		bool init(std::string type_file, std::vector<std::string> file_params, int nLevels);
+		
+		bool reSize(vmml::vector<3, int> cubeDim, int cubeInc, int levelCube, int numElements );
+
+		vmml::vector<3, int>    getCubeDim(){ return _cubeDim; }
+		vmml::vector<3, int>    getCubeInc(){ return _cubeInc; }
+		vmml::vector<3, int>    getRealCubeDim(){ return _realcubeDim; }
+		int						getLevelCube(){ return _levelCube;}
+		int						getnLevels(){ return _nLevels; }
 
 		float *  push_cube(index_node_t  idCube);
 

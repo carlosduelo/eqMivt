@@ -22,14 +22,14 @@ class OctreeContainer
 	private:
 		float 			_isosurface;
 		vmml::vector<3, int>	_realDim;
-		int 			_dimension;
-		int 			_nLevels;
-		int 			_maxLevel;
+		int					_dimension;
+		int					_nLevels;
+		int					_maxLevel;
 
 		index_node_t ** 	_octree;
 		index_node_t * 		_memoryGPU;
-		int	*		_sizes;
-		int			_device;
+		int	*				_sizes;
+		int					_device;
 	public:
 		/* Lee el Octree de un fichero */
 		OctreeContainer(int device);
@@ -37,6 +37,8 @@ class OctreeContainer
 		~OctreeContainer();
 
 		static int getnLevelsFromOctreeFile(std::string file_name);
+
+		static int getmaxLevelFromOctreeFile(std::string file_name);
 
 		static eq::Vector3f  getRealDimFromOctreeFile(std::string file_name);
 

@@ -11,7 +11,6 @@ Notes:
 
 #include "cubeCacheCPU.h"
 
-
 #include "cuda_runtime.h"
 
 namespace eqMivt
@@ -21,39 +20,37 @@ class cubeCacheGPU
 {
 	private:
 		// Acces to file
-		cubeCacheCPU *        	cpuCache;
+		cubeCacheCPU *        	_cpuCache;
 
-		lunchbox::Lock			lock;
+		lunchbox::Lock			_lock;
 
-		vmml::vector<3, int>    cubeDim;
-		vmml::vector<3, int>    cubeInc;
-		vmml::vector<3, int>    realcubeDim;
-		int						offsetCube;
-		int						levelCube;
-		int						nLevels;
+		vmml::vector<3, int>    _cubeDim;
+		vmml::vector<3, int>    _cubeInc;
+		vmml::vector<3, int>    _realcubeDim;
+		int						_offsetCube;
+		int						_levelCube;
+		int						_nLevels;
 
-#ifdef _BUNORDER_MAP_
-		boost::unordered_map<index_node_t, NodeLinkedList *> indexStored;
-#else
-		std::map<index_node_t, NodeLinkedList *> indexStored;
-#endif
+		boost::unordered_map<index_node_t, NodeLinkedList *> _indexStored;
 
-		LinkedList      *       queuePositions;
+		LinkedList      *       _queuePositions;
 
-		int                     maxElements;
-		float           *       cacheData;
+		int                     _maxElements;
+		float           *       _cacheData;
 
 	public:
 		cubeCacheGPU();
 
 		~cubeCacheGPU();
 
-		vmml::vector<3, int>    getCubeDim(){ return cubeDim; }
-		vmml::vector<3, int>    getCubeInc(){ return cubeInc; }
-		int						getLevelCube(){ return levelCube;}
-		int						getnLevels(){ return nLevels; }
+		vmml::vector<3, int>    getCubeDim(){ return _cubeDim; }
+		vmml::vector<3, int>    getCubeInc(){ return _cubeInc; }
+		int						getLevelCube(){ return _levelCube;}
+		int						getnLevels(){ return _nLevels; }
 
-		bool init(cubeCacheCPU * p_cpuCache, int p_maxElements);
+		bool init(cubeCacheCPU * cpuCache);
+
+		bool reSize(vmml::vector<3, int> cubeDim, int cubeInc, int levelCube, int numElements);
 
 		float * push_cube(index_node_t idCube, cudaStream_t stream);
 

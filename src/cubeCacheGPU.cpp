@@ -7,6 +7,7 @@ Notes:
  */
 
 #include <cubeCacheGPU.h>
+#include <mortonCodeUtil_CPU.h>
 
 namespace eqMivt
 {
@@ -29,54 +30,86 @@ namespace eqMivt
 
 cubeCacheGPU::cubeCacheGPU()
 {
+	_cpuCache = 0;
+	_cubeDim.set(0,0,0);
+	_cubeInc.set(0,0,0);
+	_realcubeDim.set(0,0,0);
+	_offsetCube = 0;
+	_levelCube = 0;
+	_nLevels = 0;
+
+	_queuePositions = 0;
+
+	_maxElements = 0;
+	_cacheData = 0;
 }
 
 cubeCacheGPU::~cubeCacheGPU()
 {
-	delete queuePositions;
-	cudaFree(cacheData);
+	if (_queuePositions != 0)
+		delete _queuePositions;
+	if (_cacheData!=0)
+		cudaFree(_cacheData);
 }
 
-bool cubeCacheGPU::init(cubeCacheCPU * p_cpuCache, int p_maxElements)
+bool cubeCacheGPU::init(cubeCacheCPU * cpuCache)
 {
-	cpuCache 	= p_cpuCache;
+	_cpuCache= cpuCache;
+	_nLevels = _cpuCache->getnLevels(); 
+
+}
+
+bool cubeCacheGPU::reSize(vmml::vector<3, int> cubeDim, int cubeInc, int levelCube, int numElements)
+{
+	if (_cpuCache->getLevelCube() > levelCube)
+	{
+		LBERROR << "Cache GPU: level cube in gpu cache has to be >= level cube in cache CPU"<<std::endl;
+		return false;
+	}
+
+	if (levelCube == _levelCube)
+		return true;
 
 	// cube size
-	cubeDim         = cpuCache->getCubeDim();
-	cubeInc         = cpuCache->getCubeInc(); 
-	realcubeDim     = cubeDim + 2 * cubeInc.x();
-	levelCube       = cpuCache->getLevelCube();
-	nLevels         = cpuCache->getnLevels();
-	offsetCube      = (cubeDim.x()+2*cubeInc.x())*(cubeDim.y()+2*cubeInc.y())*(cubeDim.z()+2*cubeInc.z());
+	_cubeDim 	= cubeDim;
+	_cubeInc.set(cubeInc,cubeInc,cubeInc);
+	_realcubeDim	= cubeDim + 2 * cubeInc;
+	_levelCube	= levelCube;
+	_offsetCube	= (_cubeDim.x()+2*_cubeInc.x())*(_cubeDim.y()+2*_cubeInc.y())*(_cubeDim.z()+2*_cubeInc.z());
 
-	if (p_maxElements == 0)
+	if (numElements == 0)
 	{
 		size_t total = 0;
 		size_t free = 0;
 
 		if (cudaSuccess != cudaMemGetInfo(&free, &total))
 		{
-			LBERROR<<"LRUCache: Error getting memory info"<<std::endl;
+			LBERROR<<"Cache GPU: Error getting memory info"<<std::endl;
 			return false;
 		}
 
 		float freeS = (8.0f*free)/10.0f; // Get 80% of free memory
-		maxElements = freeS / (float)(offsetCube*sizeof(float));
-		std::cout << total/1024/1024 <<" "<<free /1024/1024<< " "<<freeS/1024/1024<<" " <<maxElements<<std::endl;
+		_maxElements = freeS / (float)(_offsetCube*sizeof(float));
+		LBINFO << total/1024/1024 <<" "<<free /1024/1024<< " "<<freeS/1024/1024<<" " <<_maxElements<<std::endl;
 	}
 	else
 	{
-		maxElements	= p_maxElements;
+		_maxElements	= numElements;
 	}
 
-	// Creating caches
-	queuePositions  = new LinkedList(maxElements);
+	_indexStored.clear();
 
+	if (_queuePositions != 0)
+		delete _queuePositions;
+	_queuePositions  = new LinkedList(_maxElements);
+
+	if (_cacheData!=0)
+		cudaFree(_cacheData);
 	// Allocating memory                                                                            
-	LBINFO<<"Creating cache in GPU: "<< maxElements*offsetCube*sizeof(float)/1024/1024<<" MB"<<std::endl;
-	if (cudaSuccess != cudaMalloc((void**)&cacheData, maxElements*offsetCube*sizeof(float)))
+	LBINFO<<"Creating cache in GPU: "<< _maxElements*_offsetCube*sizeof(float)/1024/1024<<" MB"<<std::endl;
+	if (cudaSuccess != cudaMalloc((void**)&_cacheData, _maxElements*_offsetCube*sizeof(float)))
 	{                                                                                               
-		LBERROR<<"LRUCache: Error creating gpu cache"<<std::endl;
+		LBERROR<<"Cache GPU: Error creating gpu cache"<<std::endl;
 		return false;                                                                                  
 	}       
 
@@ -85,66 +118,83 @@ bool cubeCacheGPU::init(cubeCacheCPU * p_cpuCache, int p_maxElements)
 
 float * cubeCacheGPU::push_cube(index_node_t idCube, cudaStream_t stream)
 {
-#ifdef _BUNORDER_MAP_
 	boost::unordered_map<index_node_t, NodeLinkedList *>::iterator it;
-#else
-	std::map<index_node_t, NodeLinkedList *>::iterator it;
-#endif
 
-	lock.set();
+	_lock.set();
 
 	float * cube = 0;
 
 	// Find the cube in the GPU cache
-	it = indexStored.find(idCube);
-	if ( it != indexStored.end() ) // If exist
+	it = _indexStored.find(idCube);
+	if ( it != _indexStored.end() ) // If exist
 	{
 		NodeLinkedList * node = it->second;
 
 		unsigned pos    = node->element;
-		cube    = cacheData + pos*offsetCube;
+		cube    = _cacheData + pos*_offsetCube;
 
-		queuePositions->moveToLastPosition(node);
-		queuePositions->addReference(node);
+		_queuePositions->moveToLastPosition(node);
+		_queuePositions->addReference(node);
 	}
 	else // If not exists
 	{
 		index_node_t     removedCube = (index_node_t)0;
-		NodeLinkedList * node = queuePositions->getFirstFreePosition(idCube, &removedCube);
+		NodeLinkedList * node = _queuePositions->getFirstFreePosition(idCube, &removedCube);
 
 		if (node != NULL)
 		{
+			index_node_t idCubeCPU = idCube >> 3*(_levelCube - _cpuCache->getLevelCube()); 
 			// Search in cpu cache and check as locked
-			float * pCube = cpuCache->push_cube(idCube);
+			float * pCube = _cpuCache->push_cube(idCubeCPU);
 
 			// search on CPU cache
 			if (pCube != NULL)
 			{
-				indexStored.insert(std::pair<int, NodeLinkedList *>(idCube, node));
+				_indexStored.insert(std::pair<int, NodeLinkedList *>(idCube, node));
 				if (removedCube!= (index_node_t)0)
-					indexStored.erase(indexStored.find(removedCube));
+					_indexStored.erase(_indexStored.find(removedCube));
 
-				queuePositions->moveToLastPosition(node);
-				queuePositions->addReference(node);
+				_queuePositions->moveToLastPosition(node);
+				_queuePositions->addReference(node);
 
 				unsigned pos   = node->element;
-				cube    = cacheData + pos*offsetCube;
+				cube    = _cacheData + pos*_offsetCube;
 
-				if (cudaSuccess != cudaMemcpyAsync((void*) cube, (void*) pCube, offsetCube*sizeof(float), cudaMemcpyHostToDevice, stream))
+				if (idCube == idCubeCPU)
 				{
-					std::cerr<<"Cache GPU_CPU_File: error copying to a device "<<cube<<" "<<pCube<<" "<<offsetCube<<std::endl;
-					throw;
+					if (cudaSuccess != cudaMemcpyAsync((void*) cube, (void*) pCube, _offsetCube*sizeof(float), cudaMemcpyHostToDevice, stream))
+					{
+						LBERROR<<"Cache GPU: error copying to a device "<<cube<<" "<<pCube<<" "<<_offsetCube<<std::endl;
+						throw;
+					}
+				}
+				else
+				{
+					vmml::vector<3, int> realDimCPU = _cpuCache->getRealCubeDim();	
+					size_t spitch = _realcubeDim.y()*_realcubeDim.z()*sizeof(float);
+					size_t width = _realcubeDim.y()*_realcubeDim.z();
+					size_t height = _realcubeDim.x();
+					size_t dpitch = realDimCPU.y()*realDimCPU.z()*sizeof(float);
+
+					vmml::vector<3, int> coord = getMinBoxIndex2(idCube, _levelCube, _nLevels);
+					pCube += (coord.z() + coord.y()*realDimCPU.z() + coord.x()*realDimCPU.z()*realDimCPU.y()); 
+
+					if (cudaSuccess != cudaMemcpy2DAsync((void*)cube, dpitch, (const void*)pCube, spitch, width, height, cudaMemcpyHostToDevice, stream))
+					{
+						LBERROR<<"Cache GPU: error copying to a device "<<cube<<" "<<pCube<<" "<<_offsetCube<<std::endl;
+						throw;
+					}
+
 				}
 
 				// Unlock the cube on cpu cache
-
 				callback_struct_t * callBackData = new callback_struct_t;
-				callBackData->cpuCache = cpuCache;
-				callBackData->idCube = idCube;
+				callBackData->cpuCache = _cpuCache;
+				callBackData->idCube = idCubeCPU;
 
 				if ( cudaSuccess != cudaStreamAddCallback(stream, unLockCPUCube, (void*)callBackData, 0))
 				{
-					std::cerr<<"Error making cudaCallback"<<std::endl;
+					LBERROR<<"Error making cudaCallback"<<std::endl;
 					throw;
 				}
 
@@ -153,37 +203,34 @@ float * cubeCacheGPU::push_cube(index_node_t idCube, cudaStream_t stream)
 		}
 		else // there is no free slot
 		{
+			return 0;
 		}
 	}
 
-	lock.unset();
+	_lock.unset();
 
 	return cube;
 }
 
 void  cubeCacheGPU::pop_cube(index_node_t idCube)
 {
-#ifdef _BUNORDER_MAP_
 	boost::unordered_map<index_node_t, NodeLinkedList *>::iterator it;
-#else
-	std::map<index_node_t, NodeLinkedList *>::iterator it;
-#endif
 
-	lock.set();
+	_lock.set();
 
 	// Find the cube in the GPU cache
-	it = indexStored.find(idCube);
-	if ( it != indexStored.end() ) // If exist remove reference
+	it = _indexStored.find(idCube);
+	if ( it != _indexStored.end() ) // If exist remove reference
 	{
 		NodeLinkedList * node = it->second;
-		queuePositions->removeReference(node);
+		_queuePositions->removeReference(node);
 	}
 	else
 	{
-		std::cerr<<"Cache is unistable"<<std::endl;
+		LBERROR<<"Cache GPU: is unistable"<<std::endl;
 		throw;
 	}
 
-	lock.unset();
+	_lock.unset();
 }
 }

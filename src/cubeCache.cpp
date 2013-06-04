@@ -11,31 +11,28 @@ Notes:
 namespace eqMivt
 {
 
-
-bool cubeCache::init(cubeCacheCPU * p_cpuCache, int p_numWorkers, int p_maxElements)
-{
-#ifdef _BUNORDER_MAP_
-	insertedCubes = new boost::unordered_map<index_node_t, cacheElement_t >[p_numWorkers];
-#else
-	insertedCubes = new std::map<index_node_t, cacheElement_t >[p_numWorkers];
-#endif
-
-	return cache.init(p_cpuCache, p_maxElements);	
-
-}
-
 cubeCache::~cubeCache()
 {
-	delete[] insertedCubes;
+	delete[] _insertedCubes;
 }
+
+bool cubeCache::init(cubeCacheCPU * cpuCache, int numWorkers)
+{
+	_insertedCubes = new boost::unordered_map<index_node_t, cacheElement_t >[numWorkers];
+
+	return _cache.init(cpuCache);
+
+}
+
+bool cubeCache::reSize(vmml::vector<3, int> cubeDim, int cubeInc, int levelCube, int numElements)
+{
+	return _cache.reSize(cubeDim, cubeInc, levelCube, numElements);
+}
+
 
 bool cubeCache::push(visibleCube_t * visibleCubes, int *indexCube, int * num, int octreeLevel, int threadID, cudaStream_t stream)
 {
-#ifdef _BUNORDER_MAP_
 	boost::unordered_map<index_node_t, cacheElement_t>::iterator it;
-#else
-	std::map<index_node_t, cacheElement_t>::iterator it;
-#endif
 
 	int nextIndex	= 0;
 
@@ -47,12 +44,12 @@ bool cubeCache::push(visibleCube_t * visibleCubes, int *indexCube, int * num, in
 		{
 			if (visibleCubes[index].state == NOCACHED || visibleCubes[index].state == CUBE)
 			{
-				index_node_t idCube = visibleCubes[index].id >> (3*(octreeLevel - cache.getLevelCube()));
+				index_node_t idCube = visibleCubes[index].id >> (3*(octreeLevel - _cache.getLevelCube()));
 
-				it = insertedCubes[threadID].find(idCube);
-				if (it == insertedCubes[threadID].end()) // If does not exist, do not push again
+				it = _insertedCubes[threadID].find(idCube);
+				if (it == _insertedCubes[threadID].end()) // If does not exist, do not push again
 				{
-					float * cubeData = cache.push_cube(idCube, stream);
+					float * cubeData = _cache.push_cube(idCube, stream);
 
 					visibleCubes[index].cubeID  = idCube;
 					visibleCubes[index].state   = cubeData == 0 ? NOCACHED : CACHED;
@@ -63,7 +60,7 @@ bool cubeCache::push(visibleCube_t * visibleCubes, int *indexCube, int * num, in
 					newCube.state = cubeData == 0 ? NOCACHED : CACHED;
 					newCube.data = cubeData;
 
-					insertedCubes[threadID].insert(std::pair<index_node_t, cacheElement_t>(idCube, newCube));
+					_insertedCubes[threadID].insert(std::pair<index_node_t, cacheElement_t>(idCube, newCube));
 				}
 				else
 				{
@@ -86,24 +83,20 @@ bool cubeCache::push(visibleCube_t * visibleCubes, int *indexCube, int * num, in
 
 void cubeCache::pop(visibleCube_t * visibleCubes, int * indexCube, int num, int octreeLevel, int threadID, cudaStream_t stream)
 {
-#ifdef _BUNORDER_MAP_
 	boost::unordered_map<index_node_t, cacheElement_t>::iterator it;
-#else
-	std::map<index_node_t, cacheElement_t>::iterator it;
-#endif
 
-	it = insertedCubes[threadID].begin();
+	it = _insertedCubes[threadID].begin();
 
-	while(it != insertedCubes[threadID].end())
+	while(it != _insertedCubes[threadID].end())
 	{
 		if (it->second.state == CACHED)
 		{
-			cache.pop_cube(it->second.cubeID);
+			_cache.pop_cube(it->second.cubeID);
 		}
 		it++;
 	}
 
-	insertedCubes[threadID].clear();
+	_insertedCubes[threadID].clear();
 
 }
 
