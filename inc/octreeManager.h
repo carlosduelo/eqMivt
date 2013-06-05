@@ -10,9 +10,11 @@ Notes:
 #define EQ_MIVT_OCTREE_MANAGER_H
 
 #include <typedef.h>
+#include <octree.h>
 
 #include <eq/eq.h>
 
+#include <map>
 #include <string>
 #include <iostream>
 #include <fstream>
@@ -40,6 +42,8 @@ class OctreeManager
 		index_node_t ** _octreeData;
 		int _currentOctree;
 
+		std::map<int , Octree *>   _octrees;
+
 		/* private methods */
 		void _readCurrentOctree();
 	public:
@@ -64,10 +68,9 @@ class OctreeManager
 		int	getMaxHeight() { return _maxHeight[_currentOctree]; }
 		int getBestCubeLevel(){ return _cubeCacheLevel[_currentOctree]; }
 
-		#if 0
-		void setCurrentOctree(int currentOctree);
-		void cpyOctreeToDevice(int device);
-		#endif
+		bool setCurrentOctree(int currentOctree);
+
+		Octree * getOctree(int device);
 };
 }
 #endif /*EQ_MIVT_OCTREE_MANAGER_H*/

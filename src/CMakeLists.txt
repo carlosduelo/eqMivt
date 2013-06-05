@@ -9,9 +9,9 @@ set(MIVT_SOURCE
 		cubeCacheGPU.cpp
 		cubeCache.cpp
 		cacheManager.cpp
+		octree.cpp
 		octreeManager.cpp
 		octreeContainer.cpp
-		octree.cpp
 		render.cpp
 		linkedList.cpp
 		rayCaster.cpp

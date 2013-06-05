@@ -588,4 +588,125 @@ __global__ void cuda_getFirtsVoxel(index_node_t ** octree, int * sizes, int nLev
 
 }
 
+/*
+ ******************************************************************************************************
+ ************ METHODS OCTREE CUDA CREATE **************************************************************
+ ******************************************************************************************************
+ */
+
+__global__ void insertOctreePointers(index_node_t ** octreeGPU, int * sizes, index_node_t * memoryGPU)
+{
+	int offset = 0;
+	for(int i=0;i<threadIdx.x; i++)
+		offset+=sizes[i];
+
+	octreeGPU[threadIdx.x] = &memoryGPU[offset];
+}
+
+
+
+bool Create_Octree(int device, index_node_t ** octreeCPU, int * sizesCPU, int maxLevel, index_node_t *** octree, index_node_t ** memoryGPU, int ** sizes)
+{
+
+	// Creating sizes
+	if ((*sizes) == 0)
+	{
+		std::cout<< "Allocating memory octree CUDA sizes "<<(maxLevel+1)*sizeof(int)/1024.0f/1024.0f<< " MB:"<<std::endl;
+		if (cudaSuccess != (cudaMalloc(sizes,   (maxLevel+1)*sizeof(int))))
+		{
+			std::cout<< "Octree: error allocating octree in the gpu"<<std::endl;
+			return false;
+		}
+		else
+			std::cout<<"OK"<<std::endl;
+	}
+	std::cout<< "Octree: coping to device the sizes ";
+	if (cudaSuccess != (cudaMemcpy((void*)*sizes, (void*)sizesCPU, (maxLevel+1)*sizeof(int), cudaMemcpyHostToDevice)))
+	{
+		std::cout<< "Fail"<<std::endl;
+		return false;
+	}
+	else
+		std::cout<< "OK"<<std::endl;
+
+	// Create octree
+	if ((*octree) == 0)
+	{
+		std::cout<< "Allocating memory octree CUDA octree "<<(maxLevel+1)*sizeof(index_node_t*)/1024.0f/1024.0f<< " MB: ";
+		if (cudaSuccess != (cudaMalloc(octree, (maxLevel+1)*sizeof(index_node_t*))))
+		{
+			std::cout<< "Octree: error allocating octree in the gpu"<<std::endl;
+			return false;
+		}
+		else
+			std::cout<<"OK"<<std::endl;
+	}
+
+	int total = 0;
+	for(int i=0; i<=maxLevel; i++)
+		total+=sizesCPU[i];
+
+	if ((*memoryGPU) != 0)
+	{
+		if (cudaSuccess != cudaFree(*memoryGPU))
+		{
+			std::cout<<"Error creating octree"<<std::endl;
+			return false;
+		}
+	}
+
+	std::cout<< "Allocating memory octree CUDA memory "<< total*sizeof(index_node_t)/1024.0f/1024.0f<< " MB: ";
+	if (cudaSuccess != (cudaMalloc(memoryGPU, total*sizeof(index_node_t))))
+	{
+		std::cout<< "Octree: error allocating octree in the gpu"<<std::endl;
+		return false;
+	}
+
+	/* Copying octree */
+	int offset = 0;
+	for(int i=0; i<=maxLevel; i++)
+	{
+		std::cout<< "Coping to device level "<< i<<": ";
+		if (cudaSuccess != (cudaMemcpy((void*)((*memoryGPU)+offset), (void*)octreeCPU[i], sizesCPU[i]*sizeof(index_node_t), cudaMemcpyHostToDevice)))
+		{
+			std::cout<<"Fail"<<std::endl;;
+			return false;
+		}
+		else
+			std::cout<< "OK"<<std::endl;
+
+		offset+=sizesCPU[i];
+	}
+
+	dim3 blocks(1);
+	dim3 threads(maxLevel+1);
+
+	insertOctreePointers<<<blocks,threads>>>(*octree, *sizes,*memoryGPU);
+	std::cout<< "Octree: sorting pointers ";
+	if (cudaSuccess != cudaDeviceSynchronize())
+	{
+		std::cout<< "Fail"<<std::endl;
+		return false;
+	}
+	else
+		std::cout<< "OK"<<std::endl;
+
+	std::cout<< "End copying octree to GPU"<<std::endl;
+
+	return true;
+}
+
+
+bool Destroy_Octree(int device, index_node_t ** octree, index_node_t * memoryGPU, int * sizes)
+{
+
+	if (memoryGPU != 0)
+		cudaFree(memoryGPU);
+	if (octree != 0)
+		cudaFree(octree);
+	if (sizes != 0)
+		cudaFree(sizes);
+
+	return true;
+}
 }

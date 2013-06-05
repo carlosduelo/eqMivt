@@ -80,11 +80,14 @@ CacheHandler CacheManager::getCache(int device)
 	if (itC == _caches.end())
 	{
 		eqMivt::cubeCache * c = new cubeCache();
-		c->init(_cubeCacheCPU, MAX_WORKERS);
-		c->reSize(_cubeDim, _cubeInc, _levelCube, _numElements); 
-		_caches[device]  = c;
-		_ids[device] = 0;
-		result.set(c, 0);
+		if (c->init(_cubeCacheCPU, MAX_WORKERS) && c->reSize(_cubeDim, _cubeInc, _levelCube, _numElements))
+		{
+			_caches[device]  = c;
+			_ids[device] = 0;
+			result.set(c, 0);
+		}
+		else
+			result.set(0,0);
 	}
 	else
 	{
