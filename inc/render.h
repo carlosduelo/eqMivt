@@ -26,15 +26,13 @@ namespace eqMivt
     class Render 
     {
 	private:
-
-		int _id;
 		std::string	_name;
 	
 	    bool _init;
 
-		Octree		_octree;
-		cubeCache * _cache;
-		rayCaster	_raycaster;
+		Octree		*	_octree;
+		CacheHandler	_cache;
+		rayCaster		_raycaster;
 
 	    int  _height;
 	    int  _width;
@@ -44,18 +42,17 @@ namespace eqMivt
 		int	*			_indexVisibleCubesGPU;
 		int	*			_indexVisibleCubesCPU;
 
-
   	    struct cudaGraphicsResource * _cuda_pbo_resource;
     
-   	    cudaStream_t _stream;
-		struct  cudaDeviceProp _cudaProp;
+   	    cudaStream_t			_stream;
+		struct  cudaDeviceProp	_cudaProp;
 
 	    void _CreateVisibleCubes();
 	    void _DestroyVisibleCubes();
 
 		// Statistics
 		std::ofstream *		_outputFile;
-		bool	_statistics;
+		bool				_statistics;
 		lunchbox::Clock		_resizeClock;
 		int					_resizeTimes;
 		double				_resizeAccum;
@@ -90,7 +87,13 @@ namespace eqMivt
 
 	    bool checkCudaResources();
 
-		void setCudaResources(OctreeContainer * oc, cubeCache * cc, int id, std::string name);
+		void setOctree(Octree * oc); 
+
+		CacheHandler * getCacheHandler() { return &_cache; }
+
+		void setName(std::string name);
+
+		void updateParamenters(int maxHeight);
 
 		void setStatistics(bool stat);
 

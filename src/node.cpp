@@ -12,6 +12,7 @@ Notes:
 #include "error.h"
 
 #define MAX_WORKERS 32
+#define CUBE_INC 2
 
 namespace eqMivt
 {
@@ -31,139 +32,63 @@ namespace eqMivt
 			return false;
 		}
 
-		_initCubeCacheCPU = false;
-		_idPipes = 0;
+		// Init cpu Cache
+		const InitData& initData = config->getInitData();
 
-		return true;
+		_status = true;
+
+		_status =	_octreeManager.init(initData.getOctreeFilename()) &&  
+					_cacheManager.init(initData.getDataTypeFile(), initData.getDataFilename(), _octreeManager.getNLevels(), CUBE_INC); 
+
+		return _status;
 	}
 
 	bool Node::configExit()
 	{
-	    for (std::map<int , eqMivt::OctreeContainer *>::iterator it = _octrees.begin(); it!=_octrees.end(); it++)
-	        delete it->second;
-
-	    for (std::map<int , eqMivt::cubeCache *>::iterator it = _caches.begin(); it!=_caches.end(); it++)
-	        delete it->second;
+		return eq::Node::configExit();
 	}
 	
-	vmml::vector<3, int>    Node::getVolumeDim()
+	vmml::vector<3, int>    Node::getCurrentVolumeDim()
 	{ 
-	    _lock.set();
-
-		if (!_initCubeCacheCPU)
-		{
-			// Init cpu Cache
-			Config* config = static_cast< Config* >( getConfig( ));
-			const InitData& initData = config->getInitData();
-
-			vmml::vector<3, int> cubeDim;
-			int nLevels = OctreeContainer::getnLevelsFromOctreeFile(initData.getOctreeFilename());
-			int cDim = exp2(nLevels - initData.getCubeLevelData());
-			cubeDim.set(cDim, cDim, cDim);
-
-			if (!_cubeCacheCPU.init(initData.getDataTypeFile(), initData.getDataFilename(), initData.getMaxCubesCacheCPU(), cubeDim, 2 ,initData.getCubeLevelData(), nLevels ))
-			{
-				setError( ERROR_EQ_MIVT_FAILED );
-				vmml::vector<3, int> erResul; erResul.set(-1,-1,-1);
-				return erResul;
-			}
-			_initCubeCacheCPU = true;
-		}
-	    _lock.unset();
-
-		return _cubeCacheCPU.getVolumeDim(); 
+		return _octreeManager.getCurrentRealDim(); 
 	}
 
-	bool Node::registerPipeResources(int device)
+	Octree *	Node::getOctree(int device)
 	{
-	    _lock.set();
-
-		if (!_initCubeCacheCPU)
+		if (_status)
 		{
-			// Init cpu Cache
-			Config* config = static_cast< Config* >( getConfig( ));
-			const InitData& initData = config->getInitData();
-
-			vmml::vector<3, int> cubeDim;
-			int nLevels = OctreeContainer::getnLevelsFromOctreeFile(initData.getOctreeFilename());
-			int cDim = exp2(nLevels - initData.getCubeLevelData());
-			cubeDim.set(cDim, cDim, cDim);
-
-			if (!_cubeCacheCPU.init(initData.getDataTypeFile(), initData.getDataFilename(), initData.getMaxCubesCacheCPU(), cubeDim, 2 ,initData.getCubeLevelData(), nLevels ))
-			{
-				setError( ERROR_EQ_MIVT_FAILED );
-				return false;
-			}
-			_initCubeCacheCPU = true;
+			Octree * o = _octreeManager.getOctree(device);
+			_status = o == 0 ? false : true;
+			return o;
 		}
+	}
 
-	    // Check octree
-	    std::map<int , eqMivt::OctreeContainer *>::iterator it;
-	    it = _octrees.find(device);
-
-	    if (it ==  _octrees.end())
-	    {
-	        _octrees[device] = new eqMivt::OctreeContainer(device);
+	bool Node::getCacheHandler(int device, CacheHandler * cacheHandler)
+	{
+		if (_status)
+			_status = _cacheManager.getCache(device, cacheHandler);
 		
-			Config* config = static_cast< Config* >( getConfig( ));
-			const InitData& initData = config->getInitData();
-
-			if (!_octrees[device]->readOctreeFile(initData.getOctreeFilename(), initData.getOctreeMaxLevel()))
-			{
-				LBERROR<<"Error: creating octree in node"<<std::endl;
-				_lock.unset();
-				return false;
-			}
-	    }
-		
-		std::map<int , eqMivt::cubeCache *>::iterator itC;
-		itC = _caches.find(device);
-
-		if (itC == _caches.end())
+		return _status;
+	}
+	
+	bool Node::checkStatus(int device, CacheHandler * cacheHandler, int currentOctree)
+	{
+		if (_status)
 		{
-			_caches[device] = new eqMivt::cubeCache();
+			// Octree set Current Octree
+			_status = _octreeManager.setCurrentOctree(currentOctree);
 
-			Config* config = static_cast< Config* >( getConfig( ));
-			const InitData& initData = config->getInitData();
+			// Set Size cache manager for CPU
+			int levelCube = _octreeManager.getBestCubeLevel();
+			int numElements = 0; // COGER DE INITPARAMS
+			int numElementsCPU = 0; //COGER DE INITPARAMS
+			int levelDif  = 0; //FUTURO
+			_status = _status && _cacheManager.reSize(levelCube, numElements, numElementsCPU, levelDif);
 
-			if (!_caches[device]->init(&_cubeCacheCPU, MAX_WORKERS, initData.getMaxCubesCacheGPU()))
-			{
-				LBERROR<<"Error: creating cache in node"<<std::endl;
-				_lock.unset();
-				return false;
-			}
-
+			_status = _status	&& _octreeManager.checkStatus(device) 
+								&& _cacheManager.checkStatus(cacheHandler);
 		}
-	    
-	    _lock.unset();
-	    return true;
-	}
-
-	OctreeContainer * Node::getOctreeContainer(int device)
-	{
-	    std::map<int , eqMivt::OctreeContainer *>::iterator it;
-	    it = _octrees.find(device);
-
-	    if (it ==  _octrees.end())
-			return 0;
-		else
-			return _octrees[device];
-	}
-
-	cubeCache *	Node::getCubeCache(int device)
-	{
-		std::map<int , eqMivt::cubeCache *>::iterator itC;
-		itC = _caches.find(device);
-
-		if (itC == _caches.end())
-			return 0;
-		else
-			return _caches[device];
-	}
-
-	int			Node::getNewId()
-	{
-		return _idPipes++;
+		return _status;
 	}
 
 }

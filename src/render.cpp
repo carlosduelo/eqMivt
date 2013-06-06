@@ -18,6 +18,8 @@ Render::Render()
 {
     _init = false;
 
+	_octree = 0;
+
     _height = 0;
     _width = 0;
 
@@ -130,6 +132,7 @@ void Render::resizeViewport(int width, int height, GLuint pbo)
 
 bool Render::checkCudaResources()
 {
+	_init =  _octree != 0 && _cache.isValid();
     return _init;
 }
 
@@ -148,13 +151,19 @@ void Render::printCudaProperties()
 	std::cout<<_cudaProp.name<<std::endl;
 }
 
-void Render::setCudaResources(OctreeContainer * oc, cubeCache * cc, int id, std::string name)
+void Render::setOctree(Octree * oc)
 {
-    _octree.setOctree(oc);
-	_cache = cc;
-	_id  = id;
-	_raycaster.setIsosurface(oc->getIsosurface());
-	_init = true;
+	_octree = oc;	
+	_raycaster.setIsosurface(_octree->getIsosurface());
+	//Set la altura en raycaster
+}
+
+void Render::updateParamenters(int maxHeight)
+{
+}
+
+void Render::setName(std::string name)
+{
 	_name = name + "-Render";
 }
 
@@ -214,7 +223,7 @@ void Render::frameDraw(eq::Vector4f origin, eq::Vector4f LB, eq::Vector4f up, eq
 		_octreeTimes++;
 		_octreeClock.reset();
 
-		_octree.getBoxIntersected(origin, LB, up, right, w, h, pvpW, pvpH, _visibleCubesGPU, _visibleCubesCPU, numPixels, _indexVisibleCubesGPU, _indexVisibleCubesCPU, _stream);
+		_octree->getBoxIntersected(origin, LB, up, right, w, h, pvpW, pvpH, _visibleCubesGPU, _visibleCubesCPU, numPixels, _indexVisibleCubesGPU, _indexVisibleCubesCPU, _stream);
 
 		cudaMemcpyAsync((void*) _visibleCubesCPU, (const void*) _visibleCubesGPU, pvpW*pvpH*sizeof(visibleCube_t), cudaMemcpyDeviceToHost, _stream);
 
@@ -230,7 +239,7 @@ void Render::frameDraw(eq::Vector4f origin, eq::Vector4f LB, eq::Vector4f up, eq
 		_cachePushTimes++;
 		_cachePushClock.reset();
 
-		if(!_cache->push(_visibleCubesCPU, _indexVisibleCubesCPU, &numPixels, _octree.getOctreeLevel(), _id, _stream))
+		if(!_cache.push(_visibleCubesCPU, _indexVisibleCubesCPU, &numPixels, _octree->getOctreeLevel(), _stream))
 		{
 			break;
 		}
@@ -280,10 +289,10 @@ void Render::frameDraw(eq::Vector4f origin, eq::Vector4f LB, eq::Vector4f up, eq
 		_rayCastingTimes++;
 		_rayCastingClock.reset();
 
-		vmml::vector<3, int> cDim = _cache->getCubeDim();
-		vmml::vector<3, int> cInc = _cache->getCubeInc();
+		vmml::vector<3, int> cDim = _cache.getCubeDim();
+		vmml::vector<3, int> cInc = _cache.getCubeInc();
 
-		_raycaster.render(origin, LB, up, right, w, h, pvpW, pvpH, numPixels, _octree.getOctreeLevel(), _cache->getCacheLevel(), _octree.getnLevels(), _visibleCubesGPU,  _indexVisibleCubesGPU, make_int3(cDim.x(), cDim.y(), cDim.z()), make_int3(cInc.x(), cInc.y(), cInc.z()), pixelBuffer, _stream);
+		_raycaster.render(origin, LB, up, right, w, h, pvpW, pvpH, numPixels, _octree->getOctreeLevel(), _cache.getCacheLevel(), _octree->getnLevels(), _visibleCubesGPU,  _indexVisibleCubesGPU, make_int3(cDim.x(), cDim.y(), cDim.z()), make_int3(cInc.x(), cInc.y(), cInc.z()), pixelBuffer, _stream);
 
 		if (_statistics)
 			if (cudaSuccess != cudaStreamSynchronize(_stream))
@@ -300,7 +309,7 @@ void Render::frameDraw(eq::Vector4f origin, eq::Vector4f LB, eq::Vector4f up, eq
 		_cachePopTimes++;
 		_cachePopClock.reset();
 
-		_cache->pop(_visibleCubesCPU, _indexVisibleCubesCPU, numPixels, _octree.getOctreeLevel(), _id, _stream);
+		_cache.pop(_visibleCubesCPU, _indexVisibleCubesCPU, numPixels, _octree->getOctreeLevel(), _stream);
 		time = _cachePopClock.getTimed();
 		_cachePopAccum += time;
 		timeCp += time;

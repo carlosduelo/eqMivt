@@ -33,7 +33,7 @@ class cubeCache
 	public:
 		~cubeCache();
 
-		bool init(cubeCacheCPU * cpuCache, int numWorkers);
+		bool init(cubeCacheCPU * cpuCache, int numWorkers, int device);
 
 		bool reSize(vmml::vector<3, int> cubeDim, int cubeInc, int levelCube, int numElements);
 
@@ -55,15 +55,24 @@ class CacheHandler
 		cubeCache * _cache;
 		int			_id;
 	public:
+		CacheHandler()
+		{
+			_cache = 0;
+			_id = -1;
+		}
 		void set(cubeCache * cache, int id)
 		{
 			_cache = cache;
 			_id = id;
 		}
+		bool isValid() { return _cache != 0; }
 		int getCacheLevel() {return _cache->getCacheLevel(); }
 		vmml::vector<3, int> getCubeDim(){ return _cache->getCubeDim(); }
 		vmml::vector<3, int> getCubeInc(){ return _cache->getCubeInc(); } 
-		// Return true if exist some petition and false otherwise
+		bool reSize(vmml::vector<3, int> cubeDim, int cubeInc, int levelCube, int numElements)
+		{
+			return _cache->reSize(cubeDim, cubeInc, levelCube, numElements);
+		}
 		bool push(visibleCube_t * visibleCubes, int * indexCube, int * num, int octreeLevel, cudaStream_t stream)
 		{
 			_cache->push(visibleCubes, indexCube, num, octreeLevel, _id, stream);

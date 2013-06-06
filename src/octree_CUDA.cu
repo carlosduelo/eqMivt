@@ -605,7 +605,7 @@ __global__ void insertOctreePointers(index_node_t ** octreeGPU, int * sizes, ind
 
 
 
-bool Create_Octree(int device, index_node_t ** octreeCPU, int * sizesCPU, int maxLevel, index_node_t *** octree, index_node_t ** memoryGPU, int ** sizes)
+bool Create_Octree(index_node_t ** octreeCPU, int * sizesCPU, int maxLevel, index_node_t *** octree, index_node_t ** memoryGPU, int ** sizes)
 {
 
 	// Creating sizes
@@ -700,12 +700,33 @@ bool Create_Octree(int device, index_node_t ** octreeCPU, int * sizesCPU, int ma
 bool Destroy_Octree(int device, index_node_t ** octree, index_node_t * memoryGPU, int * sizes)
 {
 
+	if (device < 0)
+		return false;
+
+	int d = -1;
+	cudaGetDevice(&d);
+
 	if (memoryGPU != 0)
+	{
+		if (d != device)
+			cudaSetDevice(device);
 		cudaFree(memoryGPU);
+	}
 	if (octree != 0)
+	{
+		if (d != device)
+			cudaSetDevice(device);
 		cudaFree(octree);
+	}
 	if (sizes != 0)
+	{
+		if (d != device)
+			cudaSetDevice(device);
 		cudaFree(sizes);
+	}
+
+	if (d != device)
+		cudaSetDevice(d);
 
 	return true;
 }

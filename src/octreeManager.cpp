@@ -57,6 +57,11 @@ OctreeManager::~OctreeManager()
 	}
 
 	_file.close();
+
+	for(std::map<int , Octree *>::iterator it=_octrees.begin(); it!=_octrees.end(); it++)
+	{
+		delete it->second;	
+	}
 }
 
 void OctreeManager::_readCurrentOctree()
@@ -277,6 +282,7 @@ bool OctreeManager::init(std::string file_name)
 	_numCubes = new int*[_numOctrees];
 	_sizes = new int*[_numOctrees];
 	_maxHeight = new int[_numOctrees];
+	_cubeCacheLevel = new int[_numOctrees];
 	for(int i=0; i<_numOctrees; i++)
 	{
 		_numCubes[i] = new int[_maxLevel + 1];
@@ -289,40 +295,100 @@ bool OctreeManager::init(std::string file_name)
 		_file.read((char*)_sizes[i], (_maxLevel+1)*sizeof(int));
 	}
 
+	_setBestCubeLevel();
+
 	return true;
 
 }
+
+void OctreeManager::_setBestCubeLevel()
+{
+	for(int i=0; i<_numOctrees; i++)
+		_cubeCacheLevel[i] = _maxLevel;
+}
+
 bool OctreeManager::setCurrentOctree(int currentOctree)
 {
-	if (currentOctree == _currentOctree)
-		return true;
+	_lock.set();
+	
+	bool result = true;
 
-	_currentOctree = currentOctree;
+	if (currentOctree != _currentOctree)
+	{
+		_currentOctree = currentOctree;
 
-	_readCurrentOctree();
+		try
+		{
+			_readCurrentOctree();
+		}
+		catch(...)
+		{
+			std::cerr<<"Error reading octree from file"<<std::endl;
+			result = false;
+		}
+	}
+
+	_lock.unset();
+
+	return result;
+}
+
+bool OctreeManager::checkStatus(int device)
+{
+	_lock.set();
+	bool result = true;
+	std::map<int , Octree *>::iterator it;
+	it = _octrees.find(device);
+
+	if (it == _octrees.end())
+	{
+		result = false;
+	}
+	else
+	{
+		result = it->second->setCurrentOctree(_isosurfaces[_currentOctree],  _maxHeight[_currentOctree], _octreeData, _sizes[_currentOctree]);
+	}
+
+	_lock.unset();
+
+	return result;
 }
 
 Octree * OctreeManager::getOctree(int device)
 {
+	_lock.set();
+
+	Octree * o = 0;
+
 	std::map<int , Octree *>::iterator it;
 	it = _octrees.find(device);
 
 	// Not exist create
 	if (it == _octrees.end())
 	{
-		Octree * o = new Octree();
-		o->setGeneralValues(_realDim, _dimension, _nLevels, _maxLevel);
-		if (o->setCurrentOctree(_isosurfaces[_currentOctree],  _octreeData, _sizes[_currentOctree]))
+		o = new Octree();
+		o->setGeneralValues(_realDim, _dimension, _nLevels, _maxLevel, device);
+		if (o->setCurrentOctree(_isosurfaces[_currentOctree],  _maxHeight[_currentOctree], _octreeData, _sizes[_currentOctree]))
 		{
 			_octrees[device] = o;
-			return o;
 		}
 		else
-			return 0;
+		{
+			delete o;
+			o = 0;
+		}
 	}
 	else
-		return it->second->setCurrentOctree(_isosurfaces[_currentOctree],  _octreeData, _sizes[_currentOctree]) ? it->second : 0;
+	{
+		o = it->second;
+		if (!o->setCurrentOctree(_isosurfaces[_currentOctree],  _maxHeight[_currentOctree], _octreeData, _sizes[_currentOctree]))
+		{
+			o = 0;
+		}
+	}
+	_lock.unset();
 
+	return o;
 
 }
 

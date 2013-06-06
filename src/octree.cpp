@@ -24,25 +24,31 @@ Octree::Octree()
 	_octree = 0;
 	_sizes = 0;
 	_currentLevel = 0;
+	_device = -1;
 }
 
 Octree::~Octree()
 {
-	Destroy_Octree(_octree, _memoryOctree, _sizes);
+	if (!Destroy_Octree(_device, _octree, _memoryOctree, _sizes))
+	{
+		std::cerr<<"Error deleting a octree"<<std::endl;
+	}
 }
 
-void Octree::setGeneralValues(vmml::vector<3, int> realDim, int dimension, int nLevels, int maxLevel)
+void Octree::setGeneralValues(vmml::vector<3, int> realDim, int dimension, int nLevels, int maxLevel, int device)
 {
+	_device = device;
 	_realDim = realDim;
 	_dimension = dimension;
 	_nLevels = nLevels;
 	_maxLevel = maxLevel;
 }
 
-bool Octree::setCurrentOctree(float isosurface, index_node_t ** octree, int * sizes)
+bool Octree::setCurrentOctree(float isosurface,  int maxHeight, index_node_t ** octree, int * sizes)
 {
 	if (_isosurface != isosurface)
 	{
+		_maxHeight = maxHeight;
 		_isosurface = isosurface;
 		return Create_Octree(octree, sizes, _maxLevel, &_octree, &_memoryOctree, &_sizes);
 	}

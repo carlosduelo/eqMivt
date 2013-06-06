@@ -49,11 +49,22 @@ cubeCacheGPU::~cubeCacheGPU()
 	if (_queuePositions != 0)
 		delete _queuePositions;
 	if (_cacheData!=0)
+	{
+		int d = -1;
+		cudaGetDevice(&d);
+		if (d != _device)
+			cudaSetDevice(_device);
 		cudaFree(_cacheData);
+		if (d != _device)
+			cudaSetDevice(d);
+	}
 }
 
-bool cubeCacheGPU::init(cubeCacheCPU * cpuCache)
+bool cubeCacheGPU::init(cubeCacheCPU * cpuCache, int device)
 {
+	if (device < 0)
+		return false;
+	_device = device;
 	_cpuCache= cpuCache;
 	_nLevels = _cpuCache->getnLevels(); 
 

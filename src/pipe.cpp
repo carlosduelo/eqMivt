@@ -7,6 +7,7 @@ Notes:
 */
 
 #include "pipe.h"
+#include "cubeCache.h"
 
 #include "config.h"
 #include "node.h"
@@ -37,6 +38,7 @@ bool Pipe::configInit( const eq::uint128_t& initID )
 			return false;
 		}
 		
+	_render.setName(getName());
 
     return config->mapObject( &_frameData, frameDataID );
 }
@@ -58,16 +60,17 @@ void Pipe::frameStart( const eq::uint128_t& frameID, const uint32_t frameNumber)
 Render * Pipe::getRender()
 {
     Node*       node = static_cast<Node*>( getNode( ));
-    // Check for CUDA RESOURCES
-    if (!_render.checkCudaResources())
-    {
-        if (!node->registerPipeResources(getDevice()))
-        {
-    	    LBERROR<<"Error creating pipe"<<std::endl;
-    	    return 0;
-        }
-		_render.setCudaResources(node->getOctreeContainer(getDevice()), node->getCubeCache(getDevice()), node->getNewId(), getName());
-    }
+
+	_render.setOctree(node->getOctree(getDevice()));
+	node->getCacheHandler(getDevice(), _render.getCacheHandler());
+
+	// Check status node
+	const FrameData& frameData = getFrameData();
+	if (node->checkStatus(getDevice(), _render.getCacheHandler(), frameData.getCurrentOctree()) &&
+		_render.checkCudaResources())
+		return &_render;
+	else
+		return 0;
 
 	return &_render;
 }

@@ -13,6 +13,7 @@ Notes:
 #include <octree.h>
 
 #include <eq/eq.h>
+#include <lunchbox/lock.h>
 
 #include <map>
 #include <string>
@@ -26,6 +27,7 @@ class OctreeManager
 	private:
 		std::ifstream _file;
 
+		lunchbox::Lock								_lock;
 		/* General parameters */
 		int _nLevels;
 		int	_maxLevel;
@@ -46,6 +48,7 @@ class OctreeManager
 
 		/* private methods */
 		void _readCurrentOctree();
+		void _setBestCubeLevel();
 	public:
 		OctreeManager();
 
@@ -63,12 +66,14 @@ class OctreeManager
 		int getMaxLevel() { return _maxLevel; }
 		int getDimension() { return _dimension; }
 		vmml::vector<3, int> getRealDim() { return _realDim; }
+		vmml::vector<3, int> getCurrentRealDim() { return vmml::vector<3, int>(_realDim.x(), _maxHeight[_currentOctree], _realDim.z()); }
 		int getNumOctrees() { return _numOctrees; }
 		float getCurretIsosurface() { return _isosurfaces[_currentOctree]; }
 		int	getMaxHeight() { return _maxHeight[_currentOctree]; }
 		int getBestCubeLevel(){ return _cubeCacheLevel[_currentOctree]; }
 
 		bool setCurrentOctree(int currentOctree);
+		bool checkStatus(int device);
 
 		Octree * getOctree(int device);
 };

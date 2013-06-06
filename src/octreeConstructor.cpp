@@ -411,7 +411,7 @@ namespace eqMivt
 
 		vmml::vector<3, int> cubeDim(2,2,2);
 		vmml::vector<3, int> cubeInc(0,0,0);
-		FileManager * file = eqMivt::CreateFileManage(type_file, file_params, maxLevel, maxLevel, cubeDim, cubeInc); 
+		FileManager * file = eqMivt::CreateFileManage(type_file, file_params);
 		vmml::vector<3, int> realDim = file->getRealDimension();
 		delete file;
 
@@ -479,12 +479,14 @@ namespace eqMivt
 
 		int dimCube = pow(2, nLevels - levelCube) + 1;
 		cubeDim.set(dimCube, dimCube, dimCube);
+		vmml::vector<3, int> realcubeDim	= cubeDim + 2 * cubeInc;
 
 		std::cout<<"Creating octree in file "<<octree_file<<std::endl;
 		std::cout<<"Octree dimension "<<dimension<<"x"<<dimension<<"x"<<dimension<<" levels "<<nLevels<<std::endl;
 		std::cout<<"Octree maximum level "<<maxLevel<<" dimension "<<pow(2, nLevels - maxLevel)<<"x"<<pow(2, nLevels - maxLevel)<<"x"<<pow(2, nLevels - maxLevel)<<std::endl;
 		std::cout<<"Reading in block "<<cubeDim<<" level of cube "<<levelCube<<std::endl;
-		file = eqMivt::CreateFileManage(type_file, file_params, levelCube, nLevels, cubeDim, cubeInc); 
+		file = eqMivt::CreateFileManage(type_file, file_params);
+		
 
 		float * dataCube = new float[dimCube*dimCube*dimCube];
 		float * dataCubeGPU = 0;
@@ -521,7 +523,7 @@ namespace eqMivt
 			if (currentBox.x() < realDim[0] && currentBox.y() < realDim[1] && currentBox.z() < realDim[2])
 			{
 				readingClock.reset();
-				file->readCube(id, dataCube);
+				file->readCube(id, dataCube, levelCube, nLevels, cubeDim, cubeInc, realcubeDim);
 				readingTime += readingClock.getTimed();
 				computinhClock.reset();
 				if (useCUDA)

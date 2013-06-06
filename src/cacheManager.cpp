@@ -15,10 +15,10 @@ CacheManager::CacheManager()
 	_cubeCacheCPU = 0;
 	_cubeDim.set(0,0,0);
 	_cubeInc = 0;
-	_levelCube = 0;
+	_levelCube = -1;
 	_nLevels = 0;
 	_numElements = 0;
-	_levelDif = 0;
+	_levelDif = -1;
 }
 
 CacheManager::~CacheManager()
@@ -29,7 +29,7 @@ CacheManager::~CacheManager()
 		delete it->second;
 }
 
-bool CacheManager::init(std::string type_file, std::vector<std::string> file_params, int nLevels)
+bool CacheManager::init(std::string type_file, std::vector<std::string> file_params, int nLevels, int cubeInc)
 {
 	_lock.set();
 	bool result = true;
@@ -37,6 +37,7 @@ bool CacheManager::init(std::string type_file, std::vector<std::string> file_par
 	{
 		result = _cubeCacheCPU->init(type_file, file_params, nLevels);
 		_nLevels = nLevels;
+		_cubeInc = cubeInc;
 	}
 	_lock.unset();
 
@@ -44,7 +45,7 @@ bool CacheManager::init(std::string type_file, std::vector<std::string> file_par
 }
 
 
-bool CacheManager::reSize(vmml::vector<3, int> cubeDim, int cubeInc, int levelCube, int numElements, int numElementsCPU, int levelDif)
+bool CacheManager::reSize(int levelCube, int numElements, int numElementsCPU, int levelDif)
 {
 	bool result = true;
 	_lock.set();
@@ -53,46 +54,56 @@ bool CacheManager::reSize(vmml::vector<3, int> cubeDim, int cubeInc, int levelCu
 		int levelCubeCPU = levelCube - levelDif; 
 		int dimC = exp2(_cubeCacheCPU->getnLevels() - levelCubeCPU);
 		vmml::vector<3, int> cubeDimCPU(dimC, dimC, dimC);
-		result = result && _cubeCacheCPU->reSize(cubeDimCPU, cubeInc, levelCubeCPU, numElementsCPU);
+		result = _cubeCacheCPU->reSize(cubeDimCPU, _cubeInc, levelCubeCPU, numElementsCPU);
 
-		for (std::map<int , eqMivt::cubeCache *>::iterator it = _caches.begin(); it!=_caches.end(); it++)
-			result = result && it->second->reSize(cubeDim, cubeInc,levelCube,numElements);	
-
-			_cubeDim = cubeDim;
-			_cubeInc = cubeInc;
-			_levelCube = levelCube;
-			_numElements = numElements;
+		_levelCube = levelCube;
+		int d = exp2(_nLevels - levelCube);
+		_cubeDim.set(d,d,d);
+		_numElements = numElements;
 	}
 	_lock.unset();
 
 	return result;
 }
 
-CacheHandler CacheManager::getCache(int device)
+bool CacheManager::checkStatus(CacheHandler * cacheHandler)
 {
-	CacheHandler result; 
+	_lock.set();
+	bool result = cacheHandler->isValid() && cacheHandler->reSize(_cubeDim, _cubeInc, _levelCube, _numElements);	
+	_lock.unset();
+	return result; 
+}
+
+bool CacheManager::getCache(int device, CacheHandler * cacheHandler )
+{
 	_lock.set();
 
 	std::map<int , eqMivt::cubeCache *>::iterator itC;
 	itC = _caches.find(device);
+	int result = true;
 
 	// Create the cache
 	if (itC == _caches.end())
 	{
 		eqMivt::cubeCache * c = new cubeCache();
-		if (c->init(_cubeCacheCPU, MAX_WORKERS) && c->reSize(_cubeDim, _cubeInc, _levelCube, _numElements))
+		if (c->init(_cubeCacheCPU, MAX_WORKERS, device) && c->reSize(_cubeDim, _cubeInc, _levelCube, _numElements))
 		{
 			_caches[device]  = c;
 			_ids[device] = 0;
-			result.set(c, 0);
+			cacheHandler->set(c, 0);
+			result = true;
 		}
 		else
-			result.set(0,0);
+		{
+			delete c;
+			result = false;
+		}
 	}
 	else
 	{
 		_ids[device] += 1;
-		result.set(itC->second, _ids[device]); 
+		cacheHandler->set(itC->second, _ids[device]); 
+		result = true;
 	}
 
 	_lock.unset();

@@ -40,13 +40,6 @@ bool Channel::configInit( const eq::uint128_t& initID )
 
     setNearFar( 0.1f, 10000.0f );
 
-	Node* node = static_cast<Node*>( getNode( ));
-	vmml::vector<3, int> dimBox = node->getVolumeDim();
-	if (dimBox[0] <= 0 || dimBox[1] <= 0 || dimBox[2] <= 0)
-		return false;
-
-	_dimBox.set(dimBox[0], dimBox[1], dimBox[2]);
-
     return true;
 }
 
@@ -676,6 +669,13 @@ void Channel::_drawCube()
 {
 	const FrameData& frameData = _getFrameData();
 
+	Node* node = static_cast<Node*>( getNode( ));
+	vmml::vector<3, int> dimBox = node->getCurrentVolumeDim();
+	if (dimBox[0] <= 0 || dimBox[1] <= 0 || dimBox[2] <= 0)
+		return;
+
+	_dimBox.set(dimBox[0], dimBox[1], dimBox[2]);
+
 	glMatrixMode( GL_PROJECTION );
 	glPushMatrix();
 	glLoadIdentity( );
@@ -739,75 +739,6 @@ void Channel::_drawCube()
 	glPopMatrix();
 }
 
-#if 0
-bool Channel::_intersectionBox(eq::Vector4f dir, eq::Vector4f origin, float * tnear, float *tfar)
-{
-	bool hit = true;
-
-	float tmin, tmax, tymin, tymax, tzmin, tzmax;
-	float divx = 1 / dir.x();
-	if (divx >= 0)
-	{
-		tmin = (0.0f - origin.x())*divx;
-		tmax = (_dimBox.x() - origin.x())*divx;
-	}
-	else
-	{
-		tmin = (_dimBox.x() - origin.x())*divx;
-		tmax = (0.0f - origin.x())*divx;
-	}
-	float divy = 1 / dir.y();
-	if (divy >= 0)
-	{
-		tymin = (0.0f - origin.y())*divy;
-		tymax = (_dimBox.y() - origin.y())*divy;
-	}
-	else
-	{
-		tymin = (_dimBox.y() - origin.y())*divy;
-		tymax = (0.0f - origin.y())*divy;
-	}
-
-	if ( (tmin > tymax) || (tymin > tmax) )
-	{
-		hit = false;
-	}
-
-	if (tymin > tmin)
-		tmin = tymin;
-	if (tymax < tmax)
-		tmax = tymax;
-
-	float divz = 1 / dir.z();
-	if (divz >= 0)
-	{
-		tzmin = (0.0f - origin.z())*divz;
-		tzmax = (_dimBox.z() - origin.z())*divz;
-	}
-	else
-	{
-		tzmin = (_dimBox.z() - origin.z())*divz;
-		tzmax = (0.0f - origin.z())*divz;
-	}
-
-	if ( (tmin > tzmax) || (tzmin > tmax) )
-	{
-		hit = false;
-	}
-	if (tzmin > tmin)
-		tmin = tzmin;
-	if (tzmax < tmax)
-		tmax = tzmax;
-
-	if (tmin<0.0)
-	 	*tnear=0.0;
-	else
-		*tnear=tmin;
-	*tfar=tmax;
-
-	return *tnear == *tfar ? false : hit;
-}
-#endif
 void Channel::_updateNearFar(eq::Matrix4f model)
 {
         // estimate minimal value of near plane based on frustum size

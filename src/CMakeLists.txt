@@ -3,32 +3,32 @@
 # to the root binary directory of the project as ${mivt_BINARY_DIR}. 
 
 set(MIVT_SOURCE 
+		memoryCheck.cpp
 		hdf5File.cpp
 		fileFactory.cpp
+		linkedList.cpp
 		cubeCacheCPU.cpp
 		cubeCacheGPU.cpp
 		cubeCache.cpp
 		cacheManager.cpp
 		octree.cpp
 		octreeManager.cpp
-		octreeContainer.cpp
+		node.cpp
 		render.cpp
-		linkedList.cpp
+		pipe.cpp
+		channel.cpp
 		rayCaster.cpp
 		error.cpp
 		initData.cpp
 		localInitData.cpp
 		frameData.cpp
 		config.cpp
-		node.cpp
-		pipe.cpp
-		channel.cpp
 		view.cpp
 		window.cpp
 		eqMivt.cpp
 )
 
-set(MIVT_CUDA_SOURCE ray-casting-sphere.cu octreeContainer_GPU.cu octree_CUDA.cu rayCaster_CUDA.cu)
+set(MIVT_CUDA_SOURCE ray-casting-sphere.cu octree_CUDA.cu rayCaster_CUDA.cu)
 
 # SETTING CUDA PARAMETERS
 list(APPEND CUDA_NVCC_FLAGS -arch=sm_13)

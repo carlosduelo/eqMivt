@@ -65,6 +65,10 @@ hdf5File::~hdf5File()
 	}
 }
 
+vmml::vector<3, int> hdf5File::getRealDimension()
+{
+	return vmml::vector<3, int>(_dims[0],_dims[1],_dims[2]);
+}
 
 void hdf5File::readCube(index_node_t index, float * cube, int levelCube, int nLevels, vmml::vector<3, int>    cubeDim, vmml::vector<3, int> cubeInc, vmml::vector<3, int> realCubeDim)
 {
