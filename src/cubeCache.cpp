@@ -16,7 +16,7 @@ cubeCache::~cubeCache()
 	delete[] _insertedCubes;
 }
 
-bool cubeCache::init(cubeCacheCPU * cpuCache, int numWorkers, int device)
+bool cubeCache::init(cubeCacheCPU * cpuCache, int numWorkers, uint32_t device)
 {
 	_insertedCubes = new boost::unordered_map<index_node_t, cacheElement_t >[numWorkers];
 

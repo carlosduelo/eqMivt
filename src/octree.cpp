@@ -24,7 +24,7 @@ Octree::Octree()
 	_octree = 0;
 	_sizes = 0;
 	_currentLevel = 0;
-	_device = -1;
+	_device = 40;
 }
 
 Octree::~Octree()
@@ -35,7 +35,7 @@ Octree::~Octree()
 	}
 }
 
-void Octree::setGeneralValues(vmml::vector<3, int> realDim, int dimension, int nLevels, int maxLevel, int device)
+void Octree::setGeneralValues(vmml::vector<3, int> realDim, int dimension, int nLevels, int maxLevel, uint32_t device)
 {
 	_device = device;
 	_realDim = realDim;
@@ -46,6 +46,7 @@ void Octree::setGeneralValues(vmml::vector<3, int> realDim, int dimension, int n
 
 bool Octree::setCurrentOctree(float isosurface,  int maxHeight, index_node_t ** octree, int * sizes)
 {
+
 	if (_isosurface != isosurface)
 	{
 		_maxHeight = maxHeight;

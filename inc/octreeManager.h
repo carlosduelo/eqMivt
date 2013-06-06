@@ -44,7 +44,7 @@ class OctreeManager
 		index_node_t ** _octreeData;
 		int _currentOctree;
 
-		std::map<int , Octree *>   _octrees;
+		std::map<uint32_t , Octree *>   _octrees;
 
 		/* private methods */
 		void _readCurrentOctree();
@@ -73,9 +73,9 @@ class OctreeManager
 		int getBestCubeLevel(){ return _cubeCacheLevel[_currentOctree]; }
 
 		bool setCurrentOctree(int currentOctree);
-		bool checkStatus(int device);
+		bool checkStatus(uint32_t device);
 
-		Octree * getOctree(int device);
+		Octree * getOctree(uint32_t device);
 };
 }
 #endif /*EQ_MIVT_OCTREE_MANAGER_H*/

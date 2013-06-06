@@ -36,6 +36,7 @@ namespace eqMivt
     private:
         FrameData	_frameData;
 
+		bool		_lastState;
 		Render		_render;
     };
 }

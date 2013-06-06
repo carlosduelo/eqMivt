@@ -703,7 +703,7 @@ bool Destroy_Octree(int device, index_node_t ** octree, index_node_t * memoryGPU
 	if (device < 0)
 		return false;
 
-	int d = -1;
+	int d = 40;
 	cudaGetDevice(&d);
 
 	if (memoryGPU != 0)

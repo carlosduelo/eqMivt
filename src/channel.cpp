@@ -88,6 +88,7 @@ void Channel::frameClear( const eq::uint128_t& frameID )
 
 void Channel::frameDraw( const eq::uint128_t& frameID )
 {
+
     if( stopRendering( ))
         return;
 

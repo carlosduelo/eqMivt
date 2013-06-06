@@ -25,7 +25,7 @@ CacheManager::~CacheManager()
 {
 	if (_cubeCacheCPU != 0)
 		delete _cubeCacheCPU;
-	for (std::map<int , eqMivt::cubeCache *>::iterator it = _caches.begin(); it!=_caches.end(); it++)
+	for (std::map<uint32_t, eqMivt::cubeCache *>::iterator it = _caches.begin(); it!=_caches.end(); it++)
 		delete it->second;
 }
 
@@ -81,11 +81,11 @@ bool CacheManager::checkStatus(CacheHandler * cacheHandler)
 	return result; 
 }
 
-bool CacheManager::getCache(int device, CacheHandler * cacheHandler )
+bool CacheManager::getCache(uint32_t device, CacheHandler * cacheHandler )
 {
 	_lock.set();
 
-	std::map<int , eqMivt::cubeCache *>::iterator itC;
+	std::map<uint32_t, eqMivt::cubeCache *>::iterator itC;
 	itC = _caches.find(device);
 	int result = true;
 

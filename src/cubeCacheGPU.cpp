@@ -50,7 +50,7 @@ cubeCacheGPU::~cubeCacheGPU()
 		delete _queuePositions;
 	if (_cacheData!=0)
 	{
-		int d = -1;
+		int d = 40;
 		cudaGetDevice(&d);
 		if (d != _device)
 			cudaSetDevice(_device);
@@ -60,7 +60,7 @@ cubeCacheGPU::~cubeCacheGPU()
 	}
 }
 
-bool cubeCacheGPU::init(cubeCacheCPU * cpuCache, int device)
+bool cubeCacheGPU::init(cubeCacheCPU * cpuCache, uint32_t device)
 {
 	if (device < 0)
 		return false;

@@ -27,8 +27,6 @@ namespace eqMivt
     {
 	private:
 		std::string	_name;
-	
-	    bool _init;
 
 		Octree		*	_octree;
 		CacheHandler	_cache;

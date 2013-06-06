@@ -27,17 +27,18 @@ bool Pipe::configInit( const eq::uint128_t& initID )
 	int ds = -1;
 	if (cudaSuccess != cudaGetDevice(&ds))
 	{
-		std::cerr<<"Error checking cuda device capable"<<std::endl;
+		LBERROR<<"Pipe: Error checking cuda device capable"<<std::endl;
 		return false;
 	}
 
 	if (getDevice() < 32 && ds != getDevice())
 		if (cudaSuccess != cudaSetDevice(getDevice()))
 		{
-			std::cerr<<"Error setting cuda device capable"<<std::endl;
+			LBERROR<<"Pipe: Error setting cuda device capable"<<std::endl;
 			return false;
 		}
 		
+	_lastState = true;
 	_render.setName(getName());
 
     return config->mapObject( &_frameData, frameDataID );
@@ -61,10 +62,19 @@ Render * Pipe::getRender()
 {
     Node*       node = static_cast<Node*>( getNode( ));
 
+	if (!_lastState)
+		return 0;
+
 	if (node->checkStatus())
 	{
 		_render.setOctree(node->getOctree(getDevice()));
-		node->getCacheHandler(getDevice(), _render.getCacheHandler());
+
+		if (!node->getCacheHandler(getDevice(), _render.getCacheHandler()))
+		{
+			_lastState = false;
+			LBERROR<<"Pipe: error getting cache handler"<<std::endl;
+			return 0;
+		}
 
 		// Check status node
 		const FrameData& frameData = getFrameData();
@@ -72,10 +82,18 @@ Render * Pipe::getRender()
 			_render.checkCudaResources())
 			return &_render;
 		else
+		{
+			_lastState = false;
+			LBERROR<<"Pipe: Error getting renderer, updating node status"<<std::endl;
 			return 0;
+		}
 	}
 	else
+	{
+		_lastState = 0;
+		LBERROR<<"Pipe: Error getting renderer, node status = unstable"<<std::endl;
 		return 0;
+	}
 
 }
 

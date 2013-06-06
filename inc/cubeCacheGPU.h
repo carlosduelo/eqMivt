@@ -35,7 +35,7 @@ class cubeCacheGPU
 
 		LinkedList      *       _queuePositions;
 
-		int						_device;
+		uint32_t				_device;
 		int                     _maxElements;
 		float           *       _cacheData;
 
@@ -49,7 +49,7 @@ class cubeCacheGPU
 		int						getLevelCube(){ return _levelCube;}
 		int						getnLevels(){ return _nLevels; }
 
-		bool init(cubeCacheCPU * cpuCache, int device);
+		bool init(cubeCacheCPU * cpuCache, uint32_t device);
 
 		bool reSize(vmml::vector<3, int> cubeDim, int cubeInc, int levelCube, int numElements);
 

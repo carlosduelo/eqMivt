@@ -37,9 +37,17 @@ namespace eqMivt
 
 		_status = true;
 
-		_status =	_octreeManager.init(initData.getOctreeFilename()) &&  
-					_cacheManager.init(initData.getDataTypeFile(), initData.getDataFilename(), _octreeManager.getNLevels(), CUBE_INC); 
-
+		_status =	_octreeManager.init(initData.getOctreeFilename());
+		if (!_status)
+		{
+			LBERROR<<"Node: error creating octree manager"<<std::endl;
+		}
+		else
+		{
+			_status = _cacheManager.init(initData.getDataTypeFile(), initData.getDataFilename(), _octreeManager.getNLevels(), CUBE_INC); 
+			if (!_status)
+				LBERROR<<"Node: error creating cache manager"<<std::endl;
+		}
 		return _status;
 	}
 
@@ -53,7 +61,7 @@ namespace eqMivt
 		return _octreeManager.getCurrentRealDim(); 
 	}
 
-	Octree *	Node::getOctree(int device)
+	Octree *	Node::getOctree(uint32_t device)
 	{
 		if (_status)
 		{
@@ -63,7 +71,7 @@ namespace eqMivt
 		}
 	}
 
-	bool Node::getCacheHandler(int device, CacheHandler * cacheHandler)
+	bool Node::getCacheHandler(uint32_t device, CacheHandler * cacheHandler)
 	{
 		if (_status)
 			_status = _cacheManager.getCache(device, cacheHandler);
@@ -71,7 +79,7 @@ namespace eqMivt
 		return _status;
 	}
 	
-	bool Node::updateStatus(int device, CacheHandler * cacheHandler, int currentOctree)
+	bool Node::updateStatus(uint32_t device, CacheHandler * cacheHandler, int currentOctree)
 	{
 		if (_status)
 		{
@@ -79,7 +87,7 @@ namespace eqMivt
 			if (!_octreeManager.setCurrentOctree(currentOctree))
 			{
 				_status = false;
-				LBERROR<<"Error setting current octree"<<std::endl;
+				LBERROR<<"Node: Error setting current octree"<<std::endl;
 			}
 
 			Config* config = static_cast< Config* >( getConfig( ));
@@ -93,17 +101,17 @@ namespace eqMivt
 			{
 				_status = _cacheManager.reSize(levelCube, numElements, numElementsCPU, levelDif);
 				if (!_status)
-					LBERROR<<"Error resizing cache cpu"<<std::endl;
+					LBERROR<<"Node: Error resizing cache cpu"<<std::endl;
 				else
 				{
 					_status =  _octreeManager.checkStatus(device);
 					if (!_status)
-						LBERROR<<"Error checking octree"<<std::endl;
+						LBERROR<<"Node: Error checking octree"<<std::endl;
 					else
 					{
 						_status =  _cacheManager.checkStatus(cacheHandler);
 						if (!_status)
-							LBERROR<<"Error checking cache gpu"<<std::endl;
+							LBERROR<<"Node: Error checking cache gpu"<<std::endl;
 					}
 				}
 			}

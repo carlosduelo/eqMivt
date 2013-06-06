@@ -16,8 +16,6 @@ namespace eqMivt
 
 Render::Render()
 {
-    _init = false;
-
 	_octree = 0;
 
     _height = 0;
@@ -132,8 +130,7 @@ void Render::resizeViewport(int width, int height, GLuint pbo)
 
 bool Render::checkCudaResources()
 {
-	_init =  _octree != 0 && _cache.isValid();
-    return _init;
+	return  _octree != 0 && _cache.isValid();
 }
 
 void Render::setStatistics(bool stat)
@@ -154,11 +151,6 @@ void Render::printCudaProperties()
 void Render::setOctree(Octree * oc)
 {
 	_octree = oc;	
-	if (_octree != 0)
-	{
-		_raycaster.setIsosurface(_octree->getIsosurface());
-		//Set la altura en raycaster
-	}
 }
 
 void Render::setName(std::string name)
@@ -168,6 +160,9 @@ void Render::setName(std::string name)
 
 void Render::frameDraw(eq::Vector4f origin, eq::Vector4f LB, eq::Vector4f up, eq::Vector4f right, float w, float h, int pvpW, int pvpH)
 {
+	// Update ray casting parameters
+	_raycaster.setIsosurface(_octree->getIsosurface());
+
 	_frameDrawTimes++;
 	_frameDrawClock.reset();
 

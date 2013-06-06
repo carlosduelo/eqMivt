@@ -58,7 +58,7 @@ OctreeManager::~OctreeManager()
 
 	_file.close();
 
-	for(std::map<int , Octree *>::iterator it=_octrees.begin(); it!=_octrees.end(); it++)
+	for(std::map<uint32_t , Octree *>::iterator it=_octrees.begin(); it!=_octrees.end(); it++)
 	{
 		delete it->second;	
 	}
@@ -333,11 +333,11 @@ bool OctreeManager::setCurrentOctree(int currentOctree)
 	return result;
 }
 
-bool OctreeManager::checkStatus(int device)
+bool OctreeManager::checkStatus(uint32_t device)
 {
 	_lock.set();
 	bool result = true;
-	std::map<int , Octree *>::iterator it;
+	std::map<uint32_t, Octree *>::iterator it;
 	it = _octrees.find(device);
 
 	if (it == _octrees.end())
@@ -354,13 +354,13 @@ bool OctreeManager::checkStatus(int device)
 	return result;
 }
 
-Octree * OctreeManager::getOctree(int device)
+Octree * OctreeManager::getOctree(uint32_t  device)
 {
 	_lock.set();
 
 	Octree * o = 0;
 
-	std::map<int , Octree *>::iterator it;
+	std::map<uint32_t, Octree *>::iterator it;
 	it = _octrees.find(device);
 
 	// Not exist create

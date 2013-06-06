@@ -24,8 +24,8 @@ class CacheManager
 {
 	private:
 		cubeCacheCPU		*						_cubeCacheCPU;
-		std::map<int , eqMivt::cubeCache *>			_caches;
-		std::map<int , int>							_ids;
+		std::map<uint32_t , eqMivt::cubeCache *>	_caches;
+		std::map<uint32_t , int>					_ids;
 		lunchbox::Lock								_lock;
 
 		vmml::vector<3, int>	_cubeDim;
@@ -43,7 +43,7 @@ class CacheManager
 		bool init(std::string type_file, std::vector<std::string> file_params, int nLevels, int cubeInc);
 		bool reSize(int levelCube, int numElements, int numElementsCPU, int levelDif);	
 		bool checkStatus(CacheHandler * cacheHandler);
-		bool getCache(int device, CacheHandler * cacheHandler );
+		bool getCache(uint32_t device, CacheHandler * cacheHandler );
 };
 }
 

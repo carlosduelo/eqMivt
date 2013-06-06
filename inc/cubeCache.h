@@ -33,7 +33,7 @@ class cubeCache
 	public:
 		~cubeCache();
 
-		bool init(cubeCacheCPU * cpuCache, int numWorkers, int device);
+		bool init(cubeCacheCPU * cpuCache, int numWorkers, uint32_t device);
 
 		bool reSize(vmml::vector<3, int> cubeDim, int cubeInc, int levelCube, int numElements);
 
