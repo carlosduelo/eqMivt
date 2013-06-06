@@ -71,22 +71,42 @@ namespace eqMivt
 		return _status;
 	}
 	
-	bool Node::checkStatus(int device, CacheHandler * cacheHandler, int currentOctree)
+	bool Node::updateStatus(int device, CacheHandler * cacheHandler, int currentOctree)
 	{
 		if (_status)
 		{
 			// Octree set Current Octree
-			_status = _octreeManager.setCurrentOctree(currentOctree);
+			if (!_octreeManager.setCurrentOctree(currentOctree))
+			{
+				_status = false;
+				LBERROR<<"Error setting current octree"<<std::endl;
+			}
 
+			Config* config = static_cast< Config* >( getConfig( ));
+			const InitData& initData = config->getInitData();
 			// Set Size cache manager for CPU
 			int levelCube = _octreeManager.getBestCubeLevel();
-			int numElements = 0; // COGER DE INITPARAMS
-			int numElementsCPU = 0; //COGER DE INITPARAMS
+			int numElements = initData.getMaxCubesCacheGPU();
+			int numElementsCPU = initData.getMaxCubesCacheCPU();
 			int levelDif  = 0; //FUTURO
-			_status = _status && _cacheManager.reSize(levelCube, numElements, numElementsCPU, levelDif);
-
-			_status = _status	&& _octreeManager.checkStatus(device) 
-								&& _cacheManager.checkStatus(cacheHandler);
+			if (_status)
+			{
+				_status = _cacheManager.reSize(levelCube, numElements, numElementsCPU, levelDif);
+				if (!_status)
+					LBERROR<<"Error resizing cache cpu"<<std::endl;
+				else
+				{
+					_status =  _octreeManager.checkStatus(device);
+					if (!_status)
+						LBERROR<<"Error checking octree"<<std::endl;
+					else
+					{
+						_status =  _cacheManager.checkStatus(cacheHandler);
+						if (!_status)
+							LBERROR<<"Error checking cache gpu"<<std::endl;
+					}
+				}
+			}
 		}
 		return _status;
 	}

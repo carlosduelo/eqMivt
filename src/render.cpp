@@ -154,12 +154,11 @@ void Render::printCudaProperties()
 void Render::setOctree(Octree * oc)
 {
 	_octree = oc;	
-	_raycaster.setIsosurface(_octree->getIsosurface());
-	//Set la altura en raycaster
-}
-
-void Render::updateParamenters(int maxHeight)
-{
+	if (_octree != 0)
+	{
+		_raycaster.setIsosurface(_octree->getIsosurface());
+		//Set la altura en raycaster
+	}
 }
 
 void Render::setName(std::string name)
@@ -317,7 +316,7 @@ void Render::frameDraw(eq::Vector4f origin, eq::Vector4f LB, eq::Vector4f up, eq
 			*_outputFile<<"Time cache pop: "<<time/1000.0 <<" seconds"<<std::endl;
 		
 		iterations++;
-		//std::cout<<iterations<<std::endl;
+		std::cout<<iterations<<std::endl;
 	}
 
 	_unmapResourcesTimes++;

@@ -31,6 +31,8 @@ const LocalInitData& LocalInitData::operator = ( const LocalInitData& from )
 
 	setDataTypeFile(from.getDataTypeFile());
 	setDataFilename(from.getDataFilename());
+	setMaxCubesCacheCPU(from.getMaxCubesCacheCPU());
+	setMaxCubesCacheGPU(from.getMaxCubesCacheGPU());
 
     return *this;
 }
@@ -47,6 +49,8 @@ bool LocalInitData::parseArguments( const int argc, char** argv )
     ("eq-layout", "Select equalizer layout in configuration file")
     ("octree-file,o", boost::program_options::value< std::vector<std::string> >()->multitoken(), "octree-file-path")
     ("data-file,d", boost::program_options::value< std::vector<std::string> >()->multitoken(), "type-data-file data-file-path\nType file supported: hdf5_file file-path:data-set-name")
+	("max-elements-cpu,c", boost::program_options::value<int>(), "set cpu cache, optional")
+	("max-elements-gpu,g", boost::program_options::value<int>(), "set gpu cache, optional")
     ;
 
 	boost::program_options::variables_map vm;
@@ -71,6 +75,22 @@ bool LocalInitData::parseArguments( const int argc, char** argv )
         std::cout << "Version eqMivt: "<<VERSION_EQ_MIVT << std::endl;
 		return false;
     }
+	if (vm.count("max-elements-gpu"))
+	{
+		setMaxCubesCacheGPU(vm["max-elements-gpu"].as<int>() <= 0 ? 1 : vm["max-elements-gpu"].as<int>());
+	}
+	else 
+	{
+		setMaxCubesCacheGPU(0);
+	}
+	if (vm.count("max-elements-cpu"))
+	{
+		setMaxCubesCacheCPU(vm["max-elements-cpu"].as<int>() <= 0 ? 1 : vm["max-elements-cpu"].as<int>());
+	}
+	else 
+	{
+		setMaxCubesCacheCPU(0);
+	}
 
 	bool printHelp = false;
     if (vm.count("octree-file"))

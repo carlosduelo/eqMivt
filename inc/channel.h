@@ -60,6 +60,7 @@ namespace eqMivt
 		void _destroyPBO();
 		void _destroyTexture();
 		void _draw();
+		void _drawError();
 
 		uint32_t			_frameRestart;
 		eq::PixelViewport 	_currentPVP;

@@ -36,6 +36,14 @@ namespace eqMivt
 		void		setDataTypeFile(std::string dataTypeFile) { _dataTypeFile = dataTypeFile; }
 		void		setDataFilename(std::vector<std::string> dataFilename) { _dataFilename = dataFilename; }
 
+		int			getMaxCubesCacheCPU() { return _maxCubesCacheCPU; }
+		int			getMaxCubesCacheCPU() const { return _maxCubesCacheCPU; }
+		void		setMaxCubesCacheCPU(int maxCubesCacheCPU){ _maxCubesCacheCPU = maxCubesCacheCPU; }
+
+		int			getMaxCubesCacheGPU() { return _maxCubesCacheGPU; }
+		int			getMaxCubesCacheGPU() const { return _maxCubesCacheGPU; }
+		void		setMaxCubesCacheGPU(int maxCubesCacheGPU){ _maxCubesCacheGPU = maxCubesCacheGPU; }
+
     protected:
         virtual void getInstanceData( co::DataOStream& os );
         virtual void applyInstanceData( co::DataIStream& is );
@@ -47,6 +55,9 @@ namespace eqMivt
 
 		std::string						_dataTypeFile;
 		std::vector<std::string>		_dataFilename;
+
+		int				_maxCubesCacheCPU;
+		int				_maxCubesCacheGPU;
     };
 }
 

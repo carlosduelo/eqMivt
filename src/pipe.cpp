@@ -61,18 +61,22 @@ Render * Pipe::getRender()
 {
     Node*       node = static_cast<Node*>( getNode( ));
 
-	_render.setOctree(node->getOctree(getDevice()));
-	node->getCacheHandler(getDevice(), _render.getCacheHandler());
+	if (node->checkStatus())
+	{
+		_render.setOctree(node->getOctree(getDevice()));
+		node->getCacheHandler(getDevice(), _render.getCacheHandler());
 
-	// Check status node
-	const FrameData& frameData = getFrameData();
-	if (node->checkStatus(getDevice(), _render.getCacheHandler(), frameData.getCurrentOctree()) &&
-		_render.checkCudaResources())
-		return &_render;
+		// Check status node
+		const FrameData& frameData = getFrameData();
+		if (node->updateStatus(getDevice(), _render.getCacheHandler(), frameData.getCurrentOctree()) &&
+			_render.checkCudaResources())
+			return &_render;
+		else
+			return 0;
+	}
 	else
 		return 0;
 
-	return &_render;
 }
 
 }

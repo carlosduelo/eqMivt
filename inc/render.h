@@ -93,8 +93,6 @@ namespace eqMivt
 
 		void setName(std::string name);
 
-		void updateParamenters(int maxHeight);
-
 		void setStatistics(bool stat);
 
 		void printCudaProperties();

@@ -368,6 +368,7 @@ Octree * OctreeManager::getOctree(int device)
 	{
 		o = new Octree();
 		o->setGeneralValues(_realDim, _dimension, _nLevels, _maxLevel, device);
+		#if 0
 		if (o->setCurrentOctree(_isosurfaces[_currentOctree],  _maxHeight[_currentOctree], _octreeData, _sizes[_currentOctree]))
 		{
 			_octrees[device] = o;
@@ -377,14 +378,19 @@ Octree * OctreeManager::getOctree(int device)
 			delete o;
 			o = 0;
 		}
+		#else
+		_octrees[device] = o;
+		#endif
 	}
 	else
 	{
 		o = it->second;
+		#if 0
 		if (!o->setCurrentOctree(_isosurfaces[_currentOctree],  _maxHeight[_currentOctree], _octreeData, _sizes[_currentOctree]))
 		{
 			o = 0;
 		}
+		#endif
 	}
 	_lock.unset();
 

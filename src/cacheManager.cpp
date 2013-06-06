@@ -33,8 +33,14 @@ bool CacheManager::init(std::string type_file, std::vector<std::string> file_par
 {
 	_lock.set();
 	bool result = true;
+
 	if (_cubeCacheCPU != 0)
 	{
+		result = false;
+	}
+	else
+	{
+		_cubeCacheCPU = new cubeCacheCPU();
 		result = _cubeCacheCPU->init(type_file, file_params, nLevels);
 		_nLevels = nLevels;
 		_cubeInc = cubeInc;
@@ -57,6 +63,7 @@ bool CacheManager::reSize(int levelCube, int numElements, int numElementsCPU, in
 		result = _cubeCacheCPU->reSize(cubeDimCPU, _cubeInc, levelCubeCPU, numElementsCPU);
 
 		_levelCube = levelCube;
+		_levelDif = levelDif;
 		int d = exp2(_nLevels - levelCube);
 		_cubeDim.set(d,d,d);
 		_numElements = numElements;
@@ -86,7 +93,7 @@ bool CacheManager::getCache(int device, CacheHandler * cacheHandler )
 	if (itC == _caches.end())
 	{
 		eqMivt::cubeCache * c = new cubeCache();
-		if (c->init(_cubeCacheCPU, MAX_WORKERS, device) && c->reSize(_cubeDim, _cubeInc, _levelCube, _numElements))
+		if (c->init(_cubeCacheCPU, MAX_WORKERS, device)) //&& c->reSize(_cubeDim, _cubeInc, _levelCube, _numElements))
 		{
 			_caches[device]  = c;
 			_ids[device] = 0;

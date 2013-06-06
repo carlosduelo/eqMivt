@@ -46,6 +46,9 @@ cubeCacheCPU::~cubeCacheCPU()
 
 bool cubeCacheCPU::init(std::string type_file, std::vector<std::string> file_params, int nLevels)
 {
+	if (_fileManager != 0)
+		return false;
+
 	_nLevels = nLevels;
 
 	// OpenFile
@@ -83,7 +86,7 @@ bool cubeCacheCPU::reSize(vmml::vector<3, int> cubeDim, int cubeInc, int levelCu
 		{
 			memoryCPU /= 2;
 		}
-		_maxElements = memoryCPU/_offsetCube;
+		_maxElements = memoryCPU/(_offsetCube*sizeof(int));
 	}
 	else
 	{
@@ -105,6 +108,8 @@ bool cubeCacheCPU::reSize(vmml::vector<3, int> cubeDim, int cubeInc, int levelCu
 		LBERROR<<"Cache CPU: Error creating cpu cache"<<std::endl;
 		return false;
 	}
+
+	return true;
 }
 
 

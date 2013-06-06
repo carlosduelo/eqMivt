@@ -122,7 +122,10 @@ void Channel::frameDraw( const eq::uint128_t& frameID )
 		Render * render = pipe->getRender();
 
 		if (render == 0)
+		{
+			_drawError();
 			return;
+		}
 
 		render->setStatistics(frameData.getStatistics());
 
@@ -363,6 +366,20 @@ void Channel::frameViewFinish( const eq::uint128_t& frameID )
 	config->sendEvent( IDLE_AA_LEFT ) << steps;
 
 	eq::Channel::frameViewFinish( frameID );
+}
+
+void Channel::_drawError()
+{
+    declareRegion( getPixelViewport( ));
+
+    glBegin(GL_QUADS);
+	glColor3f(1.0f,0.58f,0.58f);
+	glVertex2f(-1.0f,-1.0f);
+	glVertex2f( 1.0f,-1.0f);
+	glVertex2f( 1.0f, 1.0f);
+	glVertex2f(-1.0f, 1.0f);
+    glEnd();
+
 }
 
 void Channel::_draw()

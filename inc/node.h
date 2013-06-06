@@ -29,7 +29,8 @@ namespace eqMivt
 		public:
 			Node( eq::Config* parent ) : eq::Node( parent ) {}
 
-			bool	checkStatus(int device, CacheHandler * cacheHandler, int currentOctree);
+			bool	checkStatus() { return _status; }
+			bool updateStatus(int device, CacheHandler * cacheHandler, int currentOctree);
 			Octree *	getOctree(int device);
 			bool		getCacheHandler(int device, CacheHandler * cacheHandler);
 			vmml::vector<3, int>    getCurrentVolumeDim();
