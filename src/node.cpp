@@ -74,7 +74,8 @@ namespace eqMivt
 	bool Node::getCacheHandler(uint32_t device, CacheHandler * cacheHandler)
 	{
 		if (_status)
-			_status = _cacheManager.getCache(device, cacheHandler);
+			if (!cacheHandler->isValid())
+				_status = _cacheManager.getCache(device, cacheHandler);
 		
 		return _status;
 	}
