@@ -259,6 +259,7 @@ void Render::frameDraw(eq::Vector4f origin, eq::Vector4f LB, eq::Vector4f up, eq
 			for(int i=0; i<numPixels; i++)
 			{
 				int index  = _indexVisibleCubesCPU[i];
+
 				if (_visibleCubesCPU[index].state == PAINTED)
 					numP++;
 				else if (_visibleCubesCPU[index].state == NOCACHED)

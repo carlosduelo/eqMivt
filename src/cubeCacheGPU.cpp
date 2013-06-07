@@ -37,6 +37,8 @@ cubeCacheGPU::cubeCacheGPU()
 	_offsetCube = 0;
 	_levelCube = 0;
 	_nLevels = 0;
+	_minIndex = 0;
+	_maxIndex = 0;
 
 	_queuePositions = 0;
 
@@ -87,6 +89,9 @@ bool cubeCacheGPU::reSize(vmml::vector<3, int> cubeDim, int cubeInc, int levelCu
 	_realcubeDim	= cubeDim + 2 * cubeInc;
 	_levelCube	= levelCube;
 	_offsetCube	= (_cubeDim.x()+2*_cubeInc.x())*(_cubeDim.y()+2*_cubeInc.y())*(_cubeDim.z()+2*_cubeInc.z());
+	_minIndex = coordinateToIndex(vmml::vector<3, int>(0,0,0), _levelCube, _nLevels); 
+	int d = exp2(_nLevels);
+	_maxIndex = coordinateToIndex(vmml::vector<3, int>(d-1,d-1,d-1), _levelCube, _nLevels);
 
 	if (numElements == 0)
 	{
@@ -101,7 +106,7 @@ bool cubeCacheGPU::reSize(vmml::vector<3, int> cubeDim, int cubeInc, int levelCu
 
 		float freeS = (8.0f*free)/10.0f; // Get 80% of free memory
 		_maxElements = freeS / (float)(_offsetCube*sizeof(float));
-		LBINFO << total/1024/1024 <<" "<<free /1024/1024<< " "<<freeS/1024/1024<<" " <<_maxElements<<std::endl;
+		//LBINFO << total/1024/1024 <<" "<<free /1024/1024<< " "<<freeS/1024/1024<<" " <<_maxElements<<std::endl;
 	}
 	else
 	{
@@ -130,6 +135,11 @@ bool cubeCacheGPU::reSize(vmml::vector<3, int> cubeDim, int cubeInc, int levelCu
 float * cubeCacheGPU::push_cube(index_node_t idCube, cudaStream_t stream)
 {
 	boost::unordered_map<index_node_t, NodeLinkedList *>::iterator it;
+	if (idCube < _minIndex || idCube > _maxIndex)
+	{
+		LBERROR<<"Cache GPU: Trying to push a worng index cube "<<idCube<<std::endl;
+		return 0;
+	}
 
 	_lock.set();
 

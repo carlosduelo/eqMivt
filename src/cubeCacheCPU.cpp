@@ -10,6 +10,7 @@ Notes:
 
 #include <cuda_runtime.h>
 #include "memoryCheck.h"
+#include "mortonCodeUtil_CPU.h"
 
 #define MAX_SIZE 512*1024*1024
 
@@ -27,6 +28,9 @@ cubeCacheCPU::cubeCacheCPU()
 
 		_indexStored;
 		_queuePositions = 0;
+
+		_minIndex = 0;
+		_maxIndex = 0;
 
 		_maxElements = 0;
 		_cacheData = 0;
@@ -73,6 +77,9 @@ bool cubeCacheCPU::reSize(vmml::vector<3, int> cubeDim, int cubeInc, int levelCu
 	_realcubeDim	= cubeDim + 2 * cubeInc;
 	_levelCube	= levelCube;
 	_offsetCube	= (_cubeDim.x()+2*_cubeInc.x())*(_cubeDim.y()+2*_cubeInc.y())*(_cubeDim.z()+2*_cubeInc.z());
+	_minIndex = coordinateToIndex(vmml::vector<3, int>(0,0,0), _levelCube, _nLevels); 
+	int d = exp2(_nLevels);
+	_maxIndex = coordinateToIndex(vmml::vector<3, int>(d-1,d-1,d-1), _levelCube, _nLevels);
 
 	if (numElements == 0)
 	{
@@ -116,6 +123,12 @@ bool cubeCacheCPU::reSize(vmml::vector<3, int> cubeDim, int cubeInc, int levelCu
 float * cubeCacheCPU::push_cube(index_node_t idCube)
 {
 	boost::unordered_map<index_node_t, NodeLinkedList *>::iterator it;
+
+	if (idCube < _minIndex || idCube > _maxIndex)
+	{
+		LBERROR<<"Cache CPU: Trying to push a worng index cube "<<idCube<<std::endl;
+		return 0;
+	}
 
 	_lock.set();
 	

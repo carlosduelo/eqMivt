@@ -24,6 +24,8 @@ class cubeCacheCPU
 	private:
 		lunchbox::Lock	_lock;
 
+		index_node_t			_minIndex;
+		index_node_t			_maxIndex;
 		vmml::vector<3, int>	_cubeDim;
 		vmml::vector<3, int>	_cubeInc;
 		vmml::vector<3, int>	_realcubeDim;

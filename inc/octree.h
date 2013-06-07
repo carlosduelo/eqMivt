@@ -41,7 +41,7 @@ class Octree
 
 		void setGeneralValues(vmml::vector<3, int> realDim, int dimension, int nLevels, int maxLevel, uint32_t device);
 		
-		bool setCurrentOctree(float isosurface, int maxHeight, index_node_t ** octree, int * sizes);
+		bool setCurrentOctree(int currentLevel, float isosurface, int maxHeight, index_node_t ** octree, int * sizes);
 
 		void increaseLevel() { _currentLevel = _currentLevel == _maxLevel ? _maxLevel : _currentLevel + 1; }
 

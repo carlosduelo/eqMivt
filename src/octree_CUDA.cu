@@ -611,7 +611,7 @@ bool Create_Octree(index_node_t ** octreeCPU, int * sizesCPU, int maxLevel, inde
 	// Creating sizes
 	if ((*sizes) == 0)
 	{
-		std::cout<< "Allocating memory octree CUDA sizes "<<(maxLevel+1)*sizeof(int)/1024.0f/1024.0f<< " MB:"<<std::endl;
+		std::cout<< "Allocating memory octree CUDA sizes "<<(maxLevel+1)*sizeof(int)/1024.0f/1024.0f<< " MB: ";
 		if (cudaSuccess != (cudaMalloc(sizes,   (maxLevel+1)*sizeof(int))))
 		{
 			std::cout<< "Octree: error allocating octree in the gpu"<<std::endl;
@@ -620,6 +620,7 @@ bool Create_Octree(index_node_t ** octreeCPU, int * sizesCPU, int maxLevel, inde
 		else
 			std::cout<<"OK"<<std::endl;
 	}
+
 	std::cout<< "Octree: coping to device the sizes ";
 	if (cudaSuccess != (cudaMemcpy((void*)*sizes, (void*)sizesCPU, (maxLevel+1)*sizeof(int), cudaMemcpyHostToDevice)))
 	{

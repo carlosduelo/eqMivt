@@ -30,6 +30,8 @@ class cubeCacheGPU
 		int						_offsetCube;
 		int						_levelCube;
 		int						_nLevels;
+		index_node_t			_minIndex;
+		index_node_t			_maxIndex;
 
 		boost::unordered_map<index_node_t, NodeLinkedList *> _indexStored;
 
