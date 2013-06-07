@@ -65,6 +65,7 @@ void FrameData::setNextOctree()
 {
 	if (_currentOctree < (_numOctrees-1))
 		_currentOctree++;
+
     setDirty( DIRTY_MODEL);
 }
 

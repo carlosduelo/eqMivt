@@ -90,6 +90,8 @@ bool Config::loadData( const eq::uint128_t& initDataID )
 	    return false;
     }
 
+	_frameData.setNumOctrees(OctreeManager::readNumOctreesFromFile(_initData.getOctreeFilename()));
+
 	// Set camera step
 	vmml::vector<3, int> dimensionVolume = OctreeManager::readRealDimFromFile(_initData.getOctreeFilename());
 	if (dimensionVolume.x() == 0 || dimensionVolume.z() == 0 || dimensionVolume.y() == 0)
@@ -181,9 +183,14 @@ bool Config::handleEvent( const eq::ConfigEvent* event )
 
         case eq::Event::CHANNEL_POINTER_WHEEL:
         {
-            _frameData.moveCamera( -_cameraStep * event->data.pointerWheel.yAxis,
-                                   0.f,
-                                   _cameraStep * event->data.pointerWheel.xAxis );
+//            _frameData.moveCamera( -_cameraStep * event->data.pointerWheel.yAxis,
+//                                   0.f,
+//                                   _cameraStep * event->data.pointerWheel.xAxis );
+			if (event->data.pointerWheel.xAxis > 0)
+				_frameData.setPreviusOctree();
+			else
+				_frameData.setNextOctree();
+
             _redraw = true;
             return true;
         }
@@ -279,10 +286,15 @@ bool Config::handleEvent( eq::EventICommand command )
 
         case eq::Event::CHANNEL_POINTER_WHEEL:
         {
-	    const eq::Event& event = command.get< eq::Event >();
-            _frameData.moveCamera( -_cameraStep * event.pointerWheel.yAxis,
-                                   0.f,
-                                   _cameraStep * event.pointerWheel.xAxis );
+			const eq::Event& event = command.get< eq::Event >();
+            //_frameData.moveCamera( -_cameraStep * event.pointerWheel.yAxis,
+            //                       0.f,
+            //                       _cameraStep * event.pointerWheel.xAxis );
+			
+			if (event.pointerWheel.xAxis>0)
+				_frameData.setPreviusOctree();
+			else
+				_frameData.setNextOctree();
             _redraw = true;
             return true;
         }
@@ -333,6 +345,26 @@ bool Config::_handleKeyEvent( const eq::KeyEvent& event )
 		case 'S':
 		{
 			_frameData.setStatistics();
+			return true;
+		}
+		case 'n':
+		{
+			_frameData.setNextOctree();
+			return true;
+		}
+		case 'N':
+		{
+			_frameData.setNextOctree();
+			return true;
+		}
+		case 'p':
+		{
+			_frameData.setPreviusOctree();
+			return true;
+		}
+		case 'P':
+		{
+			_frameData.setPreviusOctree();
 			return true;
 		}
         default:

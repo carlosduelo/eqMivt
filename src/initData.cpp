@@ -22,12 +22,12 @@ InitData::~InitData()
 
 void InitData::getInstanceData( co::DataOStream& os )
 {
-    os << _frameDataID << _octreeFilename << _dataTypeFile << _dataFilename;
+    os << _frameDataID << _octreeFilename << _dataTypeFile << _dataFilename << _maxCubesCacheCPU << _maxCubesCacheGPU;
 }
 
 void InitData::applyInstanceData( co::DataIStream& is )
 {
-    is >> _frameDataID >> _octreeFilename >> _dataTypeFile >> _dataFilename;
+    is >> _frameDataID >> _octreeFilename >> _dataTypeFile >> _dataFilename >> _maxCubesCacheCPU >> _maxCubesCacheGPU;
  
     LBASSERT( _frameDataID != 0 );
 }

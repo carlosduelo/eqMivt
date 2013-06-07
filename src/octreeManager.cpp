@@ -304,7 +304,7 @@ bool OctreeManager::init(std::string file_name)
 void OctreeManager::_setBestCubeLevel()
 {
 	for(int i=0; i<_numOctrees; i++)
-		_cubeCacheLevel[i] = _maxLevel;
+		_cubeCacheLevel[i] = 3;//_maxLevel;
 }
 
 bool OctreeManager::setCurrentOctree(int currentOctree)
@@ -346,7 +346,7 @@ bool OctreeManager::checkStatus(uint32_t device)
 	}
 	else
 	{
-		result = it->second->setCurrentOctree(_maxLevel, _isosurfaces[_currentOctree],  _maxHeight[_currentOctree], _octreeData, _sizes[_currentOctree]);
+		result = it->second->setCurrentOctree(_cubeCacheLevel[_currentOctree], _isosurfaces[_currentOctree],  _maxHeight[_currentOctree], _octreeData, _sizes[_currentOctree]);
 	}
 
 	_lock.unset();
