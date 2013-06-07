@@ -162,6 +162,8 @@ void Render::frameDraw(eq::Vector4f origin, eq::Vector4f LB, eq::Vector4f up, eq
 {
 	// Update ray casting parameters
 	_raycaster.setIsosurface(_octree->getIsosurface());
+	_raycaster.setMaxHeight(_octree->getMaxHeight());
+
 
 	_frameDrawTimes++;
 	_frameDrawClock.reset();

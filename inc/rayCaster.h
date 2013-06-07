@@ -20,7 +20,8 @@ namespace eqMivt
 class rayCaster
 {
 	private:
-		float 			_iso;
+		float 		_iso;
+		float		_maxHeight;
 
 		// Lighting
 		// Material parameters
@@ -33,6 +34,8 @@ class rayCaster
 		~rayCaster();
 
 		void setIsosurface(float isosurface);
+
+		void setMaxHeight(float maxHeight);
 
 		void increaseStep();
 
