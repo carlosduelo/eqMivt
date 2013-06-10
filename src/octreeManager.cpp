@@ -303,8 +303,11 @@ bool OctreeManager::init(std::string file_name)
 
 void OctreeManager::_setBestCubeLevel()
 {
+	int mL = _nLevels - 5; 
+	if (mL <= 0)
+		mL = 1;
 	for(int i=0; i<_numOctrees; i++)
-		_cubeCacheLevel[i] = 3;//_maxLevel;
+		_cubeCacheLevel[i] = mL;//_maxLevel;
 }
 
 bool OctreeManager::setCurrentOctree(int currentOctree)

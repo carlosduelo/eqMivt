@@ -93,7 +93,11 @@ bool cubeCacheCPU::reSize(vmml::vector<3, int> cubeDim, int cubeInc, int levelCu
 		{
 			memoryCPU /= 2;
 		}
-		_maxElements = memoryCPU/(_offsetCube*sizeof(int));
+		double cd = _offsetCube;
+		cd *= sizeof(float);
+		_maxElements = memoryCPU/cd;
+		if (_maxElements == 0)
+			return false;
 	}
 	else
 	{

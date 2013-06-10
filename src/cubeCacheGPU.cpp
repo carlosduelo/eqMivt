@@ -88,7 +88,7 @@ bool cubeCacheGPU::reSize(vmml::vector<3, int> cubeDim, int cubeInc, int levelCu
 	_cubeInc.set(cubeInc,cubeInc,cubeInc);
 	_realcubeDim	= cubeDim + 2 * cubeInc;
 	_levelCube	= levelCube;
-	_offsetCube	= (_cubeDim.x()+2*_cubeInc.x())*(_cubeDim.y()+2*_cubeInc.y())*(_cubeDim.z()+2*_cubeInc.z());
+	_offsetCube	= _realcubeDim.x() * _realcubeDim.y() * _realcubeDim.z();
 	_minIndex = coordinateToIndex(vmml::vector<3, int>(0,0,0), _levelCube, _nLevels); 
 	int d = exp2(_nLevels);
 	_maxIndex = coordinateToIndex(vmml::vector<3, int>(d-1,d-1,d-1), _levelCube, _nLevels);
@@ -105,8 +105,12 @@ bool cubeCacheGPU::reSize(vmml::vector<3, int> cubeDim, int cubeInc, int levelCu
 		}
 
 		float freeS = (8.0f*free)/10.0f; // Get 80% of free memory
-		_maxElements = freeS / (float)(_offsetCube*sizeof(float));
+		float cd = _offsetCube;
+		cd *= sizeof(float);
+		_maxElements = freeS / cd;
 		//LBINFO << total/1024/1024 <<" "<<free /1024/1024<< " "<<freeS/1024/1024<<" " <<_maxElements<<std::endl;
+		if (_maxElements == 0)
+			return false;
 	}
 	else
 	{
