@@ -9,6 +9,8 @@ Notes:
 #include <cubeCacheGPU.h>
 #include <mortonCodeUtil_CPU.h>
 
+#define posToIndex(i,j,k,d) ((k)+(j)*(d)+(i)*(d)*(d))
+
 namespace eqMivt
 {
 	typedef struct
@@ -184,7 +186,6 @@ float * cubeCacheGPU::push_cube(index_node_t idCube, cudaStream_t stream)
 
 				unsigned pos   = node->element;
 				cube    = _cacheData + pos*_offsetCube;
-
 				if (idCube == idCubeCPU)
 				{
 					if (cudaSuccess != cudaMemcpyAsync((void*) cube, (void*) pCube, _offsetCube*sizeof(float), cudaMemcpyHostToDevice, stream))
@@ -195,20 +196,29 @@ float * cubeCacheGPU::push_cube(index_node_t idCube, cudaStream_t stream)
 				}
 				else
 				{
-					vmml::vector<3, int> realDimCPU = _cpuCache->getRealCubeDim();	
-					size_t spitch = _realcubeDim.y()*_realcubeDim.z()*sizeof(float);
-					size_t width = _realcubeDim.y()*_realcubeDim.z();
-					size_t height = _realcubeDim.x();
-					size_t dpitch = realDimCPU.y()*realDimCPU.z()*sizeof(float);
-
+					#if 0
 					vmml::vector<3, int> coord = getMinBoxIndex2(idCube, _levelCube, _nLevels);
-					pCube += (coord.z() + coord.y()*realDimCPU.z() + coord.x()*realDimCPU.z()*realDimCPU.y()); 
+					vmml::vector<3, int> coordC = getMinBoxIndex2(idCubeCPU, _cpuCache->getLevelCube(), _nLevels) - _cpuCache->getCubeInc();
+					coord -= coordC;
+					vmml::vector<3, int> realDimCPU = _cpuCache->getRealCubeDim();
 
-					if (cudaSuccess != cudaMemcpy2DAsync((void*)cube, dpitch, (const void*)pCube, spitch, width, height, cudaMemcpyHostToDevice, stream))
+					cudaMemcpy3DParms myParms = {0};
+					myParms.srcPos = make_cudaPos(coord.x(), coord.y(), coord.z());
+					myParms.srcPtr = make_cudaPitchedPtr((void*)pCube, realDimCPU.z()*sizeof(float), realDimCPU.x(), realDimCPU.y()); 
+					myParms.dstPos = make_cudaPos(0,0,0);
+					myParms.dstPtr = make_cudaPitchedPtr((void*)cube, _realcubeDim.z()*sizeof(float), _realcubeDim.x(), _realcubeDim.y()); 
+					myParms.extent = make_cudaExtent(_realcubeDim.x()*sizeof(float),_realcubeDim.y()*sizeof(float),_realcubeDim.z()*sizeof(float));
+					myParms.kind = cudaMemcpyHostToDevice;
+
+					if (cudaSuccess != cudaMemcpy3DAsync(&myParms, stream))
 					{
 						LBERROR<<"Cache GPU: error copying to a device "<<cube<<" "<<pCube<<" "<<_offsetCube<<std::endl;
 						throw;
 					}
+					#endif
+					// Not implemented
+					std::cerr<<"NOT IMPLEMENTED"<<std::endl;
+					throw;
 
 				}
 

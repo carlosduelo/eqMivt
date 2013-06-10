@@ -303,7 +303,7 @@ bool OctreeManager::init(std::string file_name)
 
 void OctreeManager::_setBestCubeLevel()
 {
-	int mL = _nLevels - 5; 
+	int mL = _nLevels - 9 + 1; 
 	if (mL <= 0)
 		mL = 1;
 	for(int i=0; i<_numOctrees; i++)
