@@ -413,7 +413,26 @@ namespace eqMivt
 		vmml::vector<3, int> cubeInc(0,0,0);
 		FileManager * file = eqMivt::CreateFileManage(type_file, file_params);
 		vmml::vector<3, int> realDim = file->getRealDimension();
-		delete file;
+
+		// get grid vectors
+		double * xGrid = 0;
+		double * yGrid = 0;
+		double * zGrid = 0;
+		if (!file->getxGrid(&xGrid) || 
+			!file->getyGrid(&yGrid) ||
+			!file->getzGrid(&zGrid))
+		{
+			std::cerr<<"Error reading grid"<<std::endl;
+			return false;
+		}
+
+		std::vector<octree*> octrees(isosurfaceList.size());
+		for(int i=0; i<isosurfaceList.size(); i++)
+		{
+			octrees[i] = new octree(nLevels, maxLevel, isosurfaceList[i]);
+			octrees[i]->printTree();
+		}
+		return true;
 
 		int dimension;
 		int nLevels;
@@ -485,7 +504,6 @@ namespace eqMivt
 		std::cout<<"Octree dimension "<<dimension<<"x"<<dimension<<"x"<<dimension<<" levels "<<nLevels<<std::endl;
 		std::cout<<"Octree maximum level "<<maxLevel<<" dimension "<<pow(2, nLevels - maxLevel)<<"x"<<pow(2, nLevels - maxLevel)<<"x"<<pow(2, nLevels - maxLevel)<<std::endl;
 		std::cout<<"Reading in block "<<cubeDim<<" level of cube "<<levelCube<<std::endl;
-		file = eqMivt::CreateFileManage(type_file, file_params);
 		
 
 		float * dataCube = new float[dimCube*dimCube*dimCube];
@@ -500,10 +518,6 @@ namespace eqMivt
 				throw;
 			}
 		}
-
-		std::vector<octree*> octrees(isosurfaceList.size());
-		for(int i=0; i<isosurfaceList.size(); i++)
-			octrees[i] = new octree(nLevels, maxLevel, isosurfaceList[i]);
 
 		index_node_t idStart = coordinateToIndex(vmml::vector<3, int>(0,0,0), levelCube, nLevels);
 		index_node_t idFinish = coordinateToIndex(vmml::vector<3, int>(dimension-1, dimension-1, dimension-1), levelCube, nLevels);

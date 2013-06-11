@@ -108,6 +108,13 @@ bool parseConfigFile(std::string file_name)
 		finish[1] = toInt(*tok_iter);	if (finish[1] < 0) {infile.close(); return false;} tok_iter++;
 		finish[2] = toInt(*tok_iter);	if (finish[2] < 0) {infile.close(); return false;} tok_iter++;
 
+		if (finish[0] <= start[0] || finish[1] <= start[1] || finish[2] <= start[2])
+		{
+			std::cerr<<"Error: finish coordinates should be > start coordinates"<<std::endl;
+			infile.close();
+			return false;
+		}
+
 		bool error = false;
 		int num = 0;
 
@@ -233,7 +240,7 @@ bool checkParameters(const int argc, char ** argv)
 			fileParams.push_back(t);
 		}
 
-		if (dataParam[0] == "hdf5_file" && (fileParams.size() != 2 || fileParams.size() != 5))
+		if (dataParam[0] == "hdf5_file" && (fileParams.size() != 2 && fileParams.size() != 5))
 		{
 			std::cerr <<"data-file option: hdf5_file  file-path:data-set-name<string>:[x_grid<string>:y_grid<string>:z_grid<string>] level-cube<int>" << std::endl;
 			return false;
