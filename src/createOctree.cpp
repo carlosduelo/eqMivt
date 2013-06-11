@@ -21,6 +21,7 @@ std::vector<std::string>	file_params;
 int							maxLevel;
 std::vector<float>			isosurfaceList;
 std::string					octree_file_name;
+bool						octree_name_set = false;
 bool						useCUDA;
 
 bool checkParameters(const int argc, char ** argv)
@@ -33,6 +34,7 @@ bool checkParameters(const int argc, char ** argv)
     ("data-file,d", boost::program_options::value< std::vector<std::string> >()->multitoken(), "type-data-file data-file-path level-cube-data\nType file supported:\nhdf5_file file-path:data-set-name level-cube-data")
 	("list-isosurfaces,l", boost::program_options::value< std::vector<float> >()->multitoken(), "list isosurfaces: iso0<float> iso1<float> iso2<float> ...")
 	("range-isosurfaces,r", boost::program_options::value< std::vector<float> >()->multitoken(), "set by range [isoA, isoB] chunk: isoA<float> isoB<float> chunk<float>")
+	("output-file-name,o", boost::program_options::value< std::vector<std::string> >()->multitoken(), "set name of output file, optional, by default same name as data with extension octree")
     ;
 
 	boost::program_options::variables_map vm;
@@ -57,6 +59,13 @@ bool checkParameters(const int argc, char ** argv)
         std::cout << "Version eqMivt: "<<CREATE_OCTREE_VERSION<< "\n";
 		return false;
     }
+	if (vm.count("output-file-name"))
+	{
+		std::vector<std::string> dataParam = vm["output-file-name"].as< std::vector<std::string> >();
+
+		octree_name_set = true;
+		octree_file_name = dataParam[0];
+	}
 	if (vm.count("data-file"))
 	{
 		std::vector<std::string> dataParam = vm["data-file"].as< std::vector<std::string> >();
@@ -86,9 +95,12 @@ bool checkParameters(const int argc, char ** argv)
 		}
 
 		file_params = fileParams;
-		octree_file_name = file_params[0];
-		octree_file_name.erase(octree_file_name.find_last_of("."), std::string::npos);
-		octree_file_name += ".octree";
+		if (!octree_name_set)
+		{
+			octree_file_name = file_params[0];
+			octree_file_name.erase(octree_file_name.find_last_of("."), std::string::npos);
+			octree_file_name += ".octree";
+		}
 
 		try
 		{
