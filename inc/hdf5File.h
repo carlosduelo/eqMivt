@@ -24,12 +24,21 @@ class hdf5File : public FileManager
 		hid_t           _spaceid;
 		int             _ndim;
 		hsize_t         _dims[3];
+		hid_t			_datatype;
+
+		std::string		_xGrid;
+		std::string		_yGrid;
+		std::string		_zGrid;
 
 	public:
 
 		virtual bool init(std::vector<std::string> file_params);
 
 		~hdf5File();
+
+		virtual bool getxGrid(double ** xGrid);
+		virtual bool getyGrid(double ** yGrid);
+		virtual bool getzGrid(double ** zGrid);
 
 		virtual void readCube(index_node_t index, float * cube, int levelCube, int nLevels, vmml::vector<3, int>    cubeDim, vmml::vector<3, int> cubeInc, vmml::vector<3, int> realCubeDim);
 

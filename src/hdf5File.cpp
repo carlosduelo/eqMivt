@@ -30,6 +30,12 @@ bool hdf5File::init(std::vector<std::string> file_params)
 		return false;
 	}
 
+	if (( _datatype = H5Dget_type(_dataset_id)) < 0)
+	{
+		LBERROR<<"hdf5: unable to data set type"<<std::endl;
+		return false;
+	}
+
 	if ((_spaceid    = H5Dget_space(_dataset_id)) < 0)
 	{
 		LBERROR<<"hdf5: unable to open the requested data space"<<std::endl;
@@ -41,6 +47,21 @@ bool hdf5File::init(std::vector<std::string> file_params)
 		LBERROR<<"hdf5: handling file"<<std::endl;
 		return false;
 	}
+
+	if (file_params.size() == 2)
+	{
+		_xGrid = "";
+		_yGrid = "";
+		_zGrid = "";
+	}
+	else
+	{
+		_xGrid = file_params[2];
+		_yGrid = file_params[3];
+		_zGrid = file_params[4];
+	}
+
+	_isInit = true;
 
 	return true;
 }
@@ -70,9 +91,165 @@ vmml::vector<3, int> hdf5File::getRealDimension()
 	return vmml::vector<3, int>(_dims[0],_dims[1],_dims[2]);
 }
 
+bool hdf5File::getxGrid(double ** xGrid)
+{
+	if (!_isInit)
+		return false;
+	
+	(*xGrid) = new double[_dims[0]];
+
+	if (_xGrid == "")
+	{
+		for(int i=0; i<_dims[0]; i++)
+			(*xGrid)[i] = i;
+	}
+	else
+	{
+		hid_t           dataset_id;
+		hid_t           spaceid;
+		hid_t			datatype;
+
+		if ((dataset_id = H5Dopen1(_file_id, _xGrid.c_str())) < 0 )
+		{
+			LBERROR<<"hdf5: unable to open the requested data set "<<_xGrid<<std::endl;
+			return false;
+		}
+
+		if (( datatype = H5Dget_type(dataset_id)) < 0)
+		{
+			LBERROR<<"hdf5: unable to data set type"<<std::endl;
+			return false;
+		}
+
+		if ((spaceid    = H5Dget_space(dataset_id)) < 0)
+		{
+			LBERROR<<"hdf5: unable to open the requested data space"<<std::endl;
+			return false;
+		}
+
+		herr_t	status;
+		if ((status = H5Dread(dataset_id, datatype, H5S_ALL, spaceid, H5P_DEFAULT, (*xGrid))) < 0)
+		{
+			LBERROR<<"hdf5: reading x grid"<<std::endl;
+		}
+
+		if ((status = H5Dclose(dataset_id)) < 0)
+		{
+			LBERROR<<"hdf5: unable to close the data set"<<std::endl;
+		}
+
+	}
+	return true;
+}
+
+bool hdf5File::getyGrid(double ** yGrid)
+{
+	if (!_isInit)
+		return false;
+	(*yGrid) = new double[_dims[1]];
+
+	if (_yGrid == "")
+	{
+		for(int i=0; i<_dims[1]; i++)
+			(*yGrid)[i] = i;
+	}
+	else
+	{
+		hid_t           dataset_id;
+		hid_t           spaceid;
+		hid_t			datatype;
+
+		if ((dataset_id = H5Dopen1(_file_id, _yGrid.c_str())) < 0 )
+		{
+			LBERROR<<"hdf5: unable to open the requested data set "<<_yGrid<<std::endl;
+			return false;
+		}
+
+		if (( datatype = H5Dget_type(dataset_id)) < 0)
+		{
+			LBERROR<<"hdf5: unable to data set type"<<std::endl;
+			return false;
+		}
+
+		if ((spaceid    = H5Dget_space(dataset_id)) < 0)
+		{
+			LBERROR<<"hdf5: unable to open the requested data space"<<std::endl;
+			return false;
+		}
+
+		herr_t	status;
+		if ((status = H5Dread(dataset_id, datatype, H5S_ALL, spaceid, H5P_DEFAULT, (*yGrid))) < 0)
+		{
+			LBERROR<<"hdf5: reading y grid"<<std::endl;
+		}
+
+		if ((status = H5Dclose(dataset_id)) < 0)
+		{
+			LBERROR<<"hdf5: unable to close the data set"<<std::endl;
+		}
+
+	}
+	return true;
+}
+
+bool hdf5File::getzGrid(double ** zGrid)
+{
+	if (!_isInit)
+		return false;
+	(*zGrid) = new double[_dims[2]];
+
+	if (_zGrid == "")
+	{
+		for(int i=0; i<_dims[2]; i++)
+			(*zGrid)[i] = i;
+	}
+	else
+	{
+		hid_t           dataset_id;
+		hid_t           spaceid;
+		hid_t			datatype;
+
+		if ((dataset_id = H5Dopen1(_file_id, _zGrid.c_str())) < 0 )
+		{
+			LBERROR<<"hdf5: unable to open the requested data set "<<_zGrid<<std::endl;
+			return false;
+		}
+
+		if (( datatype = H5Dget_type(dataset_id)) < 0)
+		{
+			LBERROR<<"hdf5: unable to data set type"<<std::endl;
+			return false;
+		}
+
+		if ((spaceid    = H5Dget_space(dataset_id)) < 0)
+		{
+			LBERROR<<"hdf5: unable to open the requested data space"<<std::endl;
+			return false;
+		}
+
+		herr_t	status;
+		if ((status = H5Dread(dataset_id, datatype, H5S_ALL, spaceid, H5P_DEFAULT, (*zGrid))) < 0)
+		{
+			LBERROR<<"hdf5: reading z grid"<<std::endl;
+		}
+
+		if ((status = H5Dclose(dataset_id)) < 0)
+		{
+			LBERROR<<"hdf5: unable to close the data set"<<std::endl;
+		}
+
+	}
+	return true;
+}
+
 void hdf5File::readCube(index_node_t index, float * cube, int levelCube, int nLevels, vmml::vector<3, int>    cubeDim, vmml::vector<3, int> cubeInc, vmml::vector<3, int> realCubeDim)
 {
+	if (!_isInit)
+		return;
+
 	vmml::vector<3, int> coord 	= getMinBoxIndex2(index, levelCube, nLevels);
+	// ADD offset
+	coord += _offset;
 	vmml::vector<3, int> s 		= coord - cubeInc;
 	vmml::vector<3, int> e 		= s + realCubeDim;
 
@@ -142,7 +319,7 @@ void hdf5File::readCube(index_node_t index, float * cube, int levelCube, int nLe
 	* Read data from hyperslab in the file into the hyperslab in 
 	* memory and display.
 	*/
-	if ((status = H5Dread(_dataset_id, H5T_IEEE_F32LE, memspace, _spaceid, H5P_DEFAULT, cube)) < 0)
+	if ((status = H5Dread(_dataset_id, _datatype, memspace, _spaceid, H5P_DEFAULT, cube)) < 0)
 	{
 		LBERROR<<"hdf5: reading data from hyperslab un the file"<<std::endl;
 	}

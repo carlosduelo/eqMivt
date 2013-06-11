@@ -406,7 +406,7 @@ namespace eqMivt
 		return;
 	}
 
-	bool createOctree(std::string type_file, std::vector<std::string> file_params, int maxLevel, std::vector<float> isosurfaceList, std::string octree_file, bool useCUDA)
+ bool createOctree(std::string type_file, std::vector<std::string> file_params, int maxLevel, std::vector<float> isosurfaceList, std::vector<int> numOctrees, std::vector< vmml::vector<3, int> > startCoordinates, std::vector< vmml::vector<3, int> > finishCoordinates, std::string octree_file, bool useCUDA)
 	{
 
 		vmml::vector<3, int> cubeDim(2,2,2);

@@ -15,14 +15,160 @@ Notes:
 #include <boost/foreach.hpp>
 #include <boost/tokenizer.hpp>
 
+#include <fstream>
+
 // GLOBAL VARS
 std::string					type_file;
 std::vector<std::string>	file_params;
 int							maxLevel;
 std::vector<float>			isosurfaceList;
+std::vector<int>			octreesPieces;
+std::vector< vmml::vector<3, int> > startCoordinates;
+std::vector< vmml::vector<3, int> > finishCoordinates;
+
+std::string					config_file_name;
 std::string					octree_file_name;
 bool						octree_name_set = false;
 bool						useCUDA;
+
+float toFloat(std::string  s)
+{
+	try
+	{
+		float r = -1.0f;
+		r = boost::lexical_cast<float>(s);
+		if (r < 0)
+		{
+			std::cerr<<"coordinates should be > 0"<<std::endl;
+			return -1.0f;
+		}
+		return r;
+	}
+	catch( boost::bad_lexical_cast const& )
+	{
+		std::cerr <<"error parsing file" << std::endl;
+		return  -1.0f;
+	}
+
+}
+
+int toInt(std::string  s)
+{
+	try
+	{
+		int r = 0;
+		r = boost::lexical_cast<int>(s);
+		if (r < 0)
+		{
+			std::cerr<<"coordinates should be > 0"<<std::endl;
+			return -1;
+		}
+		return r;
+	}
+	catch( boost::bad_lexical_cast const& )
+	{
+		std::cerr <<"error parsing file" << std::endl;
+		return  -1;
+	}
+
+}
+
+bool parseConfigFile(std::string file_name)
+{
+	std::ifstream infile;
+	try
+	{
+		infile.open(file_name.c_str());
+	}
+	catch(...)
+	{
+		std::cerr<<file_name<<" do not exist"<<std::endl;
+		return false;
+	}
+
+	if (!infile.is_open())
+	{
+		std::cerr<<file_name<<" do not exist"<<std::endl;
+		return false;
+	}
+
+	std::string line;
+	while (std::getline(infile, line))
+	{
+		boost::char_separator<char> sep(" ");
+		boost::tokenizer< boost::char_separator<char> > tokens(line, sep);
+		
+		vmml::vector<3, int> start;
+		vmml::vector<3, int> finish;
+		boost::tokenizer< boost::char_separator<char> >::iterator tok_iter = tokens.begin();
+		start[0] = toInt(*tok_iter);	if (start[0] < 0) {infile.close(); return false;} tok_iter++;
+		start[1] = toInt(*tok_iter);	if (start[1] < 0) {infile.close(); return false;} tok_iter++;
+		start[2] = toInt(*tok_iter);	if (start[2] < 0) {infile.close(); return false;} tok_iter++;
+		finish[0] = toInt(*tok_iter);	if (finish[0] < 0) {infile.close(); return false;} tok_iter++;
+		finish[1] = toInt(*tok_iter);	if (finish[1] < 0) {infile.close(); return false;} tok_iter++;
+		finish[2] = toInt(*tok_iter);	if (finish[2] < 0) {infile.close(); return false;} tok_iter++;
+
+		bool error = false;
+		int num = 0;
+
+		if ((*tok_iter).compare("r") == 0)
+		{
+			tok_iter++;
+			float ranges[3];
+			ranges[0] = toFloat(*tok_iter); tok_iter++;
+			ranges[1] = toFloat(*tok_iter); tok_iter++;
+			ranges[2] = toFloat(*tok_iter); tok_iter++;
+
+			if (ranges[0] > ranges[1] || (ranges[1]-ranges[0]) < ranges[2])
+			{
+				error = true;
+			}
+			else
+			{
+				float iso = ranges[0];
+				while(iso <= ranges[1])
+				{
+					isosurfaceList.push_back(iso);
+					iso += ranges[2];
+					num++;
+				}
+			}
+		}
+		else if ((*tok_iter).compare("l") == 0)
+		{
+			tok_iter++;
+			while(tok_iter != tokens.end())
+			{
+				num++;
+				float i = toFloat(*tok_iter);
+				if (i <= 0.0f)
+				{
+					std::cerr<<"Isosurface should be > 0.0"<<std::endl;
+					error = true;
+					break;
+				}
+				isosurfaceList.push_back(i);
+				tok_iter++;
+			}
+		}
+
+		if (num > 0)
+			octreesPieces.push_back(num);
+		else
+			error = true;
+
+		if (error)
+		{
+			std::cerr<<"Error parsing config file"<<std::endl;
+			infile.close(); 
+			return false;
+		}
+	}
+
+	infile.close();
+	return true;
+
+}
 
 bool checkParameters(const int argc, char ** argv)
 {
@@ -31,10 +177,9 @@ bool checkParameters(const int argc, char ** argv)
     ("version,v", "print version")
     ("help", "produce help message")
     ("use-CUDA,c", "activate CUDA acceleration, by default CUDA acceleration disable")
-    ("data-file,d", boost::program_options::value< std::vector<std::string> >()->multitoken(), "type-data-file data-file-path level-cube-data\nType file supported:\nhdf5_file file-path:data-set-name level-cube-data")
-	("list-isosurfaces,l", boost::program_options::value< std::vector<float> >()->multitoken(), "list isosurfaces: iso0<float> iso1<float> iso2<float> ...")
-	("range-isosurfaces,r", boost::program_options::value< std::vector<float> >()->multitoken(), "set by range [isoA, isoB] chunk: isoA<float> isoB<float> chunk<float>")
+    ("data-file,d", boost::program_options::value< std::vector<std::string> >()->multitoken(), "type-data-file data-file-path level-cube-data\nType file supported:\nhdf5_file file-path:data-set-name[:x_grid:y_grid:z_grid] level-cube-data")
 	("output-file-name,o", boost::program_options::value< std::vector<std::string> >()->multitoken(), "set name of output file, optional, by default same name as data with extension octree")
+	("config-file,f", boost::program_options::value< std::vector<std::string> >()->multitoken(), "config file")
     ;
 
 	boost::program_options::variables_map vm;
@@ -45,6 +190,7 @@ bool checkParameters(const int argc, char ** argv)
 	}
 	catch( ... )
 	{
+		std::cout<<"Octree constructor: allows create a octree"<<std::endl; 
         std::cout << desc << "\n";
 		return false;
 	}
@@ -87,9 +233,9 @@ bool checkParameters(const int argc, char ** argv)
 			fileParams.push_back(t);
 		}
 
-		if (dataParam[0] == "hdf5_file" && fileParams.size() != 2)
+		if (dataParam[0] == "hdf5_file" && (fileParams.size() != 2 || fileParams.size() != 5))
 		{
-			std::cerr <<"data-file option: hdf5_file  file-path:data-set-name<string> level-cube<int>" << std::endl;
+			std::cerr <<"data-file option: hdf5_file  file-path:data-set-name<string>:[x_grid<string>:y_grid<string>:z_grid<string>] level-cube<int>" << std::endl;
 			return false;
 
 		}
@@ -124,44 +270,18 @@ bool checkParameters(const int argc, char ** argv)
 		else
 			useCUDA = false;
 
-		bool setIso = false;
-		if (vm.count("list-isosurfaces"))
+		if (vm.count("config-file"))
 		{
-			setIso = true;
+			std::vector<std::string> dataParam = vm["config-file"].as< std::vector<std::string> >();
 
-			isosurfaceList = vm["list-isosurfaces"].as< std::vector<float> >();
+			config_file_name = dataParam[0];
 		}
-		if (vm.count("range-isosurfaces"))
+		else
 		{
-			if (setIso)
-			{
-				std::cout << desc << "\n";
-				return false;
-			}
-			else
-				setIso = true;
-
-			std::vector<float> ranges = vm["range-isosurfaces"].as< std::vector<float> >();
-
-			if (ranges.size() != 3 || ranges[0] > ranges[1] || (ranges[1]-ranges[0]) < ranges[2])
-			{
-				std::cout << desc << "\n";
-				return false;
-			}
-
-			float iso = ranges[0];
-			while(iso <= ranges[1])
-			{
-				isosurfaceList.push_back(iso);
-				iso += ranges[2];
-			}
-		}
-
-		if (!setIso)
-		{
-			std::cout << desc << "\n";
+			std::cout<<desc<<std::endl;
 			return false;
 		}
+
 	}
 	else
 	{
@@ -169,9 +289,15 @@ bool checkParameters(const int argc, char ** argv)
 		return false;
 	}
 
-
-
-	return true;
+	if (parseConfigFile(config_file_name))
+	{
+		std::cout<<"Parsing config file..... OK"<<std::endl;
+		return true;
+	}
+	else
+	{
+		return false;
+	}
 }
 
 
@@ -180,10 +306,15 @@ int main( const int argc, char ** argv)
 	if (!checkParameters(argc, argv))
 		return 0;
 
-	for (std::vector<float>::iterator it = isosurfaceList.begin() ; it != isosurfaceList.end(); ++it)
+	#if 0
+	for (std::vector<int>::iterator it = octreesPieces.begin() ; it != octreesPieces.end(); ++it)
 	    std::cout << ' ' << *it<<std::endl;
 
-	if (!eqMivt::createOctree(type_file, file_params, maxLevel, isosurfaceList, octree_file_name, useCUDA))
+	for (std::vector<float>::iterator it = isosurfaceList.begin() ; it != isosurfaceList.end(); ++it)
+	    std::cout << ' ' << *it<<std::endl;
+	#endif
+
+	if (!eqMivt::createOctree(type_file, file_params, maxLevel, isosurfaceList, octreesPieces, startCoordinates, finishCoordinates, octree_file_name, useCUDA))
 		return 0;
 
 	return 0;
