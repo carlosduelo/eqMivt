@@ -112,12 +112,18 @@ namespace eqMivt
 						id >>= 3;
 					}
 				}
+				_lastLevel.clear();
 			}
 
 			void reportHeight(int height)
 			{
 				if (_maxHeight < height)
 					_maxHeight = height;
+			}
+
+			float getIso()
+			{
+				return _iso;
 			}
 
 			int getMaxHeight()
@@ -361,37 +367,44 @@ namespace eqMivt
 
 	}
 
-	void _writeToFile(std::vector<octree*> octrees, std::vector<float> isos, int nLevels, int maxLevel, int dimension, vmml::vector<3, int> realDim, std::string octree_file)
+	void _writeToFile(std::vector<octree*> octrees, std::vector<int> maxLevel, std::vector<int> nLevel, std::vector<int> numOctrees, std::vector< vmml::vector<3, int> > startCoordinates, std::vector< vmml::vector<3, int> > finishCoordinates, vmml::vector<3, int> realDim, double * xGrid, double * yGrid, double * zGrid, std::string octree_file)
 	{
 		std::ofstream file(octree_file.c_str(), std::ofstream::binary);
 
 		int magicWord = 919278872;
 
 		int numO = octrees.size();
-		int x = realDim.x(); 
-		int y = realDim.y(); 
-		int z = realDim.z(); 
 
 		file.write((char*)&magicWord,  sizeof(magicWord));
-		file.write((char*)&nLevels,sizeof(nLevels));
-		file.write((char*)&maxLevel,sizeof(maxLevel));
-		file.write((char*)&dimension,sizeof(dimension));
-		file.write((char*)&x,sizeof(x));
-		file.write((char*)&y,sizeof(y));
-		file.write((char*)&z,sizeof(z));
 		file.write((char*)&numO,sizeof(numO));
+		file.write((char*)&realDim.array,3*sizeof(int));
+		file.write((char*)xGrid, realDim[0]*sizeof(double));
+		file.write((char*)yGrid, realDim[1]*sizeof(double));
+		file.write((char*)zGrid, realDim[2]*sizeof(double));
 
-		std::vector<float>::iterator it;
-		for (it=isos.begin() ; it !=isos.end(); it++ )
+		int nO = 0;
+		for(int i=0; i<maxLevel.size(); i++)
 		{
-			float iso = *it;
+			file.write((char*)&numOctrees[i], sizeof(int));
+			file.write((char*)&startCoordinates[i].array,3*sizeof(int));
+			file.write((char*)&finishCoordinates[i].array,3*sizeof(int));
+			file.write((char*)&nLevel[i], sizeof(int));
+			file.write((char*)&maxLevel[i], sizeof(int));
+
+		}
+
+		for(int i=0; i<numO; i++)
+		{
+			float iso = octrees[i]->getIso();;
 			file.write((char*)&iso,sizeof(float));
 		}
 
 		// offset from start
-		int desp = 8*sizeof(int) + 2*numO*sizeof(float);
+		int desp =	5*sizeof(int) + realDim[0]*sizeof(double) + realDim[1]*sizeof(double) + realDim[2]*sizeof(double) +
+					numOctrees.size() * 9 *sizeof(int) + numO * sizeof(float);
 		for(int i =0; i<numO; i++)
 		{
+			std::cout<<desp<<std::endl;
 			file.write((char*)&desp,sizeof(desp));
 			desp = octrees[i]->getSize(); 
 		}
@@ -401,16 +414,14 @@ namespace eqMivt
 			octrees[i]->writeToFile(&file);
 		}
 
-
 		file.close();	
+
 		return;
 	}
 
- bool createOctree(std::string type_file, std::vector<std::string> file_params, int maxLevel, std::vector<float> isosurfaceList, std::vector<int> numOctrees, std::vector< vmml::vector<3, int> > startCoordinates, std::vector< vmml::vector<3, int> > finishCoordinates, std::string octree_file, bool useCUDA)
+ bool createOctree(std::string type_file, std::vector<std::string> file_params, std::vector<int> maxLevel, std::vector< std::vector<float> > isosurfaceList, std::vector<int> numOctrees, std::vector< vmml::vector<3, int> > startCoordinates, std::vector< vmml::vector<3, int> > finishCoordinates, std::string octree_file, bool useCUDA)
 	{
 
-		vmml::vector<3, int> cubeDim(2,2,2);
-		vmml::vector<3, int> cubeInc(0,0,0);
 		FileManager * file = eqMivt::CreateFileManage(type_file, file_params);
 		vmml::vector<3, int> realDim = file->getRealDimension();
 
@@ -426,167 +437,200 @@ namespace eqMivt
 			return false;
 		}
 
-		std::vector<octree*> octrees(isosurfaceList.size());
-		for(int i=0; i<isosurfaceList.size(); i++)
-		{
-			octrees[i] = new octree(nLevels, maxLevel, isosurfaceList[i]);
-			octrees[i]->printTree();
-		}
-		return true;
+		lunchbox::Clock		completeCreationClock;
+		completeCreationClock.reset();
 
-		int dimension;
-		int nLevels;
-
-		if (realDim[0]>realDim[1] && realDim[0]>realDim[2])
-			dimension = realDim[0];
-		else if (realDim[1]>realDim[2])
-			dimension = realDim[1];
-		else
-			dimension = realDim[2];
-
-		/* Calcular dimension del árbol*/
-		float aux = logf(dimension)/logf(2.0);
-		float aux2 = aux - floorf(aux);
-		nLevels = aux2>0.0 ? aux+1 : aux;
-		dimension = pow(2,nLevels);
-	
-		if (maxLevel > nLevels)
+		std::vector<int>	_nLevels;
+		std::vector<octree*> octrees;
+		for(int i=0; i<numOctrees.size(); i++)
 		{
-			std::cerr<<"MaxLevel has to be <= "<<nLevels<<std::endl;
-			return false;
-		}
+			int nO = numOctrees[i];
+			int mxLevel = maxLevel[i];
+			std::vector< float > isos = isosurfaceList[i];
+			std::vector<octree*> _octrees(nO);
 
-		int levelCube = 0; 
-		double memoryCPU = getMemorySize();
-		if (memoryCPU == 0)
-		{
-			std::cerr<<"Not possible, check memory aviable (the call failed due to OS limitations)"<<std::endl;
-			levelCube = nLevels >= 9 ? ((nLevels-9) > maxLevel ? maxLevel : ((nLevels-9))): maxLevel;
-		}
-		else
-		{
-			if (useCUDA)
+			vmml::vector<3, int> start  = startCoordinates[i];
+			vmml::vector<3, int> finish = finishCoordinates[i];
+			vmml::vector<3, int> realDimSub = finish - start;
+
+			if (finish[0] > realDim[0] || finish[1] > realDim[1] || finish[2] > realDim[2])
 			{
-				double memoryGPU = octreeConstructorGetFreeMemory();
-				for(int l=10; l>0; l--)
-				{
-					double bigCubeDim = pow(pow(2, l) + 1, 3)*(float)sizeof(float);
-					if ((2.0*bigCubeDim) < memoryGPU)
-					{
-						levelCube = nLevels >= l ? ((nLevels-l) > maxLevel ? maxLevel : ((nLevels-l))): maxLevel;
-						break;
-					}
-				}
+				std::cerr<<finish<< "is outside of volume"<<std::endl;
+				delete[] xGrid;
+				delete[] yGrid;
+				delete[] zGrid;
+				return false;
 			}
-			else if (nLevels <= 9)
+
+			int dimension = 0;
+			int nLevels = 0;
+			if (realDimSub[0]>realDimSub[1] && realDimSub[0]>realDimSub[2])
+				dimension = realDimSub[0];
+			else if (realDimSub[1]>realDimSub[2])
+				dimension = realDimSub[1];
+			else
+				dimension = realDimSub[2];
+			/* Calcular dimension del árbol*/
+			float aux = logf(dimension)/logf(2.0);
+			float aux2 = aux - floorf(aux);
+			nLevels = aux2>0.0 ? aux+1 : aux;
+			dimension = pow(2,nLevels);
+	
+			if (mxLevel > nLevels)
 			{
-					levelCube = nLevels >= 9 ? ((nLevels-9) > maxLevel ? maxLevel : ((nLevels-9))): maxLevel;
+				std::cerr<<"MaxLevel has to be <= "<<nLevels<<std::endl;
+				return false;
+			}
+
+			_nLevels.push_back(nLevels);
+
+			int levelCube = 0; 
+			double memoryCPU = getMemorySize();
+			if (memoryCPU == 0)
+			{
+				std::cerr<<"Not possible, check memory aviable (the call failed due to OS limitations)"<<std::endl;
+				levelCube = nLevels >= 9 ? ((nLevels-9) > mxLevel ? mxLevel : ((nLevels-9))): 0;
 			}
 			else
 			{
-				for(int l=10; l>0; l--)
-				{
-					double bigCubeDim = pow(pow(2, l) + 1, 3)*(float)sizeof(float);
-					if ((2.0*bigCubeDim) < memoryCPU)
-					{
-						levelCube = nLevels >= l ? ((nLevels-l) > maxLevel ? maxLevel : ((nLevels-l))): maxLevel;
-						break;
-					}
-				}
-			}
-		}
-
-		int dimCube = pow(2, nLevels - levelCube) + 1;
-		cubeDim.set(dimCube, dimCube, dimCube);
-		vmml::vector<3, int> realcubeDim	= cubeDim + 2 * cubeInc;
-
-		std::cout<<"Creating octree in file "<<octree_file<<std::endl;
-		std::cout<<"Octree dimension "<<dimension<<"x"<<dimension<<"x"<<dimension<<" levels "<<nLevels<<std::endl;
-		std::cout<<"Octree maximum level "<<maxLevel<<" dimension "<<pow(2, nLevels - maxLevel)<<"x"<<pow(2, nLevels - maxLevel)<<"x"<<pow(2, nLevels - maxLevel)<<std::endl;
-		std::cout<<"Reading in block "<<cubeDim<<" level of cube "<<levelCube<<std::endl;
-		
-
-		float * dataCube = new float[dimCube*dimCube*dimCube];
-		float * dataCubeGPU = 0;
-		if (useCUDA)
-		{
-			//Create CUDA memory
-			dataCubeGPU = octreeConstructorCreateCube(dimCube);
-			if (dataCubeGPU == 0)
-			{
-				std::cerr<<"Error allocating memory in a cuda device"<<std::endl;
-				throw;
-			}
-		}
-
-		index_node_t idStart = coordinateToIndex(vmml::vector<3, int>(0,0,0), levelCube, nLevels);
-		index_node_t idFinish = coordinateToIndex(vmml::vector<3, int>(dimension-1, dimension-1, dimension-1), levelCube, nLevels);
-
-		boost::progress_display show_progress(idFinish - idStart + 1);
-
-		lunchbox::Clock		completeCreationClock;
-		lunchbox::Clock		readingClock;
-		lunchbox::Clock		computinhClock;
-		double				readingTime = 0.0;
-		double				computingTime = 0.0;
-		completeCreationClock.reset();
-
-		for(index_node_t id=idStart; id<= idFinish; id++)
-		{
-			vmml::vector<3, int> currentBox = getMinBoxIndex(id, levelCube, nLevels);
-			if (currentBox.x() < realDim[0] && currentBox.y() < realDim[1] && currentBox.z() < realDim[2])
-			{
-				readingClock.reset();
-				file->readCube(id, dataCube, levelCube, nLevels, cubeDim, cubeInc, realcubeDim);
-				readingTime += readingClock.getTimed();
-				computinhClock.reset();
 				if (useCUDA)
 				{
-					if(!octreeConstructorCopyCube(dataCubeGPU, dataCube, dimCube))
+					double memoryGPU = octreeConstructorGetFreeMemory();
+					for(int l=10; l>0; l--)
 					{
-						std::cerr<<"Error copying cube to cuda device"<<std::endl;
-						throw;
+						double bigCubeDim = pow(pow(2, l) + 1, 3)*(float)sizeof(float);
+						if ((2.0*bigCubeDim) < memoryGPU)
+						{
+							levelCube = nLevels >= l ? ((nLevels-l) > mxLevel ? mxLevel : ((nLevels-l))): 0;
+							break;
+						}
 					}
-					_checkCube_cuda(octrees, isosurfaceList, nLevels, maxLevel, pow(2,nLevels-maxLevel), id, levelCube, dimCube, dataCubeGPU);
+				}
+				else if (nLevels <= 9)
+				{
+						levelCube = nLevels >= 9 ? ((nLevels-9) > mxLevel ? mxLevel : ((nLevels-9))): 0;
 				}
 				else
 				{
-					_checkCube(octrees, isosurfaceList, nLevels, maxLevel, pow(2,nLevels-maxLevel), id, levelCube, dimCube, dataCube);
+					for(int l=10; l>0; l--)
+					{
+						double bigCubeDim = pow(pow(2, l) + 1, 3)*(float)sizeof(float);
+						if ((2.0*bigCubeDim) < memoryCPU)
+						{
+							levelCube = nLevels >= l ? ((nLevels-l) > mxLevel ? mxLevel : ((nLevels-l))): 0;
+							break;
+						}
+					}
 				}
-
-				computingTime += computinhClock.getTimed();
 			}
-			++show_progress;
+
+
+			int dimCube = pow(2, nLevels - levelCube) + 1;
+			vmml::vector<3, int> cubeDim(dimCube, dimCube, dimCube);
+			vmml::vector<3, int> cubeInc(0,0,0);
+			vmml::vector<3, int> realcubeDim	= cubeDim + 2 * cubeInc;
+
+			std::cout<<"Octree dimension "<<dimension<<"x"<<dimension<<"x"<<dimension<<" levels "<<nLevels<<std::endl;
+			std::cout<<"Octree maximum level "<<mxLevel<<" dimension "<<pow(2, nLevels - mxLevel)<<"x"<<pow(2, nLevels - mxLevel)<<"x"<<pow(2, nLevels - mxLevel)<<std::endl;
+			std::cout<<"Reading in block "<<cubeDim<<" level of cube "<<levelCube<<std::endl;
+			std::cout<<"Coordinates "<<start<<" to "<<finish<<" Isosurfaces: ";
+			for(int j=0;j<nO; j++)
+			{
+				_octrees[j] = new octree(nLevels, mxLevel, isos[j]);
+				std::cout<<isos[j]<<" ";
+			}
+			std::cout<<std::endl;
+			
+			float * dataCube = new float[dimCube*dimCube*dimCube];
+			float * dataCubeGPU = 0;
+			if (useCUDA)
+			{
+				//Create CUDA memory
+				dataCubeGPU = octreeConstructorCreateCube(dimCube);
+				if (dataCubeGPU == 0)
+				{
+					std::cerr<<"Error allocating memory in a cuda device"<<std::endl;
+					throw;
+				}
+			}
+
+			index_node_t idStart = coordinateToIndex(vmml::vector<3, int>(0,0,0), levelCube, nLevels);
+			index_node_t idFinish = coordinateToIndex(vmml::vector<3, int>(dimension-1, dimension-1, dimension-1), levelCube, nLevels);
+
+			boost::progress_display show_progress(idFinish - idStart + 1);
+
+			lunchbox::Clock		readingClock;
+			lunchbox::Clock		computinhClock;
+			double				readingTime = 0.0;
+			double				computingTime = 0.0;
+
+			file->setOffset(start);
+
+			for(index_node_t id=idStart; id<= idFinish; id++)
+			{
+				vmml::vector<3, int> currentBox = getMinBoxIndex(id, levelCube, nLevels);
+				if (currentBox.x() < realDim[0] && currentBox.y() < realDim[1] && currentBox.z() < realDim[2])
+				{
+					readingClock.reset();
+					file->readCube(id, dataCube, levelCube, nLevels, cubeDim, cubeInc, realcubeDim);
+					readingTime += readingClock.getTimed();
+					computinhClock.reset();
+					if (useCUDA)
+					{
+						if(!octreeConstructorCopyCube(dataCubeGPU, dataCube, dimCube))
+						{
+							std::cerr<<"Error copying cube to cuda device"<<std::endl;
+							throw;
+						}
+						_checkCube_cuda(_octrees, isos, nLevels, mxLevel, pow(2,nLevels-mxLevel), id, levelCube, dimCube, dataCubeGPU);
+					}
+					else
+					{
+						_checkCube(_octrees, isos, nLevels, mxLevel, pow(2,nLevels-mxLevel), id, levelCube, dimCube, dataCube);
+					}
+
+					computingTime += computinhClock.getTimed();
+				}
+				++show_progress;
+			}
+
+			delete[] dataCube;
+			if (useCUDA)
+				octreeConstructorDestroyCube(dataCubeGPU);
+
+			computinhClock.reset();
+			#pragma omp parallel for
+			for(int i=0; i<_octrees.size(); i++)
+				_octrees[i]->completeOctree();
+			double completeTime = computinhClock.getTimed();
+
+			for(int j=0;j<nO; j++)
+				octrees.push_back(_octrees[j]);
+
+			std::cout<<"Hard disk reading time: "<<readingTime/1000.0<<" seconds."<<std::endl;
+			std::cout<<"Computing time: "<<computingTime/1000.0<<" seconds, "<<"time in complete octree "<<completeTime/1000.0<<" seconds."<<std::endl;
 		}
 
-		delete[] dataCube;
-	
-		computinhClock.reset();
-		#pragma omp parallel for
-		for(int i=0; i<octrees.size(); i++)
-			octrees[i]->completeOctree();
-		double completeTime = computinhClock.getTimed();
-
-		computinhClock.reset();
-		_writeToFile(octrees, isosurfaceList, nLevels, maxLevel, dimension, realDim, octree_file);
-		double writeFileTime = computinhClock.getTimed();
+		std::cout<<"Creating octree in file "<<octree_file<<std::endl;
+		lunchbox::Clock		writingClock;
+		writingClock.reset();
+		_writeToFile(octrees, maxLevel, _nLevels, numOctrees, startCoordinates, finishCoordinates, realDim, xGrid, yGrid, zGrid, octree_file);
+		double writeFileTime = writingClock.getTimed();
 
 		double time = completeCreationClock.getTimed();
 		std::cout<<"Toltal time: "<<time/1000.0<<" seconds."<<std::endl;
-		std::cout<<"Hard disk reading time: "<<readingTime/1000.0<<" seconds."<<std::endl;
-		std::cout<<"Computing time: "<<computingTime/1000.0<<" seconds, "<<"time in complete octree "<<completeTime/1000.0<<" seconds."<<std::endl;
 		std::cout<<"Time writing file "<<writeFileTime/1000.0<<" seconds."<<std::endl;
+
+		delete file;
+		delete[] xGrid;
+		delete[] yGrid;
+		delete[] zGrid;
 
 		for(int i=0; i<octrees.size(); i++)
 		{
 			//octrees[i]->printTree();
 			delete octrees[i];
 		}
-
-		delete file;
-
-		if (useCUDA)
-			octreeConstructorDestroyCube(dataCubeGPU);
 
 		return true;
 	}

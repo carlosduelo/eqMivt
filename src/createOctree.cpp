@@ -20,8 +20,8 @@ Notes:
 // GLOBAL VARS
 std::string					type_file;
 std::vector<std::string>	file_params;
-int							maxLevel;
-std::vector<float>			isosurfaceList;
+std::vector<int>			maxLevel;
+std::vector< std::vector<float>	>		isosurfaceList;
 std::vector<int>			octreesPieces;
 std::vector< vmml::vector<3, int> > startCoordinates;
 std::vector< vmml::vector<3, int> > finishCoordinates;
@@ -115,6 +115,38 @@ bool parseConfigFile(std::string file_name)
 			return false;
 		}
 
+		int mL = toInt(*tok_iter); tok_iter++;
+		if (mL <= 0)
+		{
+			std::cerr<<"Errror: max level should be > 0"<<std::endl;
+		}
+		int dimension;
+		int nLevels;
+		int realDim[3] = {finish[0]-start[0], finish[1]-start[1], finish[2]-start[2]};
+
+		if (realDim[0]>realDim[1] && realDim[0]>realDim[2])
+			dimension = realDim[0];
+		else if (realDim[1]>realDim[2])
+			dimension = realDim[1];
+		else
+			dimension = realDim[2];
+
+		/* Calcular dimension del árbol*/
+		float aux = logf(dimension)/logf(2.0);
+		float aux2 = aux - floorf(aux);
+		nLevels = aux2>0.0 ? aux+1 : aux;
+		dimension = pow(2,nLevels);
+
+		if (mL > nLevels)
+		{
+			std::cerr<<"To coordinates "<<start<<" to "<<finish<<" max level should be <= "<<nLevels<<std::endl;
+			return false;
+		}
+		
+		startCoordinates.push_back(start);
+		finishCoordinates.push_back(finish);
+		maxLevel.push_back(mL);
+
 		bool error = false;
 		int num = 0;
 
@@ -132,17 +164,20 @@ bool parseConfigFile(std::string file_name)
 			}
 			else
 			{
+				std::vector<float> isos;
 				float iso = ranges[0];
 				while(iso <= ranges[1])
 				{
-					isosurfaceList.push_back(iso);
+					isos.push_back(iso);
 					iso += ranges[2];
 					num++;
 				}
+				isosurfaceList.push_back(isos);
 			}
 		}
 		else if ((*tok_iter).compare("l") == 0)
 		{
+			std::vector<float> isos;
 			tok_iter++;
 			while(tok_iter != tokens.end())
 			{
@@ -154,9 +189,10 @@ bool parseConfigFile(std::string file_name)
 					error = true;
 					break;
 				}
-				isosurfaceList.push_back(i);
+				isos.push_back(i);
 				tok_iter++;
 			}
+			isosurfaceList.push_back(isos);
 		}
 
 		if (num > 0)
@@ -184,7 +220,7 @@ bool checkParameters(const int argc, char ** argv)
     ("version,v", "print version")
     ("help", "produce help message")
     ("use-CUDA,c", "activate CUDA acceleration, by default CUDA acceleration disable")
-    ("data-file,d", boost::program_options::value< std::vector<std::string> >()->multitoken(), "type-data-file data-file-path level-cube-data\nType file supported:\nhdf5_file file-path:data-set-name[:x_grid:y_grid:z_grid] level-cube-data")
+    ("data-file,d", boost::program_options::value< std::vector<std::string> >()->multitoken(), "type-data-file data-file-path\nType file supported:\nhdf5_file file-path:data-set-name[:x_grid:y_grid:z_grid]")
 	("output-file-name,o", boost::program_options::value< std::vector<std::string> >()->multitoken(), "set name of output file, optional, by default same name as data with extension octree")
 	("config-file,f", boost::program_options::value< std::vector<std::string> >()->multitoken(), "config file")
     ;
@@ -253,21 +289,6 @@ bool checkParameters(const int argc, char ** argv)
 			octree_file_name = file_params[0];
 			octree_file_name.erase(octree_file_name.find_last_of("."), std::string::npos);
 			octree_file_name += ".octree";
-		}
-
-		try
-		{
-			 maxLevel = boost::lexical_cast<int>(dataParam[2]);
-			 if (maxLevel <= 0)
-			 {
-				std::cerr<<"Max level has to be > 0"<<std::endl;
-				return false;
-			 }
-		} 
-		catch( boost::bad_lexical_cast const& )
-		{
-			std::cerr <<"data-file option: type-file-data<string> file-path<string> level-cube<int>" << std::endl;
-			return  false;
 		}
 
 		if (vm.count("use-CUDA"))
