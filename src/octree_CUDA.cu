@@ -659,9 +659,11 @@ bool Create_Octree(index_node_t ** octreeCPU, int * sizesCPU, int maxLevel, inde
 	std::cout<< "Allocating memory octree CUDA memory "<< total*sizeof(index_node_t)/1024.0f/1024.0f<< " MB: ";
 	if (cudaSuccess != (cudaMalloc(memoryGPU, total*sizeof(index_node_t))))
 	{
+		std::cout<<" Fail"<<std::endl;
 		std::cout<< "Octree: error allocating octree in the gpu"<<std::endl;
 		return false;
 	}
+	std::cout<<" OK"<<std::endl;
 
 	/* Copying octree */
 	int offset = 0;

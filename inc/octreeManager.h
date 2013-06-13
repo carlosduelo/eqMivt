@@ -27,13 +27,20 @@ class OctreeManager
 	private:
 		std::ifstream _file;
 
-		lunchbox::Lock								_lock;
+		lunchbox::Lock		_lock;
 		/* General parameters */
-		int _nLevels;
-		int	_maxLevel;
-		int _dimension;
-		vmml::vector<3, int> _realDim;
+		int _lastLevel; 
+		int * _nLevels;
+		int	* _maxLevel;
+		int * _dimension;
+		vmml::vector<3, int> * _realDim;
+		vmml::vector<3, int> * _startC;
+		vmml::vector<3, int> * _finishC;
 		int _numOctrees;
+		vmml::vector<3, int> _realDimensionVolume;
+		double * _xGrid;
+		double * _yGrid;
+		double * _zGrid;
 
 		float * _isosurfaces;
 		int ** _sizes;
@@ -54,23 +61,23 @@ class OctreeManager
 
 		~OctreeManager();
 
-		static int readNLevelsFromFile(std::string file_name);
-		static int readMaxLevelsFromFile(std::string file_name);
-		static int readDimensionFromFile(std::string file_name);
-		static vmml::vector<3, int> readRealDimFromFile(std::string file_name);
 		static int readNumOctreesFromFile(std::string file_name);
 
 		bool init(std::string file_name);
 
-		int getNLevels() { return _nLevels; }
-		int getMaxLevel() { return _maxLevel; }
-		int getDimension() { return _dimension; }
-		vmml::vector<3, int> getRealDim() { return _realDim; }
-		vmml::vector<3, int> getCurrentRealDim() { return vmml::vector<3, int>(_realDim.x(), _maxHeight[_currentOctree], _realDim.z()); }
+		int getNLevels() { return _nLevels[_currentOctree]; }
+		int getMaxLevel() { return _maxLevel[_currentOctree]; }
+		int getDimension() { return _dimension[_currentOctree]; }
+		vmml::vector<3, int> getRealDim() { return _realDimensionVolume; }
+		vmml::vector<3, int> getCurrentRealDim() { return _realDim[_currentOctree]; }
 		int getNumOctrees() { return _numOctrees; }
 		float getCurretIsosurface() { return _isosurfaces[_currentOctree]; }
 		int	getMaxHeight() { return _maxHeight[_currentOctree]; }
 		int getBestCubeLevel(){ return _cubeCacheLevel[_currentOctree]; }
+		double * getxGrind(){ return _xGrid; }
+		double * getyGrind(){ return _yGrid; }
+		double * getzGrind(){ return _zGrid; }
+		vmml::vector<3, int> getCurrentOffset(){ return _startC[_currentOctree]; }
 
 		bool setCurrentOctree(int currentOctree);
 		bool checkStatus(uint32_t device);

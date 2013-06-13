@@ -44,7 +44,7 @@ namespace eqMivt
 		}
 		else
 		{
-			_status = _cacheManager.init(initData.getDataTypeFile(), initData.getDataFilename(), _octreeManager.getNLevels(), CUBE_INC); 
+			_status = _cacheManager.init(initData.getDataTypeFile(), initData.getDataFilename(), CUBE_INC); 
 			if (!_status)
 				LBERROR<<"Node: error creating cache manager"<<std::endl;
 		}
@@ -95,12 +95,14 @@ namespace eqMivt
 			const InitData& initData = config->getInitData();
 			// Set Size cache manager for CPU
 			int levelCube = _octreeManager.getBestCubeLevel();
+			int nL = _octreeManager.getNLevels();
 			int numElements = initData.getMaxCubesCacheGPU();
 			int numElementsCPU = initData.getMaxCubesCacheCPU();
 			int levelDif  = 0; //FUTURO
 			if (_status)
 			{
-				_status = _cacheManager.reSize(levelCube, numElements, numElementsCPU, levelDif);
+				_status =	_cacheManager.reSize(levelCube, nL, numElements, numElementsCPU, levelDif) &&
+							_cacheManager.setOffset(_octreeManager.getCurrentOffset());
 				if (!_status)
 					LBERROR<<"Node: Error resizing cache cpu"<<std::endl;
 				else

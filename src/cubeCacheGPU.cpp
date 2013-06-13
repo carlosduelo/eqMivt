@@ -70,8 +70,8 @@ bool cubeCacheGPU::init(cubeCacheCPU * cpuCache, uint32_t device)
 		return false;
 	_device = device;
 	_cpuCache= cpuCache;
-	_nLevels = _cpuCache->getnLevels(); 
 
+	return true;
 }
 
 bool cubeCacheGPU::reSize(vmml::vector<3, int> cubeDim, int cubeInc, int levelCube, int numElements)
@@ -86,6 +86,7 @@ bool cubeCacheGPU::reSize(vmml::vector<3, int> cubeDim, int cubeInc, int levelCu
 		return true;
 
 	// cube size
+	_nLevels = _cpuCache->getnLevels(); 
 	_cubeDim 	= cubeDim;
 	_cubeInc.set(cubeInc,cubeInc,cubeInc);
 	_realcubeDim	= cubeDim + 2 * cubeInc;

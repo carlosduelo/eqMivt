@@ -9,7 +9,7 @@ Notes:
 #ifndef EQ_MIVT_H
 #define EQ_MIVT_H
 
-#define VERSION_EQ_MIVT 0.1
+#define VERSION_EQ_MIVT 0.2
 
 #include <eq/eq.h>
 

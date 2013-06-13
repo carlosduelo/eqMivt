@@ -401,7 +401,7 @@ namespace eqMivt
 
 		// offset from start
 		int desp =	5*sizeof(int) + realDim[0]*sizeof(double) + realDim[1]*sizeof(double) + realDim[2]*sizeof(double) +
-					numOctrees.size() * 9 *sizeof(int) + numO * sizeof(float);
+					numOctrees.size() * 9 *sizeof(int) + numO * sizeof(float) + numO*sizeof(int);
 		for(int i =0; i<numO; i++)
 		{
 			std::cout<<desp<<std::endl;
@@ -419,7 +419,7 @@ namespace eqMivt
 		return;
 	}
 
- bool createOctree(std::string type_file, std::vector<std::string> file_params, std::vector<int> maxLevel, std::vector< std::vector<float> > isosurfaceList, std::vector<int> numOctrees, std::vector< vmml::vector<3, int> > startCoordinates, std::vector< vmml::vector<3, int> > finishCoordinates, std::string octree_file, bool useCUDA)
+ bool createOctree(std::string type_file, std::vector<std::string> file_params, std::vector<int> maxLevel, std::vector< std::vector<float> > isosurfaceList, std::vector<int> numOctrees, std::vector< vmml::vector<3, int> > startCoordinates, std::vector< int > octreeDimension, std::string octree_file, bool useCUDA)
 	{
 
 		FileManager * file = eqMivt::CreateFileManage(type_file, file_params);
@@ -442,6 +442,7 @@ namespace eqMivt
 
 		std::vector<int>	_nLevels;
 		std::vector<octree*> octrees;
+		std::vector< vmml::vector<3, int> > finishCoordinates;
 		for(int i=0; i<numOctrees.size(); i++)
 		{
 			int nO = numOctrees[i];
@@ -450,31 +451,18 @@ namespace eqMivt
 			std::vector<octree*> _octrees(nO);
 
 			vmml::vector<3, int> start  = startCoordinates[i];
-			vmml::vector<3, int> finish = finishCoordinates[i];
-			vmml::vector<3, int> realDimSub = finish - start;
+			int dimension = octreeDimension[i];
+			vmml::vector<3, int> finish = start + dimension * vmml::vector<3, int>(1,1,1); 
+			finish[0] = finish[0] > realDim[0] ? realDim[0] : finish[0];
+			finish[1] = finish[1] > realDim[1] ? realDim[1] : finish[1];
+			finish[2] = finish[2] > realDim[2] ? realDim[2] : finish[2];
+			finishCoordinates.push_back(finish);
 
-			if (finish[0] > realDim[0] || finish[1] > realDim[1] || finish[2] > realDim[2])
-			{
-				std::cerr<<finish<< "is outside of volume"<<std::endl;
-				delete[] xGrid;
-				delete[] yGrid;
-				delete[] zGrid;
-				return false;
-			}
-
-			int dimension = 0;
 			int nLevels = 0;
-			if (realDimSub[0]>realDimSub[1] && realDimSub[0]>realDimSub[2])
-				dimension = realDimSub[0];
-			else if (realDimSub[1]>realDimSub[2])
-				dimension = realDimSub[1];
-			else
-				dimension = realDimSub[2];
 			/* Calcular dimension del árbol*/
 			float aux = logf(dimension)/logf(2.0);
 			float aux2 = aux - floorf(aux);
 			nLevels = aux2>0.0 ? aux+1 : aux;
-			dimension = pow(2,nLevels);
 	
 			if (mxLevel > nLevels)
 			{
@@ -533,7 +521,7 @@ namespace eqMivt
 			std::cout<<"Octree dimension "<<dimension<<"x"<<dimension<<"x"<<dimension<<" levels "<<nLevels<<std::endl;
 			std::cout<<"Octree maximum level "<<mxLevel<<" dimension "<<pow(2, nLevels - mxLevel)<<"x"<<pow(2, nLevels - mxLevel)<<"x"<<pow(2, nLevels - mxLevel)<<std::endl;
 			std::cout<<"Reading in block "<<cubeDim<<" level of cube "<<levelCube<<std::endl;
-			std::cout<<"Coordinates "<<start<<" to "<<finish<<" Isosurfaces: ";
+			std::cout<<"Coordinates from "<<start<<" to "<<finish<<" Isosurfaces: ";
 			for(int j=0;j<nO; j++)
 			{
 				_octrees[j] = new octree(nLevels, mxLevel, isos[j]);
@@ -569,7 +557,7 @@ namespace eqMivt
 			for(index_node_t id=idStart; id<= idFinish; id++)
 			{
 				vmml::vector<3, int> currentBox = getMinBoxIndex(id, levelCube, nLevels);
-				if (currentBox.x() < realDim[0] && currentBox.y() < realDim[1] && currentBox.z() < realDim[2])
+				if ((start[0] + currentBox.x()) < finish[0] && (start[1] + currentBox.y()) < finish[1] && (start[2] + currentBox.z()) < finish[2])
 				{
 					readingClock.reset();
 					file->readCube(id, dataCube, levelCube, nLevels, cubeDim, cubeInc, realcubeDim);

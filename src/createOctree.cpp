@@ -24,7 +24,7 @@ std::vector<int>			maxLevel;
 std::vector< std::vector<float>	>		isosurfaceList;
 std::vector<int>			octreesPieces;
 std::vector< vmml::vector<3, int> > startCoordinates;
-std::vector< vmml::vector<3, int> > finishCoordinates;
+std::vector< int >			octreeDimension;
 
 std::string					config_file_name;
 std::string					octree_file_name;
@@ -99,19 +99,16 @@ bool parseConfigFile(std::string file_name)
 		boost::tokenizer< boost::char_separator<char> > tokens(line, sep);
 		
 		vmml::vector<3, int> start;
-		vmml::vector<3, int> finish;
+		int dimension = 0;	
 		boost::tokenizer< boost::char_separator<char> >::iterator tok_iter = tokens.begin();
 		start[0] = toInt(*tok_iter);	if (start[0] < 0) {infile.close(); return false;} tok_iter++;
 		start[1] = toInt(*tok_iter);	if (start[1] < 0) {infile.close(); return false;} tok_iter++;
 		start[2] = toInt(*tok_iter);	if (start[2] < 0) {infile.close(); return false;} tok_iter++;
-		finish[0] = toInt(*tok_iter);	if (finish[0] < 0) {infile.close(); return false;} tok_iter++;
-		finish[1] = toInt(*tok_iter);	if (finish[1] < 0) {infile.close(); return false;} tok_iter++;
-		finish[2] = toInt(*tok_iter);	if (finish[2] < 0) {infile.close(); return false;} tok_iter++;
+		dimension = toInt(*tok_iter);	tok_iter++;
 
-		if (finish[0] <= start[0] || finish[1] <= start[1] || finish[2] <= start[2])
+		if(dimension == 0 && ((dimension & (dimension - 1)) == 0))
 		{
-			std::cerr<<"Error: finish coordinates should be > start coordinates"<<std::endl;
-			infile.close();
+			std::cerr<<"Dimension should be power of 2 and > 0"<<std::endl;
 			return false;
 		}
 
@@ -119,32 +116,23 @@ bool parseConfigFile(std::string file_name)
 		if (mL <= 0)
 		{
 			std::cerr<<"Errror: max level should be > 0"<<std::endl;
+			return false;
 		}
-		int dimension;
-		int nLevels;
-		int realDim[3] = {finish[0]-start[0], finish[1]-start[1], finish[2]-start[2]};
 
-		if (realDim[0]>realDim[1] && realDim[0]>realDim[2])
-			dimension = realDim[0];
-		else if (realDim[1]>realDim[2])
-			dimension = realDim[1];
-		else
-			dimension = realDim[2];
-
+		int nLevels = 0;
 		/* Calcular dimension del árbol*/
 		float aux = logf(dimension)/logf(2.0);
 		float aux2 = aux - floorf(aux);
 		nLevels = aux2>0.0 ? aux+1 : aux;
-		dimension = pow(2,nLevels);
 
 		if (mL > nLevels)
 		{
-			std::cerr<<"To coordinates "<<start<<" to "<<finish<<" max level should be <= "<<nLevels<<std::endl;
+			std::cerr<<"Octree level "<<nLevels<<", max level "<<mL<< " should be <= "<<nLevels<<std::endl;
 			return false;
 		}
 		
 		startCoordinates.push_back(start);
-		finishCoordinates.push_back(finish);
+		octreeDimension.push_back(dimension);
 		maxLevel.push_back(mL);
 
 		bool error = false;
@@ -342,7 +330,7 @@ int main( const int argc, char ** argv)
 	    std::cout << ' ' << *it<<std::endl;
 	#endif
 
-	if (!eqMivt::createOctree(type_file, file_params, maxLevel, isosurfaceList, octreesPieces, startCoordinates, finishCoordinates, octree_file_name, useCUDA))
+	if (!eqMivt::createOctree(type_file, file_params, maxLevel, isosurfaceList, octreesPieces, startCoordinates, octreeDimension, octree_file_name, useCUDA))
 		return 0;
 
 	return 0;

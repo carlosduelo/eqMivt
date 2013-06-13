@@ -40,8 +40,9 @@ class CacheManager
 
 		~CacheManager();
 		
-		bool init(std::string type_file, std::vector<std::string> file_params, int nLevels, int cubeInc);
-		bool reSize(int levelCube, int numElements, int numElementsCPU, int levelDif);	
+		bool init(std::string type_file, std::vector<std::string> file_params, int cubeInc);
+		bool reSize(int levelCube, int nLevels, int numElements, int numElementsCPU, int levelDif);	
+		bool setOffset(vmml::vector<3, int> offset);
 		bool checkStatus(CacheHandler * cacheHandler);
 		bool getCache(uint32_t device, CacheHandler * cacheHandler );
 };

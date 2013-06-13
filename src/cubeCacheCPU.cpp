@@ -48,12 +48,10 @@ cubeCacheCPU::~cubeCacheCPU()
 		cudaFreeHost(_cacheData);
 }
 
-bool cubeCacheCPU::init(std::string type_file, std::vector<std::string> file_params, int nLevels)
+bool cubeCacheCPU::init(std::string type_file, std::vector<std::string> file_params)
 {
 	if (_fileManager != 0)
 		return false;
-
-	_nLevels = nLevels;
 
 	// OpenFile
 	_fileManager = eqMivt::CreateFileManage(type_file, file_params);
@@ -66,9 +64,9 @@ bool cubeCacheCPU::init(std::string type_file, std::vector<std::string> file_par
 	return true;
 }
 
-bool cubeCacheCPU::reSize(vmml::vector<3, int> cubeDim, int cubeInc, int levelCube, int numElements)
+bool cubeCacheCPU::reSize(vmml::vector<3, int> cubeDim, int cubeInc, int levelCube, int nLevels, int numElements)
 {
-	if (levelCube == _levelCube)
+	if (levelCube == _levelCube && _nLevels == nLevels)
 		return true;
 
 	// cube size
@@ -76,6 +74,7 @@ bool cubeCacheCPU::reSize(vmml::vector<3, int> cubeDim, int cubeInc, int levelCu
 	_cubeInc.set(cubeInc,cubeInc,cubeInc);
 	_realcubeDim	= cubeDim + 2 * cubeInc;
 	_levelCube	= levelCube;
+	_nLevels = nLevels;
 	_offsetCube	= (_cubeDim.x()+2*_cubeInc.x())*(_cubeDim.y()+2*_cubeInc.y())*(_cubeDim.z()+2*_cubeInc.z());
 	_minIndex = coordinateToIndex(vmml::vector<3, int>(0,0,0), _levelCube, _nLevels); 
 	int d = exp2(_nLevels);
@@ -111,7 +110,11 @@ bool cubeCacheCPU::reSize(vmml::vector<3, int> cubeDim, int cubeInc, int levelCu
 	_queuePositions	= new LinkedList(_maxElements);
 
 	if (_cacheData != 0)
-		cudaFreeHost(_cacheData);
+		if (cudaSuccess != cudaFreeHost(_cacheData))
+		{
+			LBERROR<<"Cache CPU: Error free cache "<<std::endl;
+			return false;
+		}
 		
 	LBINFO<<"Creating cache in CPU: "<< _maxElements*_offsetCube*sizeof(float)/1024.0f/1024.0f<<" MB: "<<std::endl;
 	if (cudaSuccess != cudaHostAlloc((void**)&_cacheData, _maxElements*_offsetCube*sizeof(float),cudaHostAllocDefault))
@@ -119,6 +122,13 @@ bool cubeCacheCPU::reSize(vmml::vector<3, int> cubeDim, int cubeInc, int levelCu
 		LBERROR<<"Cache CPU: Error creating cpu cache"<<std::endl;
 		return false;
 	}
+
+	return true;
+}
+
+bool cubeCacheCPU::setOffset(vmml::vector<3, int> offset)
+{
+	_fileManager->setOffset(offset);
 
 	return true;
 }

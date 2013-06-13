@@ -47,9 +47,11 @@ class cubeCacheCPU
 		cubeCacheCPU();
 		~cubeCacheCPU();
 
-		bool init(std::string type_file, std::vector<std::string> file_params, int nLevels);
+		bool init(std::string type_file, std::vector<std::string> file_params);
 		
-		bool reSize(vmml::vector<3, int> cubeDim, int cubeInc, int levelCube, int numElements );
+		bool reSize(vmml::vector<3, int> cubeDim, int cubeInc, int levelCube, int nLevels, int numElements );
+
+		bool setOffset(vmml::vector<3, int> offset);
 
 		vmml::vector<3, int>    getCubeDim(){ return _cubeDim; }
 		vmml::vector<3, int>    getCubeInc(){ return _cubeInc; }

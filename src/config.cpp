@@ -9,7 +9,6 @@ Notes:
 #include "config.h"
 
 #include "configEvent.h"
-#include "octreeManager.h"
 
 #include <math.h>
 #include <boost/filesystem.hpp>
@@ -22,6 +21,7 @@ Config::Config( eq::ServerPtr parent )
         , _redraw( true )
 		, _numFramesAA( 0 )
 		, _cameraStep( 0.5f )
+		, _octreeManager( 0 )
 {
 }
 
@@ -92,6 +92,7 @@ bool Config::loadData( const eq::uint128_t& initDataID )
 
 	_frameData.setNumOctrees(OctreeManager::readNumOctreesFromFile(_initData.getOctreeFilename()));
 
+#if 0
 	// Set camera step
 	vmml::vector<3, int> dimensionVolume = OctreeManager::readRealDimFromFile(_initData.getOctreeFilename());
 	if (dimensionVolume.x() == 0 || dimensionVolume.z() == 0 || dimensionVolume.y() == 0)
@@ -102,7 +103,7 @@ bool Config::loadData( const eq::uint128_t& initDataID )
 	{
 		_cameraStep = fmaxf(dimensionVolume.x(), fmaxf(dimensionVolume.y(),dimensionVolume.z())) / 1000;
 	}
-
+#endif
     return true;
 }
 

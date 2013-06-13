@@ -51,7 +51,7 @@ int main( const int argc, char** argv )
     eqMivt::LocalInitData initData;
     if (!initData.parseArguments( argc, argv ))
     {
-        LBERROR << "Error parsing parameters" << std::endl;
+		eq::exit();
 		return EXIT_FAILURE;
     }
 

@@ -11,6 +11,7 @@ Notes:
 
 #include "localInitData.h"
 #include "frameData.h"
+#include "octreeManager.h"
 
 namespace eqMivt
 {
@@ -33,6 +34,8 @@ namespace eqMivt
         virtual bool handleEvent( eq::EventICommand command );
 		virtual bool handleEvent( const eq::ConfigEvent* event );
 
+		void setOctreeManager(OctreeManager * octreeManager) {_octreeManager = octreeManager; } 
+
         bool needRedraw();
 		bool isIdleAA();
 
@@ -47,6 +50,7 @@ namespace eqMivt
         bool			_redraw;
 		int32_t			_numFramesAA;
 		float			_cameraStep;
+		OctreeManager * _octreeManager;
 
         bool _handleKeyEvent( const eq::KeyEvent& event );
 		void _deregisterData();
