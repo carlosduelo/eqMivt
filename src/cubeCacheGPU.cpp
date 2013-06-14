@@ -41,6 +41,7 @@ cubeCacheGPU::cubeCacheGPU()
 	_nLevels = 0;
 	_minIndex = 0;
 	_maxIndex = 0;
+	_memorySize = -1.0f;
 
 	_queuePositions = 0;
 
@@ -82,7 +83,7 @@ bool cubeCacheGPU::reSize(vmml::vector<3, int> cubeDim, int cubeInc, int levelCu
 		return false;
 	}
 
-	if (levelCube == _levelCube)
+	if (levelCube == _levelCube && _nLevels == _cpuCache->getnLevels())
 		return true;
 
 	// cube size
@@ -96,7 +97,7 @@ bool cubeCacheGPU::reSize(vmml::vector<3, int> cubeDim, int cubeInc, int levelCu
 	int d = exp2(_nLevels);
 	_maxIndex = coordinateToIndex(vmml::vector<3, int>(d-1,d-1,d-1), _levelCube, _nLevels);
 
-	if (numElements == 0)
+	if (_memorySize < 0.0f)
 	{
 		size_t total = 0;
 		size_t free = 0;
@@ -107,17 +108,29 @@ bool cubeCacheGPU::reSize(vmml::vector<3, int> cubeDim, int cubeInc, int levelCu
 			return false;
 		}
 
-		float freeS = (8.0f*free)/10.0f; // Get 80% of free memory
+		_memorySize = (8.0f*free)/10.0f; // Get 80% of free memory
+	}
+
+	if (numElements == 0)
+	{
 		float cd = _offsetCube;
 		cd *= sizeof(float);
-		_maxElements = freeS / cd;
+		_maxElements = _memorySize/ cd;
 		//LBINFO << total/1024/1024 <<" "<<free /1024/1024<< " "<<freeS/1024/1024<<" " <<_maxElements<<std::endl;
 		if (_maxElements == 0)
+		{
+			LBERROR<<"Cache GPU: Memory aviable is not enough "<<_memorySize/1024/1024<<" MB"<<std::endl;
 			return false;
+		}
 	}
 	else
 	{
 		_maxElements	= numElements;
+		if (_maxElements*_offsetCube*sizeof(float) > _memorySize)
+		{
+			LBERROR<<"Cache GPU: max elements in cache gpu are to big"<<std::endl;
+			return false;
+		}
 	}
 
 	_indexStored.clear();
@@ -126,15 +139,17 @@ bool cubeCacheGPU::reSize(vmml::vector<3, int> cubeDim, int cubeInc, int levelCu
 		delete _queuePositions;
 	_queuePositions  = new LinkedList(_maxElements);
 
-	if (_cacheData!=0)
-		cudaFree(_cacheData);
-	// Allocating memory                                                                            
-	LBINFO<<"Creating cache in GPU: "<< _maxElements*_offsetCube*sizeof(float)/1024/1024<<" MB"<<std::endl;
-	if (cudaSuccess != cudaMalloc((void**)&_cacheData, _maxElements*_offsetCube*sizeof(float)))
-	{                                                                                               
-		LBERROR<<"Cache GPU: Error creating gpu cache"<<std::endl;
-		return false;                                                                                  
-	}       
+	if (_cacheData == 0)
+	{
+//		cudaFree(_cacheData);
+		// Allocating memory                                                                            
+		LBINFO<<"Creating cache in GPU: "<< _memorySize/1024/1024<<" MB"<<std::endl;
+		if (cudaSuccess != cudaMalloc((void**)&_cacheData, _memorySize))
+		{                                                                                               
+			LBERROR<<"Cache GPU: Error creating gpu cache"<<std::endl;
+			return false;                                                                                  
+		}
+	}
 
 	return true;
 }

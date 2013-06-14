@@ -605,14 +605,14 @@ __global__ void insertOctreePointers(index_node_t ** octreeGPU, int * sizes, ind
 
 
 
-bool Create_Octree(index_node_t ** octreeCPU, int * sizesCPU, int maxLevel, index_node_t *** octree, index_node_t ** memoryGPU, int ** sizes)
+bool Create_Octree(index_node_t ** octreeCPU, int * sizesCPU, int maxLevel, index_node_t *** octree, index_node_t ** memoryGPU, int ** sizes, int lastLevel)
 {
 
 	// Creating sizes
 	if ((*sizes) == 0)
 	{
-		std::cout<< "Allocating memory octree CUDA sizes "<<(maxLevel+1)*sizeof(int)/1024.0f/1024.0f<< " MB: ";
-		if (cudaSuccess != (cudaMalloc(sizes,   (maxLevel+1)*sizeof(int))))
+		std::cout<< "Allocating memory octree CUDA sizes "<<(lastLevel+1)*sizeof(int)/1024.0f/1024.0f<< " MB: ";
+		if (cudaSuccess != (cudaMalloc(sizes,   (lastLevel+1)*sizeof(int))))
 		{
 			std::cout<< "Octree: error allocating octree in the gpu"<<std::endl;
 			return false;
@@ -633,8 +633,8 @@ bool Create_Octree(index_node_t ** octreeCPU, int * sizesCPU, int maxLevel, inde
 	// Create octree
 	if ((*octree) == 0)
 	{
-		std::cout<< "Allocating memory octree CUDA octree "<<(maxLevel+1)*sizeof(index_node_t*)/1024.0f/1024.0f<< " MB: ";
-		if (cudaSuccess != (cudaMalloc(octree, (maxLevel+1)*sizeof(index_node_t*))))
+		std::cout<< "Allocating memory octree CUDA octree "<<(lastLevel+1)*sizeof(index_node_t*)/1024.0f/1024.0f<< " MB: ";
+		if (cudaSuccess != (cudaMalloc(octree, (lastLevel+1)*sizeof(index_node_t*))))
 		{
 			std::cout<< "Octree: error allocating octree in the gpu"<<std::endl;
 			return false;

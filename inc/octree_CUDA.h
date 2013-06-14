@@ -13,7 +13,7 @@ Notes:
 
 namespace eqMivt
 {
-	bool Create_Octree(index_node_t ** octreeCPU, int * sizesCPU, int maxLevel, index_node_t *** octree, index_node_t ** memoryGPU, int ** sizes); 
+	bool Create_Octree(index_node_t ** octreeCPU, int * sizesCPU, int maxLevel, index_node_t *** octree, index_node_t ** memoryGPU, int ** sizes, int lastLevel); 
 
 	bool Destroy_Octree(int device, index_node_t ** octree, index_node_t * memoryGPU, int * sizes); 
 

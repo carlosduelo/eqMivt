@@ -36,6 +36,7 @@ class cubeCacheCPU
 		boost::unordered_map<index_node_t, NodeLinkedList *>	_indexStored;
 		LinkedList	*											_queuePositions;
 
+		double			_memoryCPU;
 		int				_maxElements;
 		float		*	_cacheData;
 

@@ -32,6 +32,7 @@ cubeCacheCPU::cubeCacheCPU()
 		_minIndex = 0;
 		_maxIndex = 0;
 
+		_memoryCPU = -10.0;
 		_maxElements = 0;
 		_cacheData = 0;
 		
@@ -80,27 +81,48 @@ bool cubeCacheCPU::reSize(vmml::vector<3, int> cubeDim, int cubeInc, int levelCu
 	int d = exp2(_nLevels);
 	_maxIndex = coordinateToIndex(vmml::vector<3, int>(d-1,d-1,d-1), _levelCube, _nLevels);
 
-	if (numElements == 0)
+	if (_memoryCPU < 0.0)
 	{
-		double memoryCPU = getMemorySize();
-		if (memoryCPU == 0)
+		_memoryCPU = getMemorySize();
+		if (_memoryCPU == 0)
 		{
 			LBERROR<<"Not possible, check memory aviable (the call failed due to OS limitations)"<<std::endl;
-			memoryCPU = MAX_SIZE; 
+			_memoryCPU = MAX_SIZE; 
 		}
 		else
 		{
-			memoryCPU /= 2;
+			_memoryCPU /= 2;
 		}
-		double cd = _offsetCube;
-		cd *= sizeof(float);
-		_maxElements = memoryCPU/cd;
-		if (_maxElements == 0)
-			return false;
 	}
-	else
+
+	double cd = _offsetCube;
+	cd *= sizeof(float);
+	_maxElements = _memoryCPU/cd;
+	if (_maxElements == 0)
 	{
+		LBERROR<<"Cache CPU: Memory aviable is not enough "<<_memoryCPU/1024/1024<<" MB"<<std::endl;
+		return false;
+	}
+
+	if (numElements != 0)
+	{
+		if (numElements > _maxElements)
+		{
+			LBERROR<<"Cache CPU: max elements in cache cpu are to big"<<std::endl;
+			return false;
+		}
 		_maxElements = numElements;
+	}
+
+	if (_cacheData == 0)
+	{
+		LBINFO<<"Creating cache in CPU: "<< _memoryCPU/1024.0f/1024.0f<<" MB: "<<std::endl;
+		if (cudaSuccess != cudaHostAlloc((void**)&_cacheData, _memoryCPU, cudaHostAllocDefault))
+		{
+			LBERROR<<"Cache CPU: Error creating cpu cache: "<<cudaGetErrorString(cudaGetLastError())<<std::endl;	
+			return false;
+		
+		}
 	}
 
 	_indexStored.clear();
@@ -109,19 +131,6 @@ bool cubeCacheCPU::reSize(vmml::vector<3, int> cubeDim, int cubeInc, int levelCu
 		delete _queuePositions;
 	_queuePositions	= new LinkedList(_maxElements);
 
-	if (_cacheData != 0)
-		if (cudaSuccess != cudaFreeHost(_cacheData))
-		{
-			LBERROR<<"Cache CPU: Error free cache "<<std::endl;
-			return false;
-		}
-		
-	LBINFO<<"Creating cache in CPU: "<< _maxElements*_offsetCube*sizeof(float)/1024.0f/1024.0f<<" MB: "<<std::endl;
-	if (cudaSuccess != cudaHostAlloc((void**)&_cacheData, _maxElements*_offsetCube*sizeof(float),cudaHostAllocDefault))
-	{
-		LBERROR<<"Cache CPU: Error creating cpu cache"<<std::endl;
-		return false;
-	}
 
 	return true;
 }

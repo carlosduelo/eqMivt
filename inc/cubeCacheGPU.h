@@ -21,6 +21,7 @@ class cubeCacheGPU
 	private:
 		// Acces to file
 		cubeCacheCPU *        	_cpuCache;
+		float					_memorySize;
 
 		lunchbox::Lock			_lock;
 
