@@ -73,8 +73,8 @@ namespace eqMivt
 
 		void _saveFrameBuffer(const eq::uint128_t& frameID);
 
-		eq::Vector3i	_dimBox;
 		void _drawCube();
+		void _drawBox(vmml::vector<3, float> startC, vmml::vector<3, float> finishC);
 		void _drawAxis();
 
 		struct Accum

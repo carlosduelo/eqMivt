@@ -30,7 +30,6 @@ Channel::Channel( eq::Window* parent )
     _lastViewport.w = 0;
     _pbo = -1;
     _texture = -1;
-	_dimBox.set(1,1,1); 
 }
 
 bool Channel::configInit( const eq::uint128_t& initID )
@@ -113,21 +112,21 @@ void Channel::frameDraw( const eq::uint128_t& frameID )
 
 	_updateNearFar(model);
 
+	Pipe* pipe = static_cast<Pipe*>( getPipe( ));
+	Render * render = pipe->getRender();
+
+	if (render == 0)
+	{
+		_drawError();
+		return;
+	}
+
 	if (frameData.isDrawBox())
 	{
 		_drawCube();
 	}
 	else
 	{
-		Pipe* pipe = static_cast<Pipe*>( getPipe( ));
-		Render * render = pipe->getRender();
-
-		if (render == 0)
-		{
-			_drawError();
-			return;
-		}
-
 		render->setStatistics(frameData.getStatistics());
 
 		// Check viewport
@@ -688,11 +687,13 @@ void Channel::_drawCube()
 	const FrameData& frameData = _getFrameData();
 
 	Node* node = static_cast<Node*>( getNode( ));
-	vmml::vector<3, int> dimBox = node->getCurrentVolumeDim();
-	if (dimBox[0] <= 0 || dimBox[1] <= 0 || dimBox[2] <= 0)
-		return;
+	_drawBox(node->getStartCoord(), node->getFinishCoord());
+	_drawBox(vmml::vector<3, float>(0,0,0), node->getVolumeCoord());
+}
 
-	_dimBox.set(dimBox[0], dimBox[1], dimBox[2]);
+void Channel::_drawBox(vmml::vector<3, float> startC, vmml::vector<3, float> finishC)
+{
+	const FrameData& frameData = _getFrameData();
 
 	glMatrixMode( GL_PROJECTION );
 	glPushMatrix();
@@ -708,14 +709,14 @@ void Channel::_drawCube()
 	glMultMatrixf( invRot);
 	glTranslatef( -position.x(), -position.y(), -position.z() );
 
-	eq::Vector4f p1; p1.set(0.0f, 0.0f, 0.0f, 1.0f);
-	eq::Vector4f p2; p2.set(_dimBox.x(), 0.0f, 0.0f, 1.0f);
-	eq::Vector4f p3; p3.set(_dimBox.x(), _dimBox.y(), 0.0f, 1.0f);
-	eq::Vector4f p4; p4.set(0.0f, _dimBox.y(), 0.0f, 1.0f);
-	eq::Vector4f p5; p5.set(0.0f, 0.0f, _dimBox.z(), 1.0f);
-	eq::Vector4f p6; p6.set(_dimBox.x(), 0.0f, _dimBox.z(), 1.0f);
-	eq::Vector4f p7; p7.set(_dimBox.x(), _dimBox.y(), _dimBox.z(), 1.0f);
-	eq::Vector4f p8; p8.set(0.0f, _dimBox.y(), _dimBox.z(), 1.0f);
+	eq::Vector4f p1; p1.set(startC.x(), startC.y(), startC.z(), 1.0f);
+	eq::Vector4f p2; p2.set(finishC.x(), startC.y(), startC.z(), 1.0f);
+	eq::Vector4f p3; p3.set(finishC.x(), finishC.y(), startC.z(), 1.0f);
+	eq::Vector4f p4; p4.set(startC.x(), finishC.y(), startC.z(), 1.0f);
+	eq::Vector4f p5; p5.set(startC.x(), startC.y(), finishC.z(), 1.0f);
+	eq::Vector4f p6; p6.set(finishC.x(), startC.y(), finishC.z(), 1.0f);
+	eq::Vector4f p7; p7.set(finishC.x(), finishC.y(), finishC.z(), 1.0f);
+	eq::Vector4f p8; p8.set(startC.x(), finishC.y(), finishC.z(), 1.0f);
 
 	glDisable(GL_LIGHTING);
 

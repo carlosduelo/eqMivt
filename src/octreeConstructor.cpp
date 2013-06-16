@@ -453,9 +453,9 @@ namespace eqMivt
 			vmml::vector<3, int> start  = startCoordinates[i];
 			int dimension = octreeDimension[i];
 			vmml::vector<3, int> finish = start + dimension * vmml::vector<3, int>(1,1,1); 
-			finish[0] = finish[0] > realDim[0] ? realDim[0] : finish[0];
-			finish[1] = finish[1] > realDim[1] ? realDim[1] : finish[1];
-			finish[2] = finish[2] > realDim[2] ? realDim[2] : finish[2];
+			finish[0] = finish[0] >= realDim[0] ? realDim[0] - 1 : finish[0];
+			finish[1] = finish[1] >= realDim[1] ? realDim[1] - 1 : finish[1];
+			finish[2] = finish[2] >= realDim[2] ? realDim[2] - 1: finish[2];
 			finishCoordinates.push_back(finish);
 
 			int nLevels = 0;

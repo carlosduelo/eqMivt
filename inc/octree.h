@@ -29,6 +29,9 @@ class Octree
 		int						_maxLevel;
 		uint32_t				_device;
 
+		double		*		_xGrid;
+		double		*		_yGrid;
+		double		*		_zGrid;
 		index_node_t *		_memoryOctree;
 		index_node_t ** 	_octree;
 		int	*				_sizes;
@@ -41,7 +44,7 @@ class Octree
 
 		void setGeneralValues(uint32_t device);
 		
-		bool setCurrentOctree(vmml::vector<3, int> realDim, int dimension, int nLevels, int maxLevel, int currentLevel, float isosurface, int maxHeight, index_node_t ** octree, int * sizes, int lastLevel);
+		bool setCurrentOctree(vmml::vector<3, int> realDim, int dimension, int nLevels, int maxLevel, int currentLevel, float isosurface,  int maxHeight, index_node_t ** octree, int * sizes, double * xGrid, double * yGrid, double * zGrid, vmml::vector<3, int> realVolDim, int lastLevel);
 
 		void increaseLevel() { _currentLevel = _currentLevel == _maxLevel ? _maxLevel : _currentLevel + 1; }
 
@@ -56,6 +59,10 @@ class Octree
 		float getIsosurface() { return _isosurface; }
 
 		int getMaxHeight() { return _maxHeight; }
+
+		double * getxGrid(){ return _xGrid; }
+		double * getyGrid(){ return _yGrid; }
+		double * getzGrid(){ return _zGrid; }
 
 		vmml::vector<3, int> getRealDim() { return _realDim; }
 

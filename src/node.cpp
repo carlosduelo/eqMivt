@@ -56,9 +56,19 @@ namespace eqMivt
 		return eq::Node::configExit();
 	}
 	
-	vmml::vector<3, int>    Node::getCurrentVolumeDim()
+	vmml::vector<3, float>    Node::getVolumeCoord()
 	{ 
-		return _octreeManager.getCurrentRealDim(); 
+		return _octreeManager.getRealDimVolume(); 
+	}
+
+	vmml::vector<3, float>    Node::getStartCoord()
+	{
+		return _octreeManager.getCurrentStartCoord();
+	}
+
+	vmml::vector<3, float>    Node::getFinishCoord()
+	{
+		return _octreeManager.getCurrentFinishCoord();
 	}
 
 	Octree *	Node::getOctree(uint32_t device)

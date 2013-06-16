@@ -605,8 +605,67 @@ __global__ void insertOctreePointers(index_node_t ** octreeGPU, int * sizes, ind
 
 
 
-bool Create_Octree(index_node_t ** octreeCPU, int * sizesCPU, int maxLevel, index_node_t *** octree, index_node_t ** memoryGPU, int ** sizes, int lastLevel)
+bool Create_Octree(index_node_t ** octreeCPU, int * sizesCPU, int maxLevel, index_node_t *** octree, index_node_t ** memoryGPU, int ** sizes, int lastLevel, int3 realVolDim, int3 realDim, double ** xGrid, double ** yGrid, double ** zGrid, double * xGridCPU, double * yGridCPU, double * zGridCPU)
 {
+	// Creating Grid
+	if (*xGrid == 0)
+	{
+		std::cout<< "Allocating xGrid "<<realVolDim.x*sizeof(int)/1024.0f/1024.0f<< " MB: ";
+		if (cudaSuccess != (cudaMalloc(xGrid,   realVolDim.x*sizeof(int))))
+		{
+			std::cout<< "Octree: error allocating grid x"<<std::endl;
+			return false;
+		}
+		else
+			std::cout<<"OK"<<std::endl;
+	}
+	if (*yGrid == 0)
+	{
+		std::cout<< "Allocating yGrid "<<realVolDim.y*sizeof(int)/1024.0f/1024.0f<< " MB: ";
+		if (cudaSuccess != (cudaMalloc(yGrid,   realVolDim.y*sizeof(int))))
+		{
+			std::cout<< "Octree: error allocating grid x"<<std::endl;
+			return false;
+		}
+		else
+			std::cout<<"OK"<<std::endl;
+	}
+	if (*zGrid == 0)
+	{
+		std::cout<< "Allocating xGrid "<<realVolDim.z*sizeof(int)/1024.0f/1024.0f<< " MB: ";
+		if (cudaSuccess != (cudaMalloc(zGrid,   realVolDim.z*sizeof(int))))
+		{
+			std::cout<< "Octree: error allocating grid x"<<std::endl;
+			return false;
+		}
+		else
+			std::cout<<"OK"<<std::endl;
+	}
+	std::cout<< "Octree: coping x grid ";
+	if (cudaSuccess != (cudaMemcpy((void*)*xGrid, (void*)xGridCPU, realDim.x*sizeof(int), cudaMemcpyHostToDevice)))
+	{
+		std::cout<< "Fail"<<std::endl;
+		return false;
+	}
+	else
+		std::cout<< "OK"<<std::endl;
+	std::cout<< "Octree: coping y grid ";
+	if (cudaSuccess != (cudaMemcpy((void*)*yGrid, (void*)yGridCPU, realDim.y*sizeof(int), cudaMemcpyHostToDevice)))
+	{
+		std::cout<< "Fail"<<std::endl;
+		return false;
+	}
+	else
+		std::cout<< "OK"<<std::endl;
+	std::cout<< "Octree: coping z grid ";
+	if (cudaSuccess != (cudaMemcpy((void*)*zGrid, (void*)zGridCPU, realDim.z*sizeof(int), cudaMemcpyHostToDevice)))
+	{
+		std::cout<< "Fail"<<std::endl;
+		return false;
+	}
+	else
+		std::cout<< "OK"<<std::endl;
+
 
 	// Creating sizes
 	if ((*sizes) == 0)
@@ -700,7 +759,7 @@ bool Create_Octree(index_node_t ** octreeCPU, int * sizesCPU, int maxLevel, inde
 }
 
 
-bool Destroy_Octree(int device, index_node_t ** octree, index_node_t * memoryGPU, int * sizes)
+bool Destroy_Octree(int device, index_node_t ** octree, index_node_t * memoryGPU, int * sizes, double * xGrid, double * yGrid, double * zGrid)
 {
 
 	if (device < 0)
@@ -708,6 +767,31 @@ bool Destroy_Octree(int device, index_node_t ** octree, index_node_t * memoryGPU
 
 	int d = 40;
 	cudaGetDevice(&d);
+
+	if (xGrid != 0)
+	{
+		if (d != device)
+			cudaSetDevice(device);
+		cudaFree(xGrid);
+	}
+	if (xGrid != 0)
+	{
+		if (d != device)
+			cudaSetDevice(device);
+		cudaFree(xGrid);
+	}
+	if (yGrid != 0)
+	{
+		if (d != device)
+			cudaSetDevice(device);
+		cudaFree(yGrid);
+	}
+	if (zGrid != 0)
+	{
+		if (d != device)
+			cudaSetDevice(device);
+		cudaFree(zGrid);
+	}
 
 	if (memoryGPU != 0)
 	{

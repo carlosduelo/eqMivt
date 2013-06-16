@@ -8,6 +8,7 @@
 #define STACK_DIM 32
 
 #define VectorToFloat3(v) make_float3((v).x(), (v).y(), (v).z())
+#define VectorToInt3(v) make_int3((v).x(), (v).y(), (v).z())
 
 namespace eqMivt
 {
@@ -20,6 +21,9 @@ Octree::Octree()
 	_nLevels = 0;
 	_maxLevel = 0;
 
+	_xGrid = 0;
+	_yGrid = 0;
+	_zGrid = 0;
 	_memoryOctree = 0;
 	_octree = 0;
 	_sizes = 0;
@@ -29,7 +33,7 @@ Octree::Octree()
 
 Octree::~Octree()
 {
-	if (!Destroy_Octree(_device, _octree, _memoryOctree, _sizes))
+	if (!Destroy_Octree(_device, _octree, _memoryOctree, _sizes, _xGrid, _yGrid, _zGrid))
 	{
 		std::cerr<<"Error deleting a octree"<<std::endl;
 	}
@@ -40,7 +44,7 @@ void Octree::setGeneralValues(uint32_t device)
 	_device = device;
 }
 
-bool Octree::setCurrentOctree(vmml::vector<3, int> realDim, int dimension, int nLevels, int maxLevel, int currentLevel, float isosurface,  int maxHeight, index_node_t ** octree, int * sizes, int lastLevel)
+bool Octree::setCurrentOctree(vmml::vector<3, int> realDim, int dimension, int nLevels, int maxLevel, int currentLevel, float isosurface,  int maxHeight, index_node_t ** octree, int * sizes, double * xGrid, double * yGrid, double * zGrid, vmml::vector<3, int> realVolDim, int lastLevel)
 {
 	_currentLevel = currentLevel;
 	if (_isosurface != isosurface || _dimension != dimension ||
@@ -52,7 +56,7 @@ bool Octree::setCurrentOctree(vmml::vector<3, int> realDim, int dimension, int n
 		_maxLevel = maxLevel;
 		_maxHeight = maxHeight;
 		_isosurface = isosurface;
-		return Create_Octree(octree, sizes, _maxLevel, &_octree, &_memoryOctree, &_sizes, lastLevel);
+		return Create_Octree(octree, sizes, _maxLevel, &_octree, &_memoryOctree, &_sizes, lastLevel, VectorToInt3(realVolDim), VectorToInt3(realDim), &_xGrid, &_yGrid, &_zGrid, xGrid, yGrid, zGrid);
 	}
 	return true;
 }

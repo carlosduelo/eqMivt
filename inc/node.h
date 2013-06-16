@@ -33,7 +33,9 @@ namespace eqMivt
 			bool updateStatus(uint32_t device, CacheHandler * cacheHandler, int currentOctree);
 			Octree *	getOctree(uint32_t device);
 			bool		getCacheHandler(uint32_t device, CacheHandler * cacheHandler);
-			vmml::vector<3, int>    getCurrentVolumeDim();
+			vmml::vector<3, float>    getStartCoord();
+			vmml::vector<3, float>    getFinishCoord();
+			vmml::vector<3, float>    getVolumeCoord();
 
 		protected:
 			virtual ~Node(){}

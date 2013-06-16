@@ -245,7 +245,6 @@ bool OctreeManager::init(std::string file_name)
 
 	_setBestCubeLevel();
 
-
 	return true;
 
 }
@@ -287,6 +286,42 @@ bool OctreeManager::setCurrentOctree(int currentOctree)
 	return result;
 }
 
+double * OctreeManager::getxGrid()
+{
+	return &_xGrid[_startC[_currentOctree][0]];
+}
+
+double * OctreeManager::getyGrid()
+{
+	return &_yGrid[_startC[_currentOctree][1]];
+}
+
+double * OctreeManager::getzGrid()
+{
+	return &_zGrid[_startC[_currentOctree][2]];
+}
+
+vmml::vector<3, float> OctreeManager::getRealDimVolume()
+{ 
+	return vmml::vector<3, float>(_xGrid[_realDimensionVolume[0]-1],
+								_yGrid[_realDimensionVolume[1]-1],
+								_zGrid[_realDimensionVolume[2]-1]);
+}
+
+vmml::vector<3, float> OctreeManager::getCurrentStartCoord() 
+{
+	return vmml::vector<3, float>(_xGrid[_startC[_currentOctree][0]],
+								_yGrid[_startC[_currentOctree][1]],
+								_zGrid[_startC[_currentOctree][2]]);
+}
+
+vmml::vector<3, float> OctreeManager::getCurrentFinishCoord() 
+{
+	return vmml::vector<3, float>(_xGrid[_finishC[_currentOctree][0]],
+								_yGrid[_maxHeight[_currentOctree]],
+								_zGrid[_finishC[_currentOctree][2]]);
+}
+
 bool OctreeManager::checkStatus(uint32_t device)
 {
 	_lock.set();
@@ -300,7 +335,7 @@ bool OctreeManager::checkStatus(uint32_t device)
 	}
 	else
 	{
-		result = it->second->setCurrentOctree(_realDim[_currentOctree], _dimension[_currentOctree], _nLevels[_currentOctree], _maxLevel[_currentOctree], _cubeCacheLevel[_currentOctree], _isosurfaces[_currentOctree],  _maxHeight[_currentOctree], _octreeData, _sizes[_currentOctree], _lastLevel);
+		result = it->second->setCurrentOctree(_realDim[_currentOctree], _dimension[_currentOctree], _nLevels[_currentOctree], _maxLevel[_currentOctree], _cubeCacheLevel[_currentOctree], _isosurfaces[_currentOctree],  _maxHeight[_currentOctree], _octreeData, _sizes[_currentOctree], getxGrid(), getyGrid(), getzGrid(), _realDimensionVolume, _lastLevel);
 	}
 
 	_lock.unset();
