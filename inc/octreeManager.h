@@ -38,9 +38,9 @@ class OctreeManager
 		vmml::vector<3, int> * _finishC;
 		int _numOctrees;
 		vmml::vector<3, int> _realDimensionVolume;
-		double * _xGrid;
-		double * _yGrid;
-		double * _zGrid;
+		float * _xGrid;
+		float * _yGrid;
+		float * _zGrid;
 
 		float * _isosurfaces;
 		int ** _sizes;
@@ -76,9 +76,9 @@ class OctreeManager
 		float getCurretIsosurface() { return _isosurfaces[_currentOctree]; }
 		int	getMaxHeight() { return _maxHeight[_currentOctree]; }
 		int getBestCubeLevel(){ return _cubeCacheLevel[_currentOctree]; }
-		double * getxGrid();
-		double * getyGrid();
-		double * getzGrid();
+		float * getxGrid();
+		float * getyGrid();
+		float * getzGrid();
 		vmml::vector<3, int> getCurrentOffset(){ return _startC[_currentOctree]; }
 
 		bool setCurrentOctree(int currentOctree);

@@ -48,7 +48,7 @@ inline dim3 getThreads(int dim)
 
 inline __device__ bool intersection(float3 ray, float3 posR, float r, float * t)
 {
-	float3 posE = make_float3(0.0f, 0.0f, 0.0f);
+	float3 posE = make_float3(0.0, 0.0, 0.0);
 	float3 d = posR -posE;
 	//Compute A, B and C coefficients
 	float a = dot(ray, ray);
@@ -72,8 +72,8 @@ inline __device__ bool intersection(float3 ray, float3 posR, float r, float * t)
 		q = (-b + distSqrt);
 
 	// compute t0 and t1
-	float t0 = q / (2.0f*a);
-	float t1 = q / (2.0f*a);
+	float t0 = q / (2.0*a);
+	float t1 = q / (2.0*a);
 
 	// make sure t0 is smaller than t1
 	if (t0 > t1)
@@ -117,8 +117,8 @@ __global__ void kernel_render_sphere(float * buffer, int pvpW, int pvpH, float3 
 		ray += (j*h*up) + (i*w)*right;
 		ray = normalize(ray);
 
-		float hit = 100.0f;
-		if (intersection(ray, pos, 1.0f , &hit))
+		float hit = 100.0;
+		if (intersection(ray, pos, 1.0 , &hit))
 		{
 			float3 ph = pos + hit * ray;
 			float3 n = ph;
@@ -126,7 +126,7 @@ __global__ void kernel_render_sphere(float * buffer, int pvpW, int pvpH, float3 
 			float3 l = make_float3(pos.x - ph.x, pos.y - ph.y, pos.z - ph.z);
 			l = normalize(l);
 			float3 k = cross(n,l);
-			float dif = fabs(n.x*l.x + n.y*l.y + n.z*l.z);
+			float dif = fabsf(n.x*l.x + n.y*l.y + n.z*l.z);
 			buffer[3*tid] = dif*0.3f; 
 			buffer[3*tid+1] = dif*0.5f;
 			buffer[3*tid+2] = dif*0.3f;
@@ -149,7 +149,7 @@ __global__ void kernel_render_sphere(float * buffer, int pvpW, int pvpH, float3 
     	std::cerr<<"Error cudaGraphicsGLRegisterBuffer"<<std::endl;
     }
     // map PBO to get CUDA device pointer
-    float  *d_output;
+    float *d_output;
     // map PBO to get CUDA device pointer
     if (cudaSuccess != cudaGraphicsMapResources(1, &cuda_pbo_resource, 0))
     {

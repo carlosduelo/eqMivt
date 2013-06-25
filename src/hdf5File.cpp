@@ -101,7 +101,7 @@ bool hdf5File::getxGrid(double ** xGrid)
 	if (_xGrid == "")
 	{
 		for(int i=0; i<_dims[0]; i++)
-			(*xGrid)[i] = i;
+			(*xGrid)[i] = (double)i;
 	}
 	else
 	{

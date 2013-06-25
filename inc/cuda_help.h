@@ -11,6 +11,8 @@ Notes:
 
 #define BLOCK_SIZE 128
 
+#define EPS 0.0001f
+
 namespace eqMivt
 {
 

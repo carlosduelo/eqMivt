@@ -109,6 +109,11 @@ bool Config::loadData( const eq::uint128_t& initDataID )
 
 uint32_t Config::startFrame()
 {
+
+	// set step camera
+	vmml::vector<3, int> dimensionVolume = _octreeManager->getRealDimVolume();
+	_cameraStep = fmaxf(dimensionVolume.x(), fmaxf(dimensionVolume.y(),dimensionVolume.z())) / 1000.0f;
+
 	// idle mode
 	if( isIdleAA( ))
 	{
@@ -184,9 +189,16 @@ bool Config::handleEvent( const eq::ConfigEvent* event )
 
         case eq::Event::CHANNEL_POINTER_WHEEL:
         {
+			if ( event->data.pointerWheel.xAxis > 0)
+				_frameData.setNextOctree();
+			else
+				_frameData.setDrawBox();
+			#if 0
+				_frameData.setPreviusOctree();
             _frameData.moveCamera( -_cameraStep * event->data.pointerWheel.yAxis,
                                    0.f,
                                    _cameraStep * event->data.pointerWheel.xAxis );
+			#endif
             _redraw = true;
             return true;
         }
@@ -283,10 +295,16 @@ bool Config::handleEvent( eq::EventICommand command )
         case eq::Event::CHANNEL_POINTER_WHEEL:
         {
 			const eq::Event& event = command.get< eq::Event >();
+			if ( event.pointerWheel.xAxis > 0)
+				_frameData.setNextOctree();
+			else
+				_frameData.setDrawBox();
+			#if 0
+				_frameData.setPreviusOctree();
             _frameData.moveCamera( -_cameraStep * event.pointerWheel.yAxis,
                                    0.f,
                                    _cameraStep * event.pointerWheel.xAxis );
-			
+			#endif
             _redraw = true;
             return true;
         }

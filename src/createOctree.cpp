@@ -247,9 +247,9 @@ bool checkParameters(const int argc, char ** argv)
 	{
 		std::vector<std::string> dataParam = vm["data-file"].as< std::vector<std::string> >();
 
-		if (dataParam.size() != 3)
+		if (dataParam.size() != 2)
 		{
-			std::cerr <<"data-file option: type-file-data<string> file-path<string> level-cube<int>" << std::endl;
+			std::cerr <<"data-file option: type-file-data<string> file-path<string>" << std::endl;
 			return false;
 		}
 
@@ -266,7 +266,7 @@ bool checkParameters(const int argc, char ** argv)
 
 		if (dataParam[0] == "hdf5_file" && (fileParams.size() != 2 && fileParams.size() != 5))
 		{
-			std::cerr <<"data-file option: hdf5_file  file-path:data-set-name<string>:[x_grid<string>:y_grid<string>:z_grid<string>] level-cube<int>" << std::endl;
+			std::cerr <<"data-file option: hdf5_file  file-path:data-set-name<string>:[x_grid<string>:y_grid<string>:z_grid<string>]" << std::endl;
 			return false;
 
 		}

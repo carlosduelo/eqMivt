@@ -98,6 +98,7 @@ void OctreeManager::_readCurrentOctree()
 	std::cout<<"maxLevel "<<_maxLevel[_currentOctree]<<std::endl;
 	std::cout<<"dimension "<<_dimension[_currentOctree]<<std::endl;
 	std::cout<<"Real Dim "<<_realDim[_currentOctree]<<std::endl;
+	std::cout<<"Volume Dim "<<_realDimensionVolume<<std::endl;
 	std::cout<<"Max Height "<<_maxHeight[_currentOctree]<<std::endl;
 	std::cout<<"Best Cube cache level "<<_cubeCacheLevel[_currentOctree]<<std::endl;;
 	std::cout<<"Coordinates from "<<_startC[_currentOctree]<<" to "<<_finishC[_currentOctree]<<std::endl;
@@ -177,12 +178,25 @@ bool OctreeManager::init(std::string file_name)
 
 	_file.read((char*)&_numOctrees,sizeof(_numOctrees));
 	_file.read((char*)_realDimensionVolume.array,3*sizeof(int));
-	_xGrid = new double[_realDimensionVolume.x()];
-	_yGrid = new double[_realDimensionVolume.y()];
-	_zGrid = new double[_realDimensionVolume.z()];
-	_file.read((char*)_xGrid,_realDimensionVolume.x()*sizeof(double));
-	_file.read((char*)_yGrid,_realDimensionVolume.y()*sizeof(double));
-	_file.read((char*)_zGrid,_realDimensionVolume.z()*sizeof(double));
+	_xGrid = new float[4 + _realDimensionVolume.x()];
+	_yGrid = new float[4 + _realDimensionVolume.y()];
+	_zGrid = new float[4 + _realDimensionVolume.z()];
+	_file.read((char*)(_xGrid+2),_realDimensionVolume.x()*sizeof(float));
+	_file.read((char*)(_yGrid+2),_realDimensionVolume.y()*sizeof(float));
+	_file.read((char*)(_zGrid+2),_realDimensionVolume.z()*sizeof(float));
+	for(int i=1; i>=0 ;i--)
+	{
+		_xGrid[i] = _xGrid[i+1] - 1.0f;
+		_yGrid[i] = _yGrid[i+1] - 1.0f;
+		_zGrid[i] = _zGrid[i+1] - 1.0f;
+	}
+	for(int i=0; i<2; i++)
+	{
+		_xGrid[2 + _realDimensionVolume.x() + i] = _xGrid[2 + _realDimensionVolume.x() + i - 1] + 1.0f;
+		_yGrid[2 + _realDimensionVolume.y() + i] = _yGrid[2 + _realDimensionVolume.y() + i - 1] + 1.0f;
+		_zGrid[2 + _realDimensionVolume.z() + i] = _zGrid[2 + _realDimensionVolume.z() + i - 1] + 1.0f;
+		
+	}
 
 	_nLevels = new int[_numOctrees];
 	_maxLevel = new int[_numOctrees];
@@ -287,40 +301,40 @@ bool OctreeManager::setCurrentOctree(int currentOctree)
 	return result;
 }
 
-double * OctreeManager::getxGrid()
+float * OctreeManager::getxGrid()
 {
-	return &_xGrid[_startC[_currentOctree][0]];
+	return &_xGrid[2 + _startC[_currentOctree][0]];
 }
 
-double * OctreeManager::getyGrid()
+float * OctreeManager::getyGrid()
 {
-	return &_yGrid[_startC[_currentOctree][1]];
+	return &_yGrid[2 + _startC[_currentOctree][1]];
 }
 
-double * OctreeManager::getzGrid()
+float * OctreeManager::getzGrid()
 {
-	return &_zGrid[_startC[_currentOctree][2]];
+	return &_zGrid[2 + _startC[_currentOctree][2]];
 }
 
 vmml::vector<3, float> OctreeManager::getRealDimVolume()
 { 
-	return vmml::vector<3, float>(_xGrid[_realDimensionVolume[0]-1],
-								_yGrid[_realDimensionVolume[1]-1],
-								_zGrid[_realDimensionVolume[2]-1]);
+	return vmml::vector<3, float>(_xGrid[2 + _realDimensionVolume[0]-1],
+								_yGrid[2 + _realDimensionVolume[1]-1],
+								_zGrid[2 + _realDimensionVolume[2]-1]);
 }
 
 vmml::vector<3, float> OctreeManager::getCurrentStartCoord() 
 {
-	return vmml::vector<3, float>(_xGrid[_startC[_currentOctree][0]],
-								_yGrid[_startC[_currentOctree][1]],
-								_zGrid[_startC[_currentOctree][2]]);
+	return vmml::vector<3, float>(_xGrid[2 + _startC[_currentOctree][0]],
+								_yGrid[2 + _startC[_currentOctree][1]],
+								_zGrid[2 + _startC[_currentOctree][2]]);
 }
 
 vmml::vector<3, float> OctreeManager::getCurrentFinishCoord() 
 {
-	return vmml::vector<3, float>(_xGrid[_finishC[_currentOctree][0]],
-								_yGrid[_startC[_currentOctree][1]+ _maxHeight[_currentOctree]],
-								_zGrid[_finishC[_currentOctree][2]]);
+	return vmml::vector<3, float>(_xGrid[2 + _finishC[_currentOctree][0]],
+								_yGrid[2 + _startC[_currentOctree][1]+ _maxHeight[_currentOctree]],
+								_zGrid[2 + _finishC[_currentOctree][2]]);
 }
 
 bool OctreeManager::checkStatus(uint32_t device)
@@ -336,7 +350,7 @@ bool OctreeManager::checkStatus(uint32_t device)
 	}
 	else
 	{
-		result = it->second->setCurrentOctree(_realDim[_currentOctree], _dimension[_currentOctree], _nLevels[_currentOctree], _maxLevel[_currentOctree], _cubeCacheLevel[_currentOctree], _isosurfaces[_currentOctree],  _yGrid[_maxHeight[_currentOctree]+_startC[_currentOctree][1]], _octreeData, _sizes[_currentOctree], getxGrid(), getyGrid(), getzGrid(), _realDimensionVolume, _lastLevel);
+		result = it->second->setCurrentOctree(_realDim[_currentOctree], _dimension[_currentOctree], _nLevels[_currentOctree], _maxLevel[_currentOctree], _cubeCacheLevel[_currentOctree], _isosurfaces[_currentOctree],  _yGrid[2 + _maxHeight[_currentOctree]+_startC[_currentOctree][1]], _octreeData, _sizes[_currentOctree], _xGrid, _yGrid, _zGrid, _startC[_currentOctree], _realDimensionVolume, _lastLevel);
 	}
 
 	_lock.unset();

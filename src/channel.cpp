@@ -145,13 +145,13 @@ void Channel::frameDraw( const eq::uint128_t& frameID )
 		}
 
 		eq::Vector4f pos; 
-		pos.set(0.0f, 0.0f, 0.0f, 1.0f);
+		pos.set(0.0, 0.0, 0.0, 1.0);
 		pos = model*pos;
 
-		eq::Vector4f p1; p1.set(frustum.right(),	frustum.bottom(),	-frustum.near_plane(),1.0f); p1 = model * p1; 
-		eq::Vector4f p2; p2.set(frustum.right(),	frustum.top(),		-frustum.near_plane(),1.0f);  p2 = model * p2;
-		eq::Vector4f p3; p3.set(frustum.left(),		frustum.top(),		-frustum.near_plane(),1.0f);  p3 = model * p3;
-		eq::Vector4f p4; p4.set(frustum.left(),		frustum.bottom(),	-frustum.near_plane(),1.0f);  p4 = model * p4;
+		eq::Vector4f p1; p1.set(frustum.right(),	frustum.bottom(),	-frustum.near_plane(),1.0); p1 = model * p1; 
+		eq::Vector4f p2; p2.set(frustum.right(),	frustum.top(),		-frustum.near_plane(),1.0);  p2 = model * p2;
+		eq::Vector4f p3; p3.set(frustum.left(),		frustum.top(),		-frustum.near_plane(),1.0);  p3 = model * p3;
+		eq::Vector4f p4; p4.set(frustum.left(),		frustum.bottom(),	-frustum.near_plane(),1.0);  p4 = model * p4;
 		/************************
 		 *********FRUSTUM********
 		 ****p3------------p2****
@@ -177,8 +177,8 @@ void Channel::frameDraw( const eq::uint128_t& frameID )
 
 		//render_sphere(_pbo, pvp.w, pvp.h, pos.x(), pos.y(), pos.z(), p4.x(), p4.y(), p4.z(), up.x(), up.y(), up.z(), right.x(), right.y(), right.z(), w, h);
 
-		render->frameDrawCubes(pos, p4, up, right, w, h, pvp.w, pvp.h);
-		//render->frameDraw(pos, p4, up, right, w, h, pvp.w, pvp.h);
+		//render->frameDrawCubes(pos, p4, up, right, w, h, pvp.w, pvp.h);
+		render->frameDraw(pos, p4, up, right, w, h, pvp.w, pvp.h);
 
 		_draw();
 
@@ -763,8 +763,8 @@ void Channel::_updateNearFar(eq::Matrix4f model)
 {
         // estimate minimal value of near plane based on frustum size
 		const eq::Frustumf& frustum = getFrustum();
-        const float width  = fabs( frustum.right() - frustum.left() );
-        const float height = fabs( frustum.top() - frustum.bottom() );
+        const float width  = fabsf( frustum.right() - frustum.left() );
+        const float height = fabsf( frustum.top() - frustum.bottom() );
         const float size   = LB_MIN( width, height );
         const float minNear = frustum.near_plane() / size * .001f;
 

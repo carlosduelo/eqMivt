@@ -16,9 +16,9 @@ FrameData::FrameData()
         , _position( eq::Vector3f::ZERO )
 		, _idle( false )
 		, _statistics( false )
-		,_drawBox( false )
-		,_currentOctree( 0 )
-		,_numOctrees( 0 )
+		, _drawBox( false )
+		, _currentOctree( 0 )
+		, _numOctrees( 0 )
 {
     reset();
 }
@@ -152,7 +152,9 @@ void FrameData::reset()
     else
     {
         _position   = eq::Vector3f::ZERO;
-        _position.z() = 1024.f;
+        _position.z() = 20.f;
+        _position.x() = 5.f;
+        _position.y() = 5.f;
         _rotation      = eq::Matrix4f::IDENTITY;
     }
     setDirty( DIRTY_CAMERA );

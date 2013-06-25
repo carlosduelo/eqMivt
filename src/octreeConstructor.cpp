@@ -367,7 +367,7 @@ namespace eqMivt
 
 	}
 
-	void _writeToFile(std::vector<octree*> octrees, std::vector<int> maxLevel, std::vector<int> nLevel, std::vector<int> numOctrees, std::vector< vmml::vector<3, int> > startCoordinates, std::vector< vmml::vector<3, int> > finishCoordinates, vmml::vector<3, int> realDim, double * xGrid, double * yGrid, double * zGrid, std::string octree_file)
+	void _writeToFile(std::vector<octree*> octrees, std::vector<int> maxLevel, std::vector<int> nLevel, std::vector<int> numOctrees, std::vector< vmml::vector<3, int> > startCoordinates, std::vector< vmml::vector<3, int> > finishCoordinates, vmml::vector<3, int> realDim, float * xGrid, float * yGrid, float * zGrid, std::string octree_file)
 	{
 		std::ofstream file(octree_file.c_str(), std::ofstream::binary);
 
@@ -378,9 +378,9 @@ namespace eqMivt
 		file.write((char*)&magicWord,  sizeof(magicWord));
 		file.write((char*)&numO,sizeof(numO));
 		file.write((char*)&realDim.array,3*sizeof(int));
-		file.write((char*)xGrid, realDim[0]*sizeof(double));
-		file.write((char*)yGrid, realDim[1]*sizeof(double));
-		file.write((char*)zGrid, realDim[2]*sizeof(double));
+		file.write((char*)xGrid, realDim[0]*sizeof(float));
+		file.write((char*)yGrid, realDim[1]*sizeof(float));
+		file.write((char*)zGrid, realDim[2]*sizeof(float));
 
 		int nO = 0;
 		for(int i=0; i<maxLevel.size(); i++)
@@ -400,7 +400,7 @@ namespace eqMivt
 		}
 
 		// offset from start
-		int desp =	5*sizeof(int) + realDim[0]*sizeof(double) + realDim[1]*sizeof(double) + realDim[2]*sizeof(double) +
+		int desp =	5*sizeof(int) + realDim[0]*sizeof(float) + realDim[1]*sizeof(float) + realDim[2]*sizeof(float) +
 					numOctrees.size() * 9 *sizeof(int) + numO * sizeof(float) + numO*sizeof(int);
 		for(int i =0; i<numO; i++)
 		{
@@ -426,16 +426,29 @@ namespace eqMivt
 		vmml::vector<3, int> realDim = file->getRealDimension();
 
 		// get grid vectors
-		double * xGrid = 0;
-		double * yGrid = 0;
-		double * zGrid = 0;
-		if (!file->getxGrid(&xGrid) || 
-			!file->getyGrid(&yGrid) ||
-			!file->getzGrid(&zGrid))
+		double * dxGrid = 0;
+		double * dyGrid = 0;
+		double * dzGrid = 0;
+		if (!file->getxGrid(&dxGrid) || 
+			!file->getyGrid(&dyGrid) ||
+			!file->getzGrid(&dzGrid))
 		{
 			std::cerr<<"Error reading grid"<<std::endl;
 			return false;
 		}
+		float * xGrid = new float[realDim.x()];
+		float * yGrid = new float[realDim.y()];
+		float * zGrid = new float[realDim.z()];
+		for(int i=0; i<realDim.x(); i++)
+			xGrid[i]=(float)dxGrid[i];
+		for(int i=0; i<realDim.y(); i++)
+			yGrid[i]=(float)dyGrid[i];
+		for(int i=0; i<realDim.z(); i++)
+			zGrid[i]=(float)dzGrid[i];
+
+		delete[] dxGrid;
+		delete[] dyGrid;
+		delete[] dzGrid;
 
 		lunchbox::Clock		completeCreationClock;
 		completeCreationClock.reset();

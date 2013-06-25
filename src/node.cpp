@@ -48,6 +48,9 @@ namespace eqMivt
 			if (!_status)
 				LBERROR<<"Node: error creating cache manager"<<std::endl;
 		}
+
+		config->setOctreeManager(&_octreeManager);
+
 		return _status;
 	}
 
