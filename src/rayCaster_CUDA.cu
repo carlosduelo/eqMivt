@@ -142,15 +142,13 @@ __device__ float getElementInterpolate(float3 pos, float * data, int3 minBox, in
 	return c0 * (1.0f - pi.z) + c1 * pi.z;
 }
 
-#if 0
-inline __device__ float3 getNormal(float3 pos, float * data, int3 minBox, int3 maxBox, float * xGrid, float * yGrid, float * zGrid, int3 realDim)
+inline __device__ float3 getNormal(float3 pos, float * data, int3 minBox, int3 maxBox)
 {
 	return normalize(make_float3(	
-				(getElementInterpolate(make_float3(pos.x-1.0f,pos.y,pos.z),data,minBox,maxBox,xGrid,yGrid,zGrid,realDim) - getElementInterpolate(make_float3(pos.x+1.0f,pos.y,pos.z),data,minBox,maxBox,xGrid,yGrid,zGrid,realDim))        /2.0f,
-				(getElementInterpolate(make_float3(pos.x,pos.y-1.0f,pos.z),data,minBox,maxBox,xGrid,yGrid,zGrid,realDim) - getElementInterpolate(make_float3(pos.x,pos.y+1.0f,pos.z),data,minBox,maxBox,xGrid,yGrid,zGrid,realDim))        /2.0f,
-				(getElementInterpolate(make_float3(pos.x,pos.y,pos.z-1.0f),data,minBox,maxBox,xGrid,yGrid,zGrid,realDim) - getElementInterpolate(make_float3(pos.x,pos.y,pos.z+1.0f),data,minBox,maxBox,xGrid,yGrid,zGrid,realDim))        /2.0f));
+				(getElementInterpolate(make_float3(pos.x-1,pos.y,pos.z),data,minBox,maxBox) - getElementInterpolate(make_float3(pos.x+1.0f,pos.y,pos.z),data,minBox,maxBox))        /2.0f,
+				(getElementInterpolate(make_float3(pos.x,pos.y-1,pos.z),data,minBox,maxBox) - getElementInterpolate(make_float3(pos.x,pos.y+1.0f,pos.z),data,minBox,maxBox))        /2.0f,
+				(getElementInterpolate(make_float3(pos.x,pos.y,pos.z-1),data,minBox,maxBox) - getElementInterpolate(make_float3(pos.x,pos.y,pos.z+1.0f),data,minBox,maxBox))        /2.0f));
 }
-#endif
 
 __global__ void cuda_rayCaster(float3 origin, float3  LB, float3 up, float3 right, float w, float h, int pvpW, int pvpH, int numRays, float iso, visibleCube_t * cube, int * indexCube, int3 dimCube, int3 cubeInc, int levelO, int levelC, int nLevel, float maxHeight, float * xGrid, float * yGrid, float * zGrid, int3 realDim, float * screen)
 {
@@ -199,7 +197,7 @@ __global__ void cuda_rayCaster(float3 origin, float3  LB, float3 up, float3 righ
 										_cuda_searchCoordinate(Xnear.z, minBox.z - 1, maxBox.z+1, zGrid, realDim.z));
 	
 	#if 0
-				if (pos.x < -2 || pos.y < -2 || pos.z < -2)
+				if (pos.x < -1 || pos.y < -1 || pos.z < -1)
 				{
 					screen[tid*3] = 0.0f; 
 					screen[tid*3+1] = 1.0f; 
@@ -223,17 +221,14 @@ __global__ void cuda_rayCaster(float3 origin, float3  LB, float3 up, float3 righ
 				float ant		= 0.0f;
 				float sig		= 0.0f;
 
-				int p = 0;
-
-				while ((minBox.x-1 <= pos.x && pos.x <= maxBox.x) &&
+				while (!hit &&
+					(minBox.x-1 <= pos.x && pos.x <= maxBox.x) &&
 					(minBox.y-1 <= pos.y && pos.y <= maxBox.y) &&
 					(minBox.z-1 <= pos.z && pos.z <= maxBox.z))
 				{
 					float3 xyz = make_float3(	pos.x + ((Xnear.x-xGrid[pos.x])/(xGrid[pos.x+1]-xGrid[pos.x])),
 												pos.y + ((Xnear.y-yGrid[pos.y])/(yGrid[pos.y+1]-yGrid[pos.y])),
 												pos.z + ((Xnear.z-zGrid[pos.z])/(zGrid[pos.z+1]-zGrid[pos.z])));
-
-					#if 1
 					if (primera)
 					{
 						ant = getElementInterpolate(xyz, cube[tid].data, minBoxD, dimD);
@@ -254,16 +249,9 @@ __global__ void cuda_rayCaster(float3 origin, float3  LB, float3 up, float3 righ
 							float a = (iso-ant)/(sig-ant);
 							Xnew = Xfar*(1.0f-a)+ Xnear*a;
 							hit = true;
-							tnear = tfar;
-							screen[tid*3] = Xnew.y/maxHeight; 
-							screen[tid*3+1] = 0.0f; 
-							screen[tid*3+2] = 0.0f; 
-							cube[tid].state = PAINTED;
-							return;
 						}
 						
 					}
-					#endif
 
 					// Update Xnear
 					Xnear += ((fminf(fabs(xGrid[pos.x+1] -xGrid[pos.x]), fminf(fabs(yGrid[pos.y+1] -yGrid[pos.y]),fabs(zGrid[pos.z+1] -zGrid[pos.z])))) / 2.0f) * ray;
@@ -275,59 +263,36 @@ __global__ void cuda_rayCaster(float3 origin, float3  LB, float3 up, float3 righ
 						pos.y = ray.y < 0 ? pos.y - 1 : pos.y +1;
 					while(!(zGrid[pos.z] <= Xnear.z && Xnear.z <zGrid[pos.z+1]))
 						pos.z = ray.z < 0 ? pos.z - 1 : pos.z +1;
-
-					p++;
-
 				}
-				cube[tid].state = NOCUBE;
-				return;
 
-#if 0
-				int steps = 0;
-				float st = fabs(tnear-tfar)/10.0f; 
-				float3 vStep = st * ray;
-
-	/* CASOS A ESTUDIAR
-	tnear==tfar MISS
-	tfar<tnear MISS
-	tfar-tfar< step STUDY BETWEEN POINTS
-	*/
-
-				while(tnear <= tfar || steps <=2)
+				if (hit)
 				{
-					tnear += st;
-					if (primera)
+					pos = make_int3(	_cuda_searchCoordinate(Xnew.x, minBox.x - 1, maxBox.x+1, xGrid, realDim.x),
+										_cuda_searchCoordinate(Xnew.y, minBox.y - 1, maxBox.y+1, yGrid, realDim.y),
+										_cuda_searchCoordinate(Xnew.z, minBox.z - 1, maxBox.z+1, zGrid, realDim.z));
+		#if 0
+					if (pos.x < -1 || pos.y < -1 || pos.z < -1)
 					{
-						ant = getElementInterpolate(Xnear, cube[tid].data, minBoxD, dimD);
-						Xfar = Xnear;
-						primera = false;
+						screen[tid*3] = 0.0f; 
+						screen[tid*3+1] = 1.0f; 
+						screen[tid*3+2] = 0.0f; 
+						cube[tid].state = PAINTED;
+						return;
 					}
 					else
 					{
-						sig = getElementInterpolate(Xnear, cube[tid].data, minBoxD, dimD);
-
-						if (( ((iso-ant)<0.0f) && ((iso-sig)<0.0f)) || ( ((iso-ant)>0.0f) && ((iso-sig)>0.0)))
-						{
-							ant = sig;
-							Xfar=Xnear;
-						}
-						else
-						{
-							float a = (iso-ant)/(sig-ant);
-							Xnew = Xfar*(1.0f-a)+ Xnear*a;
-							hit = true;
-							tnear = tfar;
-						}
-						
+						screen[tid*3] = 0.0f; 
+						screen[tid*3+1] = 0.0f; 
+						screen[tid*3+2] = 1.0f; 
+						cube[tid].state = PAINTED;
+						return;
 					}
-
-					Xnear += vStep;
-					steps++;
-				}
-				if (hit)
-				{
-				#if 0
-					float3 n = getNormal(Xnew, cube[tid].data, minBoxD,  dimD, xGrid, yGrid, zGrid, realDim);
+		#endif
+					float3 xyz = make_float3(	pos.x + ((Xnew.x-xGrid[pos.x])/(xGrid[pos.x+1]-xGrid[pos.x])),
+												pos.y + ((Xnew.y-yGrid[pos.y])/(yGrid[pos.y+1]-yGrid[pos.y])),
+												pos.z + ((Xnew.z-zGrid[pos.z])/(zGrid[pos.z+1]-zGrid[pos.z])));
+				#if 1
+					float3 n = getNormal(xyz, cube[tid].data, minBoxD,  dimD);
 					float3 l = Xnew - origin;// ligth; light on the camera
 					l = normalize(l);	
 					float dif = fabsf(n.x*l.x + n.y*l.y + n.z*l.z);
@@ -344,8 +309,8 @@ __global__ void cuda_rayCaster(float3 origin, float3  LB, float3 up, float3 righ
 				{
 					cube[tid].state = NOCUBE;
 				}
-#endif
 			}
+			
 			else
 			{
 				screen[tid*3] = 1.0f; 
