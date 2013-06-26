@@ -137,7 +137,9 @@ bool cubeCacheCPU::reSize(vmml::vector<3, int> cubeDim, int cubeInc, int levelCu
 
 bool cubeCacheCPU::setOffset(vmml::vector<3, int> offset)
 {
+	_lock.set();
 	_fileManager->setOffset(offset);
+	_lock.unset();
 
 	return true;
 }
@@ -173,7 +175,7 @@ float * cubeCacheCPU::push_cube(index_node_t idCube)
 		index_node_t 	 removedCube = (index_node_t)0;
 		NodeLinkedList * node = _queuePositions->getFirstFreePosition(idCube, &removedCube);
 
-		if (node != NULL)
+		if (node != 0)
 		{
 			_indexStored.insert(std::pair<int, NodeLinkedList *>(idCube, node));
 			if (removedCube!= (index_node_t)0)
@@ -193,7 +195,7 @@ float * cubeCacheCPU::push_cube(index_node_t idCube)
 		else // there is no free slot
 		{
 			_lock.unset();
-			return NULL; 
+			return 0; 
 		}
 	}
 }

@@ -184,14 +184,14 @@ float * cubeCacheGPU::push_cube(index_node_t idCube, cudaStream_t stream)
 		index_node_t     removedCube = (index_node_t)0;
 		NodeLinkedList * node = _queuePositions->getFirstFreePosition(idCube, &removedCube);
 
-		if (node != NULL)
+		if (node != 0)
 		{
 			index_node_t idCubeCPU = idCube >> 3*(_levelCube - _cpuCache->getLevelCube()); 
 			// Search in cpu cache and check as locked
 			float * pCube = _cpuCache->push_cube(idCubeCPU);
 
 			// search on CPU cache
-			if (pCube != NULL)
+			if (pCube != 0)
 			{
 				_indexStored.insert(std::pair<int, NodeLinkedList *>(idCube, node));
 				if (removedCube!= (index_node_t)0)
@@ -250,11 +250,6 @@ float * cubeCacheGPU::push_cube(index_node_t idCube, cudaStream_t stream)
 				}
 
 			}
-
-		}
-		else // there is no free slot
-		{
-			return 0;
 		}
 	}
 
