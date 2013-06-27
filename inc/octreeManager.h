@@ -71,6 +71,8 @@ class OctreeManager
 		int getMaxLevel() { return _maxLevel[_currentOctree]; }
 		int getDimension() { return _dimension[_currentOctree]; }
 		vmml::vector<3, int> getRealDimVolumeData() { return _realDimensionVolume; }
+		vmml::vector<3, float> getCurrentStartCoord(int octree, bool grid);
+		vmml::vector<3, float> getCurrentFinishCoord(int octree, bool grid);
 		vmml::vector<3, float> getRealDimVolume() ;
 		vmml::vector<3, float> getCurrentStartCoord();
 		vmml::vector<3, float> getCurrentFinishCoord();

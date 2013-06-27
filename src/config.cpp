@@ -46,6 +46,16 @@ bool Config::init()
     return true;
 }
 
+void Config::_reset()
+{
+
+	// set step camera
+	vmml::vector<3, int> dimensionVolume = _octreeManager->getRealDimVolume();
+	_cameraStep = fminf(dimensionVolume.x(), fminf(dimensionVolume.y(),dimensionVolume.z())) / 20000.0f;
+
+	_frameData.reset(_octreeManager);
+}
+
 bool Config::exit()
 {
     const bool ret = eq::Config::exit();
@@ -109,11 +119,6 @@ bool Config::loadData( const eq::uint128_t& initDataID )
 
 uint32_t Config::startFrame()
 {
-
-	// set step camera
-	vmml::vector<3, int> dimensionVolume = _octreeManager->getRealDimVolume();
-	_cameraStep = fmaxf(dimensionVolume.x(), fmaxf(dimensionVolume.y(),dimensionVolume.z())) / 1000.0f;
-
 	// idle mode
 	if( isIdleAA( ))
 	{
@@ -189,16 +194,9 @@ bool Config::handleEvent( const eq::ConfigEvent* event )
 
         case eq::Event::CHANNEL_POINTER_WHEEL:
         {
-			if ( event->data.pointerWheel.xAxis > 0)
-				_frameData.setNextOctree();
-			else
-				_frameData.setDrawBox();
-			#if 0
-				_frameData.setPreviusOctree();
             _frameData.moveCamera( -_cameraStep * event->data.pointerWheel.yAxis,
                                    0.f,
                                    _cameraStep * event->data.pointerWheel.xAxis );
-			#endif
             _redraw = true;
             return true;
         }
@@ -295,16 +293,9 @@ bool Config::handleEvent( eq::EventICommand command )
         case eq::Event::CHANNEL_POINTER_WHEEL:
         {
 			const eq::Event& event = command.get< eq::Event >();
-			if ( event.pointerWheel.xAxis > 0)
-				_frameData.setNextOctree();
-			else
-				_frameData.setDrawBox();
-			#if 0
-				_frameData.setPreviusOctree();
             _frameData.moveCamera( -_cameraStep * event.pointerWheel.yAxis,
                                    0.f,
                                    _cameraStep * event.pointerWheel.xAxis );
-			#endif
             _redraw = true;
             return true;
         }
@@ -340,11 +331,13 @@ bool Config::_handleKeyEvent( const eq::KeyEvent& event )
 		case 'g':
 		{
 			_frameData.setUseGrid();
+			_reset();
 			return true;
 		}
 		case 'G':
 		{
 			_frameData.setUseGrid();
+			_reset();
 			return true;
 		}
 		case 'c':
@@ -381,21 +374,25 @@ bool Config::_handleKeyEvent( const eq::KeyEvent& event )
 		case 'n':
 		{
 			_frameData.setNextOctree();
+			_reset();
 			return true;
 		}
 		case 'N':
 		{
 			_frameData.setNextOctree();
+			_reset();
 			return true;
 		}
 		case 'p':
 		{
 			_frameData.setPreviusOctree();
+			_reset();
 			return true;
 		}
 		case 'P':
 		{
 			_frameData.setPreviusOctree();
+			_reset();
 			return true;
 		}
         default:

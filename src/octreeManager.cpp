@@ -351,6 +351,26 @@ vmml::vector<3, float> OctreeManager::getCurrentFinishCoord()
 		return vmml::vector<3, float>(_finishC[_currentOctree][0], _startC[_currentOctree][1]+ _maxHeight[_currentOctree], _finishC[_currentOctree][2]);
 }
 
+vmml::vector<3, float> OctreeManager::getCurrentStartCoord(int octree, bool grid) 
+{
+	if (grid)
+		return vmml::vector<3, float>(_xGrid[2 + _startC[octree][0]],
+									_yGrid[2 + _startC[octree][1]],
+									_zGrid[2 + _startC[octree][2]]);
+	else
+		return _startC[octree];
+}
+
+vmml::vector<3, float> OctreeManager::getCurrentFinishCoord(int octree, bool grid) 
+{
+	if (grid)
+		return vmml::vector<3, float>(_xGrid[2 + _finishC[octree][0]],
+									_yGrid[2 + _startC[octree][1]+ _maxHeight[octree]],
+									_zGrid[2 + _finishC[octree][2]]);
+	else
+		return vmml::vector<3, float>(_finishC[octree][0], _startC[octree][1]+ _maxHeight[octree], _finishC[octree][2]);
+}
+
 int	OctreeManager::getMaxHeight()
 { 
 	if (_grid)

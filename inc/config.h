@@ -54,6 +54,7 @@ namespace eqMivt
 
         bool _handleKeyEvent( const eq::KeyEvent& event );
 		void _deregisterData();
+		void _reset();
     };
 }
 

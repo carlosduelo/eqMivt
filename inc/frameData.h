@@ -10,6 +10,7 @@ Notes:
 #define EQ_MIVT_FRAMEDATA_H
 
 #include "eqMivt.h"
+#include "octreeManager.h"
 
 namespace eqMivt
 {
@@ -19,7 +20,7 @@ class FrameData : public co::Serializable
 		FrameData();
 		virtual ~FrameData() {};
 
-		void reset();
+		void reset(OctreeManager * octreeManager);
 
 		void setCameraPosition( const eq::Vector3f& position );
 		void setRotation( const eq::Vector3f& rotation);

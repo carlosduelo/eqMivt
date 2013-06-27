@@ -16,13 +16,13 @@ FrameData::FrameData()
         , _position( eq::Vector3f::ZERO )
 		, _idle( false )
 		, _statistics( false )
-		, _drawBox( false )
+		, _drawBox( true )
 		, _useGrid( false )
 		, _renderCubes( false )
 		, _currentOctree( 0 )
 		, _numOctrees( 0 )
 {
-    reset();
+    reset(0);
 }
 
 void FrameData::serialize( co::DataOStream& os, const uint64_t dirtyBits )
@@ -151,25 +151,21 @@ void FrameData::setCurrentViewID( const eq::uint128_t& id )
 	setDirty( DIRTY_VIEW );
 }
 
-void FrameData::reset()
+void FrameData::reset(OctreeManager * octreeManager)
 {
-    eq::Matrix4f model = eq::Matrix4f::IDENTITY;
-    model.rotate_x( static_cast<float>( -M_PI_2 ));
-    model.rotate_y( static_cast<float>( -M_PI_2 ));
+	_position   = eq::Vector3f::ZERO;
 
-    if( _position == eq::Vector3f( 0.f, 0.f, -2.f ) &&
-        _rotation == eq::Matrix4f::IDENTITY)
-    {
-        _position.z() = 0.0f;
-    }
-    else
-    {
-        _position   = eq::Vector3f::ZERO;
-        _position.z() = 20.f;
-        _position.x() = 5.f;
-        _position.y() = 5.f;
-        _rotation      = eq::Matrix4f::IDENTITY;
-    }
+	if (octreeManager != 0)
+	{
+		eq::Vector3f start = octreeManager->getCurrentStartCoord(_currentOctree, _useGrid);
+		eq::Vector3f end = octreeManager->getCurrentFinishCoord(_currentOctree, _useGrid);
+		_position.x() = start.x() + ((end.x()-start.x())/2.0f);
+		_position.y() = start.y() + ((end.y()-start.y())/2.0f);
+		_position.z() = end.x() + ((end.z()-start.z())/4.0f);
+		std::cout<<start<<" "<<end<<" "<<_position<<std::endl;
+	}
+
+	_rotation      = eq::Matrix4f::IDENTITY;
     setDirty( DIRTY_CAMERA );
 }
 
