@@ -164,6 +164,7 @@ void Render::frameDraw(eq::Vector4f origin, eq::Vector4f LB, eq::Vector4f up, eq
 	_raycaster.setIsosurface(_octree->getIsosurface());
 	_raycaster.setMaxHeight(_octree->getMaxHeight());
 	_raycaster.setUseGrid(_octree->useGrid());
+	_raycaster.setOffset(_octree->getOffset());
 
 
 	_frameDrawTimes++;
@@ -348,6 +349,7 @@ void Render::frameDrawCubes(eq::Vector4f origin, eq::Vector4f LB, eq::Vector4f u
 	_raycaster.setIsosurface(_octree->getIsosurface());
 	_raycaster.setMaxHeight(_octree->getMaxHeight());
 	_raycaster.setUseGrid(_octree->useGrid());
+	_raycaster.setOffset(_octree->getOffset());
 
 	_frameDrawTimes++;
 	_frameDrawClock.reset();

@@ -24,6 +24,8 @@ class rayCaster
 		float		_maxHeight;
 		bool		_grid;
 
+		vmml::vector<3, int> _offset;
+
 		// Lighting
 		// Material parameters
 
@@ -38,11 +40,9 @@ class rayCaster
 
 		void setMaxHeight(float maxHeight);
 
+		void setOffset(vmml::vector<3, int> offset);
+
 		void setUseGrid(bool grid);
-
-		void increaseStep();
-
-		void decreaseStep();
 
 		void render(eq::Vector4f origin, eq::Vector4f  LB, eq::Vector4f up, eq::Vector4f right, float w, float h, int pvpW, int pvpH, int numRays, int levelO, int levelC, int nLevel, visibleCube_t * cube,int * indexCube, int3 cubeDim, int3 cubeInc, float * pixelBuffer, float * xGrid, float * yGrid, float * zGrid, vmml::vector<3, int> realDim, cudaStream_t stream);
 

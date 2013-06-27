@@ -50,13 +50,13 @@ void Octree::setGeneralValues(uint32_t device)
 bool Octree::setCurrentOctree(vmml::vector<3, int> realDim, int dimension, int nLevels, int maxLevel, int currentLevel, float isosurface,  int maxHeight, index_node_t ** octree, int * sizes, float * xGrid, float * yGrid, float * zGrid, vmml::vector<3, int> offset, vmml::vector<3, int> realVolDim, int lastLevel, bool grid)
 {
 
+	_offset = offset;
 	_maxHeight = maxHeight;
 	_grid = grid;
 	_currentLevel = currentLevel;
 	if (_isosurface != isosurface || _dimension != dimension ||
 		_nLevels != nLevels || _maxLevel != maxLevel)
 	{
-		_offset = offset;
 		_realDim = realDim;
 		_dimension = dimension;
 		_nLevels = nLevels;
@@ -76,7 +76,7 @@ void Octree::getBoxIntersected(eq::Vector4f origin, eq::Vector4f  LB, eq::Vector
 	if (_grid)
 		getBoxIntersectedOctreeGrid(_octree, _sizes, _nLevels, VectorToFloat3(origin), VectorToFloat3(LB), VectorToFloat3(up), VectorToFloat3(right), w, h, pvpW, pvpH,  _currentLevel, numRays, visibleGPU, visibleCPU, indexVisibleCubesGPU, indexVisibleCubesCPU, _xGrid + _offset.x() + 2, _yGrid+_offset.y() + 2, _zGrid+_offset.z() + 2, VectorToInt3(_realDim), stream);
 	else
-		getBoxIntersectedOctree(_octree, _sizes, _nLevels, VectorToFloat3(origin), VectorToFloat3(LB), VectorToFloat3(up), VectorToFloat3(right), w, h, pvpW, pvpH,  _currentLevel, numRays, visibleGPU, visibleCPU, indexVisibleCubesGPU, indexVisibleCubesCPU, stream);
+		getBoxIntersectedOctree(_octree, _sizes, _nLevels, VectorToFloat3(origin), VectorToFloat3(LB), VectorToFloat3(up), VectorToFloat3(right), w, h, pvpW, pvpH,  _currentLevel, numRays, visibleGPU, visibleCPU, indexVisibleCubesGPU, indexVisibleCubesCPU, VectorToInt3(_offset), stream);
 }
 
 }

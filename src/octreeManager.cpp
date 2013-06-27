@@ -376,7 +376,7 @@ int	OctreeManager::getMaxHeight()
 	if (_grid)
 		return _yGrid[2 + _maxHeight[_currentOctree]+_startC[_currentOctree][1]];	
 	else
-		return _maxHeight[_currentOctree];
+		return _startC[_currentOctree][1] + _maxHeight[_currentOctree];
 }
 
 bool OctreeManager::checkStatus(uint32_t device)

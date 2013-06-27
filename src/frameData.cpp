@@ -160,9 +160,8 @@ void FrameData::reset(OctreeManager * octreeManager)
 		eq::Vector3f start = octreeManager->getCurrentStartCoord(_currentOctree, _useGrid);
 		eq::Vector3f end = octreeManager->getCurrentFinishCoord(_currentOctree, _useGrid);
 		_position.x() = start.x() + ((end.x()-start.x())/2.0f);
-		_position.y() = start.y() + ((end.y()-start.y())/2.0f);
-		_position.z() = end.x() + ((end.z()-start.z())/4.0f);
-		std::cout<<start<<" "<<end<<" "<<_position<<std::endl;
+		_position.y() = end.y() + ((end.x()-start.x())/4.0f);
+		_position.z() = 3.0f*end.x();
 	}
 
 	_rotation      = eq::Matrix4f::IDENTITY;

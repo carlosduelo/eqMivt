@@ -97,12 +97,12 @@ __device__  bool _cuda_searchSecuential(index_node_t * elements, index_node_t in
 	return find;
 }
 
-__device__ bool _cuda_RayAABB(index_node_t index, float3 origin, float3 dir,  float * tnear, float * tfar, int nLevels)
+__device__ bool _cuda_RayAABB(index_node_t index, float3 origin, float3 dir,  float * tnear, float * tfar, int nLevels, int3 offset)
 {
 	int3 minBox;
 	int3 maxBox;
 	int level;
-	minBox = getMinBoxIndex(index, &level, nLevels); 
+	minBox = getMinBoxIndex(index, &level, nLevels) + offset; 
 	int dim = (1<<(nLevels-level));
 	maxBox.x = dim + minBox.x;
 	maxBox.y = dim + minBox.y;
@@ -248,7 +248,7 @@ __device__ bool _cuda_RayAABB2(float3 origin, float3 dir,  float * tnear, float 
 
 }
 
-__device__ bool _cuda_searchNextChildrenValidAndHit(index_node_t * elements, int size, float3 origin, float3 ray, index_node_t father, float cTnear, float cTfar, int nLevels, int level, int3 minB, index_node_t * child, float * childTnear, float * childTfar)
+__device__ bool _cuda_searchNextChildrenValidAndHit(index_node_t * elements, int size, int3 offset, float3 origin, float3 ray, index_node_t father, float cTnear, float cTfar, int nLevels, int level, int3 minB, index_node_t * child, float * childTnear, float * childTfar)
 {
 	index_node_t childrenID = father << 3;
 	int dim = (1<<(nLevels-level));
@@ -261,7 +261,7 @@ __device__ bool _cuda_searchNextChildrenValidAndHit(index_node_t * elements, int
 
 	if (size==2)
 	{
-		if (_cuda_RayAABB2(origin, ray,  &childTnearT, &childTfarT, nLevels, minBox, level) && childTnearT >= cTnear && childTnearT <= closer &&
+		if (_cuda_RayAABB2(origin, ray,  &childTnearT, &childTfarT, nLevels, minBox + offset, level) && childTnearT >= cTnear && childTnearT <= closer &&
 			_cuda_checkRange(elements, childrenID,0,1))
 		{
 			*child = childrenID;
@@ -272,7 +272,7 @@ __device__ bool _cuda_searchNextChildrenValidAndHit(index_node_t * elements, int
 		}
 		childrenID++;
 		minBox.z+=dim;
-		if (_cuda_RayAABB2(origin, ray,  &childTnearT, &childTfarT, nLevels, minBox, level) && childTnearT >= cTnear && childTnearT <= closer &&
+		if (_cuda_RayAABB2(origin, ray,  &childTnearT, &childTfarT, nLevels, minBox + offset , level) && childTnearT >= cTnear && childTnearT <= closer &&
 			_cuda_checkRange(elements, childrenID,0,1))
 		{
 			*child = childrenID;
@@ -284,7 +284,7 @@ __device__ bool _cuda_searchNextChildrenValidAndHit(index_node_t * elements, int
 		childrenID++;
 		minBox.y+=dim;
 		minBox.z-=dim;
-		if (_cuda_RayAABB2(origin, ray,  &childTnearT, &childTfarT, nLevels, minBox, level) && childTnearT >= cTnear && childTnearT <= closer &&
+		if (_cuda_RayAABB2(origin, ray,  &childTnearT, &childTfarT, nLevels, minBox + offset , level) && childTnearT >= cTnear && childTnearT <= closer &&
 			_cuda_checkRange(elements, childrenID,0,1))
 		{
 			*child = childrenID;
@@ -295,7 +295,7 @@ __device__ bool _cuda_searchNextChildrenValidAndHit(index_node_t * elements, int
 		}
 		childrenID++;
 		minBox.z+=dim;
-		if (_cuda_RayAABB2(origin, ray,  &childTnearT, &childTfarT, nLevels, minBox, level) && childTnearT >= cTnear && childTnearT <= closer &&
+		if (_cuda_RayAABB2(origin, ray,  &childTnearT, &childTfarT, nLevels, minBox + offset, level) && childTnearT >= cTnear && childTnearT <= closer &&
 			_cuda_checkRange(elements, childrenID,0,1))
 		{
 			*child = childrenID;
@@ -308,7 +308,7 @@ __device__ bool _cuda_searchNextChildrenValidAndHit(index_node_t * elements, int
 		minBox.x+=dim;
 		minBox.y-=dim;
 		minBox.z-=dim;
-		if (_cuda_RayAABB2(origin, ray,  &childTnearT, &childTfarT, nLevels, minBox, level) && childTnearT >= cTnear && childTnearT <= closer &&
+		if (_cuda_RayAABB2(origin, ray,  &childTnearT, &childTfarT, nLevels, minBox + offset, level) && childTnearT >= cTnear && childTnearT <= closer &&
 			_cuda_checkRange(elements, childrenID,0,1))
 		{
 			*child = childrenID;
@@ -319,7 +319,7 @@ __device__ bool _cuda_searchNextChildrenValidAndHit(index_node_t * elements, int
 		}
 		childrenID++;
 		minBox.z+=dim;
-		if (_cuda_RayAABB2(origin, ray,  &childTnearT, &childTfarT, nLevels, minBox, level) && childTnearT >= cTnear && childTnearT <= closer &&
+		if (_cuda_RayAABB2(origin, ray,  &childTnearT, &childTfarT, nLevels, minBox + offset, level) && childTnearT >= cTnear && childTnearT <= closer &&
 			_cuda_checkRange(elements, childrenID,0,1))
 		{
 			*child = childrenID;
@@ -331,7 +331,7 @@ __device__ bool _cuda_searchNextChildrenValidAndHit(index_node_t * elements, int
 		childrenID++;
 		minBox.y+=dim;
 		minBox.z-=dim;
-		if (_cuda_RayAABB2(origin, ray,  &childTnearT, &childTfarT, nLevels, minBox, level) && childTnearT >= cTnear && childTnearT <= closer &&
+		if (_cuda_RayAABB2(origin, ray,  &childTnearT, &childTfarT, nLevels, minBox + offset, level) && childTnearT >= cTnear && childTnearT <= closer &&
 			_cuda_checkRange(elements, childrenID,0,1))
 		{
 			*child = childrenID;
@@ -342,7 +342,7 @@ __device__ bool _cuda_searchNextChildrenValidAndHit(index_node_t * elements, int
 		}
 		childrenID++;
 		minBox.z+=dim;
-		if (_cuda_RayAABB2(origin, ray,  &childTnearT, &childTfarT, nLevels, minBox, level) && childTnearT >= cTnear && childTnearT <= closer &&
+		if (_cuda_RayAABB2(origin, ray,  &childTnearT, &childTfarT, nLevels, minBox + offset, level) && childTnearT >= cTnear && childTnearT <= closer &&
 			_cuda_checkRange(elements, childrenID,0,1))
 		{
 			*child = childrenID;
@@ -361,7 +361,7 @@ __device__ bool _cuda_searchNextChildrenValidAndHit(index_node_t * elements, int
 		if (closer8 >= size)
 			closer8 = size-1;
 
-		if (_cuda_RayAABB2(origin, ray,  &childTnearT, &childTfarT, nLevels, minBox, level) &&  childTnearT>=cTnear && childTnearT <= closer &&
+		if (_cuda_RayAABB2(origin, ray,  &childTnearT, &childTfarT, nLevels, minBox + offset, level) &&  childTnearT>=cTnear && childTnearT <= closer &&
 			_cuda_searchSecuential(elements, childrenID, closer1, closer8))
 		{
 			*child = childrenID;
@@ -372,7 +372,7 @@ __device__ bool _cuda_searchNextChildrenValidAndHit(index_node_t * elements, int
 		}
 		childrenID++;
 		minBox.z+=dim;
-		if (_cuda_RayAABB2(origin, ray,  &childTnearT, &childTfarT, nLevels, minBox, level) &&  childTnearT>=cTnear && childTnearT <= closer &&
+		if (_cuda_RayAABB2(origin, ray,  &childTnearT, &childTfarT, nLevels, minBox + offset, level) &&  childTnearT>=cTnear && childTnearT <= closer &&
 			_cuda_searchSecuential(elements, childrenID, closer1, closer8))
 		{
 			*child = childrenID;
@@ -384,7 +384,7 @@ __device__ bool _cuda_searchNextChildrenValidAndHit(index_node_t * elements, int
 		childrenID++;
 		minBox.y+=dim;
 		minBox.z-=dim;
-		if (_cuda_RayAABB2(origin, ray,  &childTnearT, &childTfarT, nLevels, minBox, level) &&  childTnearT>=cTnear && childTnearT <= closer &&
+		if (_cuda_RayAABB2(origin, ray,  &childTnearT, &childTfarT, nLevels, minBox + offset, level) &&  childTnearT>=cTnear && childTnearT <= closer &&
 			_cuda_searchSecuential(elements, childrenID, closer1, closer8))
 		{
 			*child = childrenID;
@@ -395,7 +395,7 @@ __device__ bool _cuda_searchNextChildrenValidAndHit(index_node_t * elements, int
 		}
 		childrenID++;
 		minBox.z+=dim;
-		if (_cuda_RayAABB2(origin, ray,  &childTnearT, &childTfarT, nLevels, minBox, level) &&  childTnearT>=cTnear && childTnearT <= closer &&
+		if (_cuda_RayAABB2(origin, ray,  &childTnearT, &childTfarT, nLevels, minBox + offset, level) &&  childTnearT>=cTnear && childTnearT <= closer &&
 			_cuda_searchSecuential(elements, childrenID, closer1, closer8))
 		{
 			*child = childrenID;
@@ -408,7 +408,7 @@ __device__ bool _cuda_searchNextChildrenValidAndHit(index_node_t * elements, int
 		minBox.x+=dim;
 		minBox.y-=dim;
 		minBox.z-=dim;
-		if (_cuda_RayAABB2(origin, ray,  &childTnearT, &childTfarT, nLevels, minBox, level) &&  childTnearT>=cTnear && childTnearT <= closer &&
+		if (_cuda_RayAABB2(origin, ray,  &childTnearT, &childTfarT, nLevels, minBox + offset, level) &&  childTnearT>=cTnear && childTnearT <= closer &&
 			_cuda_searchSecuential(elements, childrenID, closer1, closer8))
 		{
 			*child = childrenID;
@@ -419,7 +419,7 @@ __device__ bool _cuda_searchNextChildrenValidAndHit(index_node_t * elements, int
 		}
 		childrenID++;
 		minBox.z+=dim;
-		if (_cuda_RayAABB2(origin, ray,  &childTnearT, &childTfarT, nLevels, minBox, level) &&  childTnearT>=cTnear && childTnearT <= closer &&
+		if (_cuda_RayAABB2(origin, ray,  &childTnearT, &childTfarT, nLevels, minBox + offset, level) &&  childTnearT>=cTnear && childTnearT <= closer &&
 			_cuda_searchSecuential(elements, childrenID, closer1, closer8))
 		{
 			*child = childrenID;
@@ -431,7 +431,7 @@ __device__ bool _cuda_searchNextChildrenValidAndHit(index_node_t * elements, int
 		childrenID++;
 		minBox.y+=dim;
 		minBox.z-=dim;
-		if (_cuda_RayAABB2(origin, ray,  &childTnearT, &childTfarT, nLevels, minBox, level) &&  childTnearT>=cTnear && childTnearT <= closer &&
+		if (_cuda_RayAABB2(origin, ray,  &childTnearT, &childTfarT, nLevels, minBox + offset, level) &&  childTnearT>=cTnear && childTnearT <= closer &&
 			_cuda_searchSecuential(elements, childrenID, closer1, closer8))
 		{
 			*child = childrenID;
@@ -442,7 +442,7 @@ __device__ bool _cuda_searchNextChildrenValidAndHit(index_node_t * elements, int
 		}
 		childrenID++;
 		minBox.z+=dim;
-		if (_cuda_RayAABB2(origin, ray,  &childTnearT, &childTfarT, nLevels, minBox, level) &&  childTnearT>=cTnear && childTnearT <= closer &&
+		if (_cuda_RayAABB2(origin, ray,  &childTnearT, &childTfarT, nLevels, minBox + offset, level) &&  childTnearT>=cTnear && childTnearT <= closer &&
 			_cuda_searchSecuential(elements, childrenID, closer1, closer8))
 		{
 			*child = childrenID;
@@ -489,7 +489,7 @@ __device__ int3 _cuda_updateCoordinates(int maxLevel, int cLevel, index_node_t c
 	}
 }
 
-__global__ void cuda_getFirtsVoxel(index_node_t ** octree, int * sizes, int nLevels, float3 origin, float3 LB, float3 up, float3 right, float w, float h, int pvpW, int pvpH, int finalLevel, visibleCube_t * p_indexNode, int * indexCube,int numElements)
+__global__ void cuda_getFirtsVoxel(index_node_t ** octree, int * sizes, int nLevels, int3 offset, float3 origin, float3 LB, float3 up, float3 right, float w, float h, int pvpW, int pvpH, int finalLevel, visibleCube_t * p_indexNode, int * indexCube,int numElements)
 {
 	int i = blockIdx.y * blockDim.x * gridDim.y + blockIdx.x * blockDim.x +threadIdx.x;
 
@@ -513,7 +513,7 @@ __global__ void cuda_getFirtsVoxel(index_node_t ** octree, int * sizes, int nLev
 			int				currentLevel	= 0;
 			
 			// Update tnear and tfar
-			if (!_cuda_RayAABB(current, origin, ray,  &currentTnear, &currentTfar, nLevels) || currentTfar < 0.0f)
+			if (!_cuda_RayAABB(current, origin, ray,  &currentTnear, &currentTfar, nLevels, offset) || currentTfar < 0.0f)
 			{
 				// NO CUBE FOUND
 				indexNode->id 	= 0;
@@ -543,7 +543,7 @@ __global__ void cuda_getFirtsVoxel(index_node_t ** octree, int * sizes, int nLev
 				index_node_t	child;
 				float			childTnear;
 				float			childTfar;
-				if (_cuda_searchNextChildrenValidAndHit(octree[currentLevel+1], sizes[currentLevel+1], origin, ray, current, currentTnear, currentTfar, nLevels, currentLevel+1, minBox, &child, &childTnear, &childTfar))
+				if (_cuda_searchNextChildrenValidAndHit(octree[currentLevel+1], sizes[currentLevel+1], offset, origin, ray, current, currentTnear, currentTfar, nLevels, currentLevel+1, minBox, &child, &childTnear, &childTfar))
 				{
 					minBox = _cuda_updateCoordinates(nLevels, currentLevel, current, currentLevel + 1, child, minBox);
 					current = child;
@@ -578,13 +578,13 @@ __global__ void cuda_getFirtsVoxel(index_node_t ** octree, int * sizes, int nLev
  ******************************************************************************************************
  */
 
-	void getBoxIntersectedOctree(index_node_t ** octree, int * sizes, int nLevels, float3 origin, float3 LB, float3 up, float3 right, float w, float h, int pvpW, int pvpH, int finalLevel, int numElements, visibleCube_t * visibleGPU, visibleCube_t * visibleCPU, int * indexVisibleCubesGPU, int * indexVisibleCubesCPU, cudaStream_t stream)
+	void getBoxIntersectedOctree(index_node_t ** octree, int * sizes, int nLevels, float3 origin, float3 LB, float3 up, float3 right, float w, float h, int pvpW, int pvpH, int finalLevel, int numElements, visibleCube_t * visibleGPU, visibleCube_t * visibleCPU, int * indexVisibleCubesGPU, int * indexVisibleCubesCPU, int3 offset, cudaStream_t stream)
 {
 
 	dim3 threads = getThreads(numElements);
 	dim3 blocks = getBlocks(numElements);
 
-	cuda_getFirtsVoxel<<<blocks,threads, 0,stream>>>(octree, sizes, nLevels, origin, LB, up, right, w, h, pvpW, pvpH, finalLevel, visibleGPU, indexVisibleCubesGPU, numElements);
+	cuda_getFirtsVoxel<<<blocks,threads, 0,stream>>>(octree, sizes, nLevels, offset, origin, LB, up, right, w, h, pvpW, pvpH, finalLevel, visibleGPU, indexVisibleCubesGPU, numElements);
 
 }
 }

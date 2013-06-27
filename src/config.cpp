@@ -51,7 +51,7 @@ void Config::_reset()
 
 	// set step camera
 	vmml::vector<3, int> dimensionVolume = _octreeManager->getRealDimVolume();
-	_cameraStep = fminf(dimensionVolume.x(), fminf(dimensionVolume.y(),dimensionVolume.z())) / 20000.0f;
+	_cameraStep = fminf(dimensionVolume.x(), fminf(dimensionVolume.y(),dimensionVolume.z())) / 2000.0f;
 
 	_frameData.reset(_octreeManager);
 }
@@ -328,6 +328,16 @@ bool Config::_handleKeyEvent( const eq::KeyEvent& event )
 {
     switch( event.key )
     {
+		case 'r':
+		{
+			_reset();
+			return true;
+		}
+		case 'R':
+		{
+			_reset();
+			return true;
+		}
 		case 'g':
 		{
 			_frameData.setUseGrid();
