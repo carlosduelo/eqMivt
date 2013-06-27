@@ -176,9 +176,10 @@ void Channel::frameDraw( const eq::uint128_t& frameID )
 		float h = frustum.get_height()/(float)pvp.h;
 
 		//render_sphere(_pbo, pvp.w, pvp.h, pos.x(), pos.y(), pos.z(), p4.x(), p4.y(), p4.z(), up.x(), up.y(), up.z(), right.x(), right.y(), right.z(), w, h);
-
-		//render->frameDrawCubes(pos, p4, up, right, w, h, pvp.w, pvp.h);
-		render->frameDraw(pos, p4, up, right, w, h, pvp.w, pvp.h);
+		if (frameData.isRenderCubes())
+			render->frameDrawCubes(pos, p4, up, right, w, h, pvp.w, pvp.h);
+		else
+			render->frameDraw(pos, p4, up, right, w, h, pvp.w, pvp.h);
 
 		_draw();
 

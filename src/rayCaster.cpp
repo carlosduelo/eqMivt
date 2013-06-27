@@ -8,6 +8,7 @@ Notes:
 #include "rayCaster.h"
 
 #include "rayCaster_CUDA.h"
+#include "rayCasterGrid_CUDA.h"
 
 #include <iostream>
 #include <fstream>
@@ -22,6 +23,7 @@ rayCaster::rayCaster()
 {
 	_iso    = 0.0f; 
 	_step	= 0.5f;
+	_grid   = false;
 }
 
 rayCaster::~rayCaster()
@@ -37,6 +39,10 @@ void rayCaster::setMaxHeight(float maxHeight)
 {
 	_maxHeight = maxHeight;
 }
+void rayCaster::setUseGrid(bool grid)
+{
+	_grid = grid;
+}
 
 void rayCaster::increaseStep()
 {
@@ -50,12 +56,18 @@ void rayCaster::decreaseStep()
 
 void rayCaster::render(eq::Vector4f origin, eq::Vector4f  LB, eq::Vector4f up, eq::Vector4f right, float w, float h, int pvpW, int pvpH, int numRays, int levelO, int levelC, int nLevel, visibleCube_t * cube,int * indexCube, int3 cubeDim, int3 cubeInc, float * pixelBuffer, float * xGrid, float * yGrid, float * zGrid, vmml::vector<3, int> realDim, cudaStream_t stream)
 {
-	rayCaster_CUDA(VectorToFloat3(origin), VectorToFloat3(LB), VectorToFloat3(up), VectorToFloat3(right), w, h, pvpW, pvpH, numRays, levelO, levelC, nLevel, _iso, cube, indexCube, cubeDim, cubeInc, _maxHeight, pixelBuffer, xGrid, yGrid, zGrid, VectorToInt3(realDim), stream);
+	if (_grid)
+		rayCasterGrid_CUDA(VectorToFloat3(origin), VectorToFloat3(LB), VectorToFloat3(up), VectorToFloat3(right), w, h, pvpW, pvpH, numRays, levelO, levelC, nLevel, _iso, cube, indexCube, cubeDim, cubeInc, _maxHeight, pixelBuffer, xGrid, yGrid, zGrid, VectorToInt3(realDim), stream);
+	else
+		rayCaster_CUDA(VectorToFloat3(origin), VectorToFloat3(LB), VectorToFloat3(up), VectorToFloat3(right), w, h, pvpW, pvpH, numRays, levelO, levelC, nLevel, _iso, cube, indexCube, cubeDim, cubeInc, _maxHeight, pixelBuffer, stream);
 }
 
 void rayCaster::renderCubes(eq::Vector4f origin, eq::Vector4f  LB, eq::Vector4f up, eq::Vector4f right, float w, float h, int pvpW, int pvpH, int numRays, int levelO, int levelC, int nLevel, visibleCube_t * cube,int * indexCube, int3 cubeDim, int3 cubeInc, float * pixelBuffer, float * xGrid, float * yGrid, float * zGrid, vmml::vector<3, int> realDim, cudaStream_t stream)
 {
-	rayCaster_Cubes_CUDA(VectorToFloat3(origin), VectorToFloat3(LB), VectorToFloat3(up), VectorToFloat3(right), w, h, pvpW, pvpH, numRays, levelO, levelC, nLevel, _iso, cube, indexCube, cubeDim, cubeInc, _maxHeight, pixelBuffer, xGrid, yGrid, zGrid, VectorToInt3(realDim), stream);
+	if (_grid)
+		rayCasterGrid_Cubes_CUDA(VectorToFloat3(origin), VectorToFloat3(LB), VectorToFloat3(up), VectorToFloat3(right), w, h, pvpW, pvpH, numRays, levelO, levelC, nLevel, _iso, cube, indexCube, cubeDim, cubeInc, _maxHeight, pixelBuffer, xGrid, yGrid, zGrid, VectorToInt3(realDim), stream);
+	else
+		rayCaster_Cubes_CUDA(VectorToFloat3(origin), VectorToFloat3(LB), VectorToFloat3(up), VectorToFloat3(right), w, h, pvpW, pvpH, numRays, levelO, levelC, nLevel, _iso, cube, indexCube, cubeDim, cubeInc, _maxHeight, pixelBuffer, stream);
 }
 
 

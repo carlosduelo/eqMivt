@@ -163,6 +163,7 @@ void Render::frameDraw(eq::Vector4f origin, eq::Vector4f LB, eq::Vector4f up, eq
 	// Update ray casting parameters
 	_raycaster.setIsosurface(_octree->getIsosurface());
 	_raycaster.setMaxHeight(_octree->getMaxHeight());
+	_raycaster.setUseGrid(_octree->useGrid());
 
 
 	_frameDrawTimes++;
@@ -314,7 +315,6 @@ void Render::frameDraw(eq::Vector4f origin, eq::Vector4f LB, eq::Vector4f up, eq
 			*_outputFile<<"Time cache pop: "<<time/1000.0 <<" seconds"<<std::endl;
 
 		iterations++;
-		std::cout<<iterations<<std::endl;
 	}
 
 	_unmapResourcesTimes++;
@@ -347,6 +347,7 @@ void Render::frameDrawCubes(eq::Vector4f origin, eq::Vector4f LB, eq::Vector4f u
 	// Update ray casting parameters
 	_raycaster.setIsosurface(_octree->getIsosurface());
 	_raycaster.setMaxHeight(_octree->getMaxHeight());
+	_raycaster.setUseGrid(_octree->useGrid());
 
 	_frameDrawTimes++;
 	_frameDrawClock.reset();

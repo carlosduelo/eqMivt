@@ -22,6 +22,7 @@ class rayCaster
 	private:
 		float 		_iso;
 		float		_maxHeight;
+		bool		_grid;
 
 		// Lighting
 		// Material parameters
@@ -36,6 +37,8 @@ class rayCaster
 		void setIsosurface(float isosurface);
 
 		void setMaxHeight(float maxHeight);
+
+		void setUseGrid(bool grid);
 
 		void increaseStep();
 

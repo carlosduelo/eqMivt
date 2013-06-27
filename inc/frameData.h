@@ -37,6 +37,10 @@ class FrameData : public co::Serializable
 
 		void setDrawBox();
 		bool isDrawBox() const { return _drawBox; }
+		void setUseGrid();
+		bool useGrid() const { return _useGrid; }
+		void setRenderCubes();
+		bool isRenderCubes() const { return _renderCubes; }
 
 		void setCurrentViewID( const eq::uint128_t& id );
 		eq::uint128_t getCurrentViewID() const { return _currentViewID; }
@@ -68,6 +72,8 @@ class FrameData : public co::Serializable
 		eq::Vector3f	_position;
 		bool            _idle;
 		bool			_drawBox;
+		bool			_useGrid;
+		bool			_renderCubes;
 		eq::uint128_t	_currentViewID;
 
 		int				_currentOctree;

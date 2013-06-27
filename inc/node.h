@@ -30,7 +30,7 @@ namespace eqMivt
 			Node( eq::Config* parent ) : eq::Node( parent ) {}
 
 			bool	checkStatus() { return _status; }
-			bool updateStatus(uint32_t device, CacheHandler * cacheHandler, int currentOctree);
+			bool updateStatus(uint32_t device, CacheHandler * cacheHandler, int currentOctree, bool grid, bool renderCubes);
 			Octree *	getOctree(uint32_t device);
 			bool		getCacheHandler(uint32_t device, CacheHandler * cacheHandler);
 			vmml::vector<3, float>    getStartCoord();

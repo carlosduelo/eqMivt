@@ -93,12 +93,12 @@ namespace eqMivt
 		return _status;
 	}
 	
-	bool Node::updateStatus(uint32_t device, CacheHandler * cacheHandler, int currentOctree)
+	bool Node::updateStatus(uint32_t device, CacheHandler * cacheHandler, int currentOctree, bool grid, bool renderCubes)
 	{
 		if (_status)
 		{
 			// Octree set Current Octree
-			if (!_octreeManager.setCurrentOctree(currentOctree))
+			if (!_octreeManager.setCurrentOctree(currentOctree, grid, renderCubes))
 			{
 				_status = false;
 				LBERROR<<"Node: Error setting current octree"<<std::endl;

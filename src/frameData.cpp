@@ -17,6 +17,8 @@ FrameData::FrameData()
 		, _idle( false )
 		, _statistics( false )
 		, _drawBox( false )
+		, _useGrid( false )
+		, _renderCubes( false )
 		, _currentOctree( 0 )
 		, _numOctrees( 0 )
 {
@@ -29,7 +31,7 @@ void FrameData::serialize( co::DataOStream& os, const uint64_t dirtyBits )
     if( dirtyBits & DIRTY_CAMERA )
         os << _position << _rotation;
 	if( dirtyBits & DIRTY_FLAGS )
-		os << _idle << _statistics << _drawBox;
+		os << _idle << _statistics << _drawBox << _useGrid << _renderCubes;
 	if( dirtyBits & DIRTY_VIEW )
 		os << _currentViewID;
 	if( dirtyBits & DIRTY_MODEL )
@@ -42,7 +44,7 @@ void FrameData::deserialize( co::DataIStream& is, const uint64_t dirtyBits )
     if( dirtyBits & DIRTY_CAMERA )
         is >> _position >> _rotation;
 	if( dirtyBits & DIRTY_FLAGS )
-		is >> _idle >> _statistics >> _drawBox;
+		is >> _idle >> _statistics >> _drawBox >> _useGrid >> _renderCubes;
 	if( dirtyBits & DIRTY_VIEW )
 		is >> _currentViewID;
 	if( dirtyBits & DIRTY_MODEL )
@@ -125,10 +127,21 @@ void FrameData::setStatistics()
 	setDirty( DIRTY_FLAGS );
 }
 
-
 void FrameData::setDrawBox()
 {
 	_drawBox = !_drawBox;
+	setDirty( DIRTY_FLAGS );
+}
+
+void FrameData::setUseGrid()
+{
+	_useGrid = !_useGrid;
+	setDirty( DIRTY_FLAGS );
+}
+
+void FrameData::setRenderCubes()
+{
+	_renderCubes = !_renderCubes;
 	setDirty( DIRTY_FLAGS );
 }
 

@@ -1,6 +1,7 @@
 #include "octree.h"
 
 #include "octree_CUDA.h"
+#include "octreeGrid_CUDA.h"
 
 #include <iostream>
 #include <fstream>
@@ -21,6 +22,7 @@ Octree::Octree()
 	_dimension = 0;
 	_nLevels = 0;
 	_maxLevel = 0;
+	_grid = false;
 
 	_xGrid = 0;
 	_yGrid = 0;
@@ -45,13 +47,12 @@ void Octree::setGeneralValues(uint32_t device)
 	_device = device;
 }
 
-bool Octree::setCurrentOctree(vmml::vector<3, int> realDim, int dimension, int nLevels, int maxLevel, int currentLevel, float isosurface,  int maxHeight, index_node_t ** octree, int * sizes, float * xGrid, float * yGrid, float * zGrid, vmml::vector<3, int> offset, vmml::vector<3, int> realVolDim, int lastLevel)
+bool Octree::setCurrentOctree(vmml::vector<3, int> realDim, int dimension, int nLevels, int maxLevel, int currentLevel, float isosurface,  int maxHeight, index_node_t ** octree, int * sizes, float * xGrid, float * yGrid, float * zGrid, vmml::vector<3, int> offset, vmml::vector<3, int> realVolDim, int lastLevel, bool grid)
 {
-	#if 1
+
+	_maxHeight = maxHeight;
+	_grid = grid;
 	_currentLevel = currentLevel;
-	#else
-	_currentLevel = maxLevel;
-	#endif
 	if (_isosurface != isosurface || _dimension != dimension ||
 		_nLevels != nLevels || _maxLevel != maxLevel)
 	{
@@ -60,7 +61,6 @@ bool Octree::setCurrentOctree(vmml::vector<3, int> realDim, int dimension, int n
 		_dimension = dimension;
 		_nLevels = nLevels;
 		_maxLevel = maxLevel;
-		_maxHeight = maxHeight;
 		_isosurface = isosurface;
 		return Create_Octree(octree, sizes, _maxLevel, &_octree, &_memoryOctree, &_sizes, lastLevel, VectorToInt3(realVolDim), VectorToInt3(realDim), &_xGrid, &_yGrid, &_zGrid, xGrid, yGrid, zGrid);
 	}
@@ -73,8 +73,10 @@ float * Octree::getzGrid(){ return _zGrid + _offset.z() + 2; }
 
 void Octree::getBoxIntersected(eq::Vector4f origin, eq::Vector4f  LB, eq::Vector4f up, eq::Vector4f right, float w, float h, int pvpW, int pvpH, visibleCube_t * visibleGPU, visibleCube_t * visibleCPU, int numRays, int * indexVisibleCubesGPU, int * indexVisibleCubesCPU, cudaStream_t stream)
 {
-
-	getBoxIntersectedOctree(_octree, _sizes, _nLevels, VectorToFloat3(origin), VectorToFloat3(LB), VectorToFloat3(up), VectorToFloat3(right), w, h, pvpW, pvpH,  _currentLevel, numRays, visibleGPU, visibleCPU, indexVisibleCubesGPU, indexVisibleCubesCPU, _xGrid + _offset.x() + 2, _yGrid+_offset.y() + 2, _zGrid+_offset.z() + 2, VectorToInt3(_realDim), stream);
+	if (_grid)
+		getBoxIntersectedOctreeGrid(_octree, _sizes, _nLevels, VectorToFloat3(origin), VectorToFloat3(LB), VectorToFloat3(up), VectorToFloat3(right), w, h, pvpW, pvpH,  _currentLevel, numRays, visibleGPU, visibleCPU, indexVisibleCubesGPU, indexVisibleCubesCPU, _xGrid + _offset.x() + 2, _yGrid+_offset.y() + 2, _zGrid+_offset.z() + 2, VectorToInt3(_realDim), stream);
+	else
+		getBoxIntersectedOctree(_octree, _sizes, _nLevels, VectorToFloat3(origin), VectorToFloat3(LB), VectorToFloat3(up), VectorToFloat3(right), w, h, pvpW, pvpH,  _currentLevel, numRays, visibleGPU, visibleCPU, indexVisibleCubesGPU, indexVisibleCubesCPU, stream);
 }
 
 }

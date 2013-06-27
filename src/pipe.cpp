@@ -78,7 +78,7 @@ Render * Pipe::getRender()
 
 		// Check status node
 		const FrameData& frameData = getFrameData();
-		if (node->updateStatus(getDevice(), _render.getCacheHandler(), frameData.getCurrentOctree()) &&
+		if (node->updateStatus(getDevice(), _render.getCacheHandler(), frameData.getCurrentOctree(), frameData.useGrid(), frameData.isRenderCubes()) &&
 			_render.checkCudaResources())
 			return &_render;
 		else

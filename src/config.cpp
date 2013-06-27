@@ -337,6 +337,27 @@ bool Config::_handleKeyEvent( const eq::KeyEvent& event )
 {
     switch( event.key )
     {
+		case 'g':
+		{
+			_frameData.setUseGrid();
+			return true;
+		}
+		case 'G':
+		{
+			_frameData.setUseGrid();
+			return true;
+		}
+		case 'c':
+		{
+			_frameData.setRenderCubes();
+			return true;
+		}
+		case 'C':
+		{
+			_frameData.setRenderCubes();
+			return true;
+		}
+		
 		case 'b':
 		{
 			_frameData.setDrawBox();

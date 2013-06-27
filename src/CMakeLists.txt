@@ -28,7 +28,7 @@ set(MIVT_SOURCE
 		eqMivt.cpp
 )
 
-set(MIVT_CUDA_SOURCE ray-casting-sphere.cu octree_CUDA.cu rayCaster_CUDA.cu)
+set(MIVT_CUDA_SOURCE ray-casting-sphere.cu octree_CUDA.cu rayCaster_CUDA.cu octreeGrid_CUDA.cu rayCasterGrid_CUDA.cu)
 
 # SETTING CUDA PARAMETERS
 list(APPEND CUDA_NVCC_FLAGS -arch=sm_13)
