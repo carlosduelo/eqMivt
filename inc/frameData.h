@@ -26,6 +26,7 @@ class FrameData : public co::Serializable
 		void setRotation( const eq::Vector3f& rotation);
 		void spinCamera( const float x, const float y );
 		void moveCamera( const float x, const float y, const float z );
+		void zoom( const float x);
 
 		const eq::Matrix4f& getCameraRotation() const
 		{ return _rotation; }
@@ -69,6 +70,9 @@ class FrameData : public co::Serializable
 			DIRTY_MODEL	= co::Serializable::DIRTY_CUSTOM << 4,
 		};
     private:
+		eq::Vector3f	_center;
+		float			_radio;
+		float			_angle;
 		eq::Matrix4f	_rotation;
 		eq::Vector3f	_position;
 		bool            _idle;

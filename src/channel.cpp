@@ -110,7 +110,7 @@ void Channel::frameDraw( const eq::uint128_t& frameID )
 	const eq::Vector2f jitter = getJitter();
 	frustum.apply_jitter(jitter);
 
-	_updateNearFar(model);
+	//_updateNearFar(model);
 
 	Pipe* pipe = static_cast<Pipe*>( getPipe( ));
 	Render * render = pipe->getRender();
@@ -160,13 +160,6 @@ void Channel::frameDraw( const eq::uint128_t& frameID )
 		 ****p4------------p1****
 		 ************************
 		*/
-
-		#if 0
-		std::cout<<pos<<std::endl;
-		std::cout<<p4<<std::endl;
-		std::cout<<p3<<std::endl;
-		std::cout<<p1<<std::endl;
-		#endif
 
 		eq::Vector4f up = p3 - p4;
 		eq::Vector4f right = p1 - p4;

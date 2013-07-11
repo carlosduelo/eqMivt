@@ -105,6 +105,7 @@ namespace eqMivt
 			}
 
 			Config* config = static_cast< Config* >( getConfig( ));
+			config->setOctreeManager(&_octreeManager);
 			const InitData& initData = config->getInitData();
 			// Set Size cache manager for CPU
 			int levelCube = _octreeManager.getBestCubeLevel();

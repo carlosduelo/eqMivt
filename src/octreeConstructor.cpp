@@ -41,33 +41,41 @@ namespace eqMivt
 			{
 				int size = _octree[level].size();
 
-				// Firts
-				if (size == 0)
+				try
 				{
-					_numCubes[level] = 1;
-					_octree[level].push_back(id);
-					_octree[level].push_back(id);
+					// Firts
+					if (size == 0)
+					{
+						_numCubes[level] = 1;
+						_octree[level].push_back(id);
+						_octree[level].push_back(id);
+					}
+					else if (_octree[level].back() == (id - (index_node_t)1))
+					{
+						_numCubes[level] += 1;
+						_octree[level][size-1] = id;
+					}
+					else if(_octree[level].back() == id)
+					{
+						//std::cout<<"repetido in level "<<level<<" "<< id <<std::endl;
+						return true;
+					}
+					else if(_octree[level].back() > id)
+					{
+						std::cout<<"=======>   ERROR: insert index in order "<< id <<" (in level "<<level<<") last inserted "<<_octree[level].back()<<std::endl;
+						throw;
+					}
+					else
+					{
+						_numCubes[level] += 1;
+						_octree[level].push_back(id);
+						_octree[level].push_back(id);
+					}
 				}
-				else if (_octree[level].back() == (id - (index_node_t)1))
+				catch (...)
 				{
-					_numCubes[level] += 1;
-					_octree[level][size-1] = id;
-				}
-				else if(_octree[level].back() == id)
-				{
-					//std::cout<<"repetido in level "<<level<<" "<< id <<std::endl;
-					return true;
-				}
-				else if(_octree[level].back() > id)
-				{
-					std::cout<<"=======>   ERROR: insert index in order "<< id <<" (in level "<<level<<") last inserted "<<_octree[level].back()<<std::endl;
+					std::cerr<<"No enough memory aviable"<<std::endl;
 					throw;
-				}
-				else
-				{
-					_numCubes[level] += 1;
-					_octree[level].push_back(id);
-					_octree[level].push_back(id);
 				}
 
 				return false;
@@ -94,9 +102,17 @@ namespace eqMivt
 
 			void addVoxel(index_node_t id)
 			{
-				_lock.set();
-				_lastLevel.push_back(id);
-				_lock.unset();
+				try
+				{
+					_lock.set();
+					_lastLevel.push_back(id);
+					_lock.unset();
+				}
+				catch (...)
+				{
+					std::cerr<<"No enough memory aviable"<<std::endl;
+					throw;
+				}
 			}
 
 			void completeOctree()
@@ -487,27 +503,27 @@ namespace eqMivt
 
 			int levelCube = 0; 
 			double memoryCPU = getMemorySize();
-			if (memoryCPU == 0)
+			if (useCUDA)
+			{
+				double memoryGPU = octreeConstructorGetFreeMemory();
+				for(int l=10; l>0; l--)
+				{
+					double bigCubeDim = pow(pow(2, l) + 1, 3)*(float)sizeof(float);
+					if ((2.0*bigCubeDim) < memoryGPU)
+					{
+						levelCube = nLevels >= l ? ((nLevels-l) > mxLevel ? mxLevel : ((nLevels-l))): 0;
+						break;
+					}
+				}
+			}
+			else if (memoryCPU == 0)
 			{
 				std::cerr<<"Not possible, check memory aviable (the call failed due to OS limitations)"<<std::endl;
 				levelCube = nLevels >= 9 ? ((nLevels-9) > mxLevel ? mxLevel : ((nLevels-9))): 0;
 			}
 			else
 			{
-				if (useCUDA)
-				{
-					double memoryGPU = octreeConstructorGetFreeMemory();
-					for(int l=10; l>0; l--)
-					{
-						double bigCubeDim = pow(pow(2, l) + 1, 3)*(float)sizeof(float);
-						if ((2.0*bigCubeDim) < memoryGPU)
-						{
-							levelCube = nLevels >= l ? ((nLevels-l) > mxLevel ? mxLevel : ((nLevels-l))): 0;
-							break;
-						}
-					}
-				}
-				else if (nLevels <= 9)
+				if (nLevels <= 9)
 				{
 						levelCube = nLevels >= 9 ? ((nLevels-9) > mxLevel ? mxLevel : ((nLevels-9))): 0;
 				}

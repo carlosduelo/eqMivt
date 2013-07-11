@@ -49,9 +49,14 @@ bool Config::init()
 void Config::_reset()
 {
 
-	// set step camera
-	vmml::vector<3, int> dimensionVolume = _octreeManager->getRealDimVolume();
-	_cameraStep = fminf(dimensionVolume.x(), fminf(dimensionVolume.y(),dimensionVolume.z())) / 2000.0f;
+	if (_octreeManager != 0)
+	{
+		// set step camera
+		vmml::vector<3, int> dimensionVolume = _octreeManager->getRealDimVolume();
+		_cameraStep = fminf(dimensionVolume.x(), fminf(dimensionVolume.y(),dimensionVolume.z())) / 2000000.0f;
+	}
+	else
+		_cameraStep = 0.05f;
 
 	_frameData.reset(_octreeManager);
 }
@@ -102,18 +107,6 @@ bool Config::loadData( const eq::uint128_t& initDataID )
 
 	_frameData.setNumOctrees(OctreeManager::readNumOctreesFromFile(_initData.getOctreeFilename()));
 
-#if 0
-	// Set camera step
-	vmml::vector<3, int> dimensionVolume = OctreeManager::readRealDimFromFile(_initData.getOctreeFilename());
-	if (dimensionVolume.x() == 0 || dimensionVolume.z() == 0 || dimensionVolume.y() == 0)
-	{
-		return false;
-	}
-	else
-	{
-		_cameraStep = fmaxf(dimensionVolume.x(), fmaxf(dimensionVolume.y(),dimensionVolume.z())) / 1000;
-	}
-#endif
     return true;
 }
 
@@ -178,7 +171,7 @@ bool Config::handleEvent( const eq::ConfigEvent* event )
                   return true;
 
               case eq::PTR_BUTTON2:
-                  _frameData.moveCamera( 0.f, 0.f, _cameraStep*event->data.pointerMotion.dy );
+                  _frameData.zoom( 100.0f*_cameraStep*event->data.pointerMotion.dy );
                   _redraw = true;
                   return true;
 
@@ -276,7 +269,7 @@ bool Config::handleEvent( eq::EventICommand command )
                   return true;
 
               case eq::PTR_BUTTON2:
-                  _frameData.moveCamera( 0.f, 0.f, _cameraStep*event.pointerMotion.dy );
+                  _frameData.zoom(100.0f*_cameraStep*event.pointerMotion.dy );
                   _redraw = true;
                   return true;
 
