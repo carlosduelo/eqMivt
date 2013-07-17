@@ -91,6 +91,8 @@ namespace eqMivt
 
 		void setName(std::string name);
 
+		bool setColors(float * c);
+
 		void setStatistics(bool stat);
 
 		void printCudaProperties();

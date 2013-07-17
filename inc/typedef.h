@@ -29,5 +29,9 @@ typedef struct
 #define NOCACHED 	(unsigned char)1
 #define NOCUBE		(unsigned char)0
 
+#define NUM_COLORS 256
+#define COLOR_INC 0.00390625f
+
+
 }
 #endif /* EQ_MIVT_TYPEDEF_H */

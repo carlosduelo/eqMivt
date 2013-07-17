@@ -26,8 +26,9 @@ class rayCaster
 
 		vmml::vector<3, int> _offset;
 
-		// Lighting
-		// Material parameters
+		float * _r;
+		float * _g;
+		float * _b;
 
 		// rayCasing Parameters
 		float _step;
@@ -41,6 +42,8 @@ class rayCaster
 		void setMaxHeight(float maxHeight);
 
 		void setOffset(vmml::vector<3, int> offset);
+
+		bool setColor(float * c);
 
 		void setUseGrid(bool grid);
 

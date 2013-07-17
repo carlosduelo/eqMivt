@@ -140,7 +140,7 @@ inline __device__ float3 getNormal(float3 pos, float * data, int3 minBox, int3 m
 			        (getElementInterpolate(make_float3(pos.x,pos.y,pos.z-1.0f),data,minBox,maxBox) - getElementInterpolate(make_float3(pos.x,pos.y,pos.z+1.0f),data,minBox,maxBox))        /2.0f));
 }			
 
-__global__ void cuda_rayCaster(float3 origin, float3  LB, float3 up, float3 right, float w, float h, int pvpW, int pvpH, int numRays, float iso, visibleCube_t * cube, int * indexCube, int3 dimCube, int3 cubeInc, int levelO, int levelC, int nLevel, int3 offset, float maxHeight, float * screen)
+__global__ void cuda_rayCaster(float3 origin, float3  LB, float3 up, float3 right, float w, float h, int pvpW, int pvpH, int numRays, float iso, visibleCube_t * cube, int * indexCube, int3 dimCube, int3 cubeInc, int levelO, int levelC, int nLevel, int3 offset, float maxHeight, float * screen, float * r, float * g, float * b)
 {
 	unsigned int tid = blockIdx.y * blockDim.x * gridDim.y + blockIdx.x * blockDim.x + threadIdx.x;
 
@@ -150,9 +150,9 @@ __global__ void cuda_rayCaster(float3 origin, float3  LB, float3 up, float3 righ
 
 		if (cube[tid].state == NOCUBE)
 		{
-			screen[tid*3] = 1.0f; 
-			screen[tid*3+1] = 1.0f; 
-			screen[tid*3+2] = 1.0f; 
+			screen[tid*3] = r[NUM_COLORS];
+			screen[tid*3+1] = g[NUM_COLORS];
+			screen[tid*3+2] = b[NUM_COLORS];
 			cube[tid].state = PAINTED;
 			return;
 		}
@@ -254,9 +254,26 @@ __global__ void cuda_rayCaster(float3 origin, float3  LB, float3 up, float3 righ
 					float dif = fabs(n.x*l.x + n.y*l.y + n.z*l.z);
 
 					float a = Xnew.y/maxHeight;
-					screen[tid*3]   =(1-a)*dif;// + 1.0f*spec;
-					screen[tid*3+1] =(a)*dif;// + 1.0f*spec;
-					screen[tid*3+2] =0.0f*dif;// + 1.0f*spec;
+					int pa = floorf(a*NUM_COLORS);
+					if (pa < 0)
+					{
+						screen[tid*3]   =r[0]*dif;
+						screen[tid*3+1] =g[0]*dif;
+						screen[tid*3+2] =b[0]*dif;
+					}
+					else if (pa >= NUM_COLORS-1) 
+					{
+						screen[tid*3]   = r[NUM_COLORS-1]*dif;
+						screen[tid*3+1] = g[NUM_COLORS-1]*dif;
+						screen[tid*3+2] = b[NUM_COLORS-1]*dif;
+					}
+					else
+					{
+						float dx = (a*(float)NUM_COLORS - (float)pa);
+						screen[tid*3]   = (r[pa] + (r[pa+1]-r[pa])*dx)*dif;
+						screen[tid*3+1] = (g[pa] + (g[pa+1]-g[pa])*dx)*dif;
+						screen[tid*3+2] = (b[pa] + (b[pa+1]-b[pa])*dx)*dif;
+					}
 					cube[tid].state= PAINTED;
 				}
 				else
@@ -274,7 +291,7 @@ __global__ void cuda_rayCaster(float3 origin, float3  LB, float3 up, float3 righ
 	}
 }
 
-__global__ void cuda_rayCaster_Cubes(float3 origin, float3  LB, float3 up, float3 right, float w, float h, int pvpW, int pvpH, int numRays, float iso, visibleCube_t * cube, int * indexCube, int3 dimCube, int3 cubeInc, int levelO, int levelC, int nLevel, float maxHeight, int3 offset, float * screen)
+__global__ void cuda_rayCaster_Cubes(float3 origin, float3  LB, float3 up, float3 right, float w, float h, int pvpW, int pvpH, int numRays, float iso, visibleCube_t * cube, int * indexCube, int3 dimCube, int3 cubeInc, int levelO, int levelC, int nLevel, float maxHeight, int3 offset, float * screen, float * r, float * g, float * b)
 {
 	unsigned int tid = blockIdx.y * blockDim.x * gridDim.y + blockIdx.x * blockDim.x + threadIdx.x;
 
@@ -284,9 +301,9 @@ __global__ void cuda_rayCaster_Cubes(float3 origin, float3  LB, float3 up, float
 
 		if (cube[tid].state == NOCUBE)
 		{
-			screen[tid*3] = 1.0f; 
-			screen[tid*3+1] = 1.0f; 
-			screen[tid*3+2] = 1.0f; 
+			screen[tid*3] = r[NUM_COLORS];
+			screen[tid*3+1] = g[NUM_COLORS];
+			screen[tid*3+2] = b[NUM_COLORS];
 			cube[tid].state = PAINTED;
 			return;
 		}
@@ -349,30 +366,87 @@ __global__ void cuda_rayCaster_Cubes(float3 origin, float3  LB, float3 up, float
 			float dif = fabsf(n.x*l.x + n.y*l.y + n.z*l.z);
 
 			float a = hit.y/maxHeight;
-			screen[tid*3]   =(1.0f-a)*dif;
-			screen[tid*3+1] =(a)*dif;
-			screen[tid*3+2] =0.0f;
+			int pa = floorf(a*NUM_COLORS);
+			if (pa < 0)
+			{
+				screen[tid*3]   =r[0]*dif;
+				screen[tid*3+1] =g[0]*dif;
+				screen[tid*3+2] =b[0]*dif;
+			}
+			else if (pa >= NUM_COLORS-1) 
+			{
+				screen[tid*3]   = r[NUM_COLORS-1]*dif;
+				screen[tid*3+1] = g[NUM_COLORS-1]*dif;
+				screen[tid*3+2] = b[NUM_COLORS-1]*dif;
+			}
+			else
+			{
+				float dx = (a*(float)NUM_COLORS - (float)pa);
+				screen[tid*3]   = (r[pa] + (r[pa+1]-r[pa])*dx)*dif;
+				screen[tid*3+1] = (g[pa] + (g[pa+1]-g[pa])*dx)*dif;
+				screen[tid*3+2] = (b[pa] + (b[pa+1]-b[pa])*dx)*dif;
+			}
 			cube[tid].state= PAINTED;
 		}
 	}
 }
 
-	void rayCaster_CUDA(float3 origin, float3  LB, float3 up, float3 right, float w, float h, int pvpW, int pvpH, int numRays, int levelO, int levelC, int nLevel, float iso, visibleCube_t * cube, int * indexCube, int3 cubeDim, int3 cubeInc, float maxHeight, int3 offset, float * pixelBuffer, cudaStream_t stream)
+	void rayCaster_CUDA(float3 origin, float3  LB, float3 up, float3 right, float w, float h, int pvpW, int pvpH, int numRays, int levelO, int levelC, int nLevel, float iso, visibleCube_t * cube, int * indexCube, int3 cubeDim, int3 cubeInc, float maxHeight, int3 offset, float * pixelBuffer, float * r, float * g, float * b, cudaStream_t stream)
 {
 	dim3 threads = getThreads(numRays);
 	dim3 blocks = getBlocks(numRays);
 
-	cuda_rayCaster<<<blocks, threads, 0, stream>>>(origin, LB, up, right, w, h, pvpW, pvpH, numRays, iso, cube, indexCube, cubeDim, cubeInc, levelO, levelC, nLevel, offset, maxHeight, pixelBuffer);
+	cuda_rayCaster<<<blocks, threads, 0, stream>>>(origin, LB, up, right, w, h, pvpW, pvpH, numRays, iso, cube, indexCube, cubeDim, cubeInc, levelO, levelC, nLevel, offset, maxHeight, pixelBuffer, r, g, b);
 	return;
 }
 
-void rayCaster_Cubes_CUDA(float3 origin, float3  LB, float3 up, float3 right, float w, float h, int pvpW, int pvpH, int numRays, int levelO, int levelC, int nLevel, float iso, visibleCube_t * cube, int * indexCube, int3 cubeDim, int3 cubeInc, float maxHeight, int3 offset, float * pixelBuffer, cudaStream_t stream)
+void rayCaster_Cubes_CUDA(float3 origin, float3  LB, float3 up, float3 right, float w, float h, int pvpW, int pvpH, int numRays, int levelO, int levelC, int nLevel, float iso, visibleCube_t * cube, int * indexCube, int3 cubeDim, int3 cubeInc, float maxHeight, int3 offset, float * pixelBuffer, float * r, float * g, float * b, cudaStream_t stream)
 {
 	dim3 threads = getThreads(numRays);
 	dim3 blocks = getBlocks(numRays);
 
-	cuda_rayCaster_Cubes<<<blocks, threads, 0, stream>>>(origin, LB, up, right, w, h, pvpW, pvpH, numRays, iso, cube, indexCube, cubeDim, cubeInc, levelO, levelC, nLevel, maxHeight, offset, pixelBuffer);
+	cuda_rayCaster_Cubes<<<blocks, threads, 0, stream>>>(origin, LB, up, right, w, h, pvpW, pvpH, numRays, iso, cube, indexCube, cubeDim, cubeInc, levelO, levelC, nLevel, maxHeight, offset, pixelBuffer, r, g, b);
 	return;
+}
+
+bool rayCasterCreateColors(float ** r, float ** g, float ** b)
+{
+	std::cout<< "Allocating vector color "<< (3*NUM_COLORS + 3)*sizeof(float)/1024.0f/1024.0f<< " MB: ";
+	if (cudaSuccess != (cudaMalloc(r, (3*NUM_COLORS + 3)*sizeof(float))))
+	{
+		std::cout<<" Fail"<<std::endl;
+		std::cout<< "Ray Casting: error allocating vector color"<<std::endl;
+		return false;
+	}
+	else
+		std::cout<<"OK"<<std::endl;
+
+	*g = (*r) + NUM_COLORS + 1;
+	*b = (*r) + 2*(NUM_COLORS + 1);
+
+
+	return true;
+}
+bool rayCasterDestroyColors(float * g)
+{
+	if (g != 0)
+		cudaFree(g);
+	
+	return true;
+}
+
+bool rayCasterCopyColors(float * c, float * g)
+{
+	std::cout<< "Coping to device color vector: ";
+	if (cudaSuccess != (cudaMemcpy((void*)g, (void*)c, (3*NUM_COLORS+3)*sizeof(float), cudaMemcpyHostToDevice)))
+	{
+		std::cout<<"Fail"<<std::endl;;
+		return false;
+	}
+	else
+		std::cout<< "OK"<<std::endl;
+	return true;
+
 }
 
 }

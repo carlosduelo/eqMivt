@@ -38,10 +38,11 @@ bool Pipe::configInit( const eq::uint128_t& initID )
 			return false;
 		}
 		
-	_lastState = true;
 	_render.setName(getName());
+	
+	_lastState = _render.setColors(0);
 
-    return config->mapObject( &_frameData, frameDataID );
+    return _lastState && config->mapObject( &_frameData, frameDataID );
 }
 
 bool Pipe::configExit()

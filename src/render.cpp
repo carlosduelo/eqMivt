@@ -81,6 +81,11 @@ Render::~Render()
 		delete _outputFile;
 }
 
+bool Render::setColors(float * c)
+{
+	return _raycaster.setColor(c);
+}
+
 void Render::resizeViewport(int width, int height, GLuint pbo)
 {
 	_resizeTimes++;
