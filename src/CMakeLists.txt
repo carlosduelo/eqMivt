@@ -68,3 +68,6 @@ target_link_libraries(octreeConstructor ${LIBS_NEEDED})
 
 add_executable(printOctree  printOctree.cpp) 
 target_link_libraries(printOctree ${LIBS_NEEDED}) 
+
+add_executable(transferFunctionCreator transferFunctionCreator.cpp) 
+target_link_libraries(transferFunctionCreator GL glut) 
