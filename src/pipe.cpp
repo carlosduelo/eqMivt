@@ -40,7 +40,27 @@ bool Pipe::configInit( const eq::uint128_t& initID )
 		
 	_render.setName(getName());
 	
-	_lastState = _render.setColors(0);
+	if (initData.getTransferFunctionFile() == "")
+		_lastState = _render.setColors(0);
+	else
+	{
+		float colors[3*NUM_COLORS+3];
+		std::ifstream file;
+		try
+		{
+			file.open(initData.getTransferFunctionFile().c_str(), std::ifstream::binary);
+			file.read((char*)colors, (3*NUM_COLORS+3)*sizeof(float));
+			file.close();
+		}
+		catch(...)
+		{
+			LBERROR<<"Error opening transfer function color file"<<std::endl;
+			_lastState = false;
+			return false;
+		}
+		_lastState = _render.setColors(colors);
+	}
+		
 
     return _lastState && config->mapObject( &_frameData, frameDataID );
 }

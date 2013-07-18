@@ -34,6 +34,7 @@ const LocalInitData& LocalInitData::operator = ( const LocalInitData& from )
 	setDataFilename(from.getDataFilename());
 	setMaxCubesCacheCPU(from.getMaxCubesCacheCPU());
 	setMaxCubesCacheGPU(from.getMaxCubesCacheGPU());
+	setTransferFunctionFile(from.getTransferFunctionFile());
 
     return *this;
 }
@@ -52,6 +53,7 @@ bool LocalInitData::parseArguments( const int argc, char** argv )
     ("data-file,d", boost::program_options::value< std::vector<std::string> >()->multitoken(), "type-data-file data-file-path\nType file supported: hdf5_file file-path:data-set-name")
 	("max-elements-cpu,c", boost::program_options::value<int>(), "set cpu cache, optional")
 	("max-elements-gpu,g", boost::program_options::value<int>(), "set gpu cache, optional")
+    ("transfer-function,t", boost::program_options::value< std::vector<std::string> >()->multitoken(), "transfer function color path")
     ;
 
 	boost::program_options::variables_map vm;
@@ -109,6 +111,16 @@ bool LocalInitData::parseArguments( const int argc, char** argv )
 		setOctreeFilename("");
 		printHelp = true;
     }
+
+	if (vm.count("transfer-function"))
+	{
+		std::vector<std::string> files = vm["transfer-function"].as< std::vector<std::string> >();
+		setTransferFunctionFile(files[0]);
+	}
+	else
+	{
+		setTransferFunctionFile("");
+	}
 
 	if (vm.count("data-file"))
 	{

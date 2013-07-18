@@ -44,6 +44,9 @@ namespace eqMivt
 		int			getMaxCubesCacheGPU() const { return _maxCubesCacheGPU; }
 		void		setMaxCubesCacheGPU(int maxCubesCacheGPU){ _maxCubesCacheGPU = maxCubesCacheGPU; }
 
+		std::string	getTransferFunctionFile() { return _transferFunctionFile; }
+		std::string	getTransferFunctionFile() const { return _transferFunctionFile; }
+		void		setTransferFunctionFile(std::string transferFunctionFile) { _transferFunctionFile = transferFunctionFile; }
     protected:
         virtual void getInstanceData( co::DataOStream& os );
         virtual void applyInstanceData( co::DataIStream& is );
@@ -56,6 +59,8 @@ namespace eqMivt
 		std::string						_dataTypeFile;
 		std::vector<std::string>		_dataFilename;
 
+		std::string						_transferFunctionFile;
+		
 		int				_maxCubesCacheCPU;
 		int				_maxCubesCacheGPU;
     };
