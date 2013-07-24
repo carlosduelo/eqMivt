@@ -75,6 +75,9 @@ bool rayCaster::setColor(float * c)
 				k++;
 			}
 
+			for(int p=0; p<192; p++)
+				cc[2*(NUM_COLORS+1) + p] = 0.0f;
+
 			dc = 1.0f/100.0f;
 			k=1;
 			for(int p=192; p<NUM_COLORS; p++)
@@ -93,9 +96,6 @@ bool rayCaster::setColor(float * c)
 			cc[2*NUM_COLORS+1] = 1.0f;
 			cc[3*NUM_COLORS+2] = 1.0f;
 			#endif
-
-			for(int i=0; i<3*NUM_COLORS+3;i++)
-				std::cout<<i<<" "<<cc[i]<<std::endl;
 
 			result &= rayCasterCopyColors(cc, _r);
 			delete[] cc;
