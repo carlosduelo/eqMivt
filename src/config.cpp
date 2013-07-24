@@ -20,7 +20,6 @@ Config::Config( eq::ServerPtr parent )
         : eq::Config( parent )
         , _redraw( true )
 		, _numFramesAA( 0 )
-		, _cameraStep( 0.5f )
 		, _octreeManager( 0 )
 {
 }
@@ -48,16 +47,6 @@ bool Config::init()
 
 void Config::_reset()
 {
-
-	if (_octreeManager != 0)
-	{
-		// set step camera
-		vmml::vector<3, int> dimensionVolume = _octreeManager->getRealDimVolume();
-		_cameraStep = fminf(dimensionVolume.x(), fminf(dimensionVolume.y(),dimensionVolume.z())) / 2000000.0f;
-	}
-	else
-		_cameraStep = 0.05f;
-
 	_frameData.reset(_octreeManager);
 }
 
@@ -171,13 +160,13 @@ bool Config::handleEvent( const eq::ConfigEvent* event )
                   return true;
 
               case eq::PTR_BUTTON2:
-                  _frameData.zoom( 100.0f*_cameraStep*event->data.pointerMotion.dy );
+                  _frameData.zoom( event->data.pointerMotion.dy );
                   _redraw = true;
                   return true;
 
               case eq::PTR_BUTTON3:
-                  _frameData.moveCamera(  _cameraStep * event->data.pointerMotion.dx,
-                                         -_cameraStep * event->data.pointerMotion.dy,
+                  _frameData.moveCamera(  event->data.pointerMotion.dx,
+                                         -event->data.pointerMotion.dy,
                                           0.f );
                   _redraw = true;
                   return true;
@@ -187,9 +176,9 @@ bool Config::handleEvent( const eq::ConfigEvent* event )
 
         case eq::Event::CHANNEL_POINTER_WHEEL:
         {
-            _frameData.moveCamera( -_cameraStep * event->data.pointerWheel.yAxis,
+            _frameData.moveCamera( -event->data.pointerWheel.yAxis,
                                    0.f,
-                                   _cameraStep * event->data.pointerWheel.xAxis );
+                                   event->data.pointerWheel.xAxis );
             _redraw = true;
             return true;
         }
@@ -269,13 +258,13 @@ bool Config::handleEvent( eq::EventICommand command )
                   return true;
 
               case eq::PTR_BUTTON2:
-                  _frameData.zoom(100.0f*_cameraStep*event.pointerMotion.dy );
+                  _frameData.zoom(event.pointerMotion.dy );
                   _redraw = true;
                   return true;
 
               case eq::PTR_BUTTON3:
-                  _frameData.moveCamera(  _cameraStep * event.pointerMotion.dx,
-                                         -_cameraStep * event.pointerMotion.dy,
+                  _frameData.moveCamera(  event.pointerMotion.dx,
+                                         -event.pointerMotion.dy,
                                           0.f );
                   _redraw = true;
                   return true;
@@ -286,9 +275,9 @@ bool Config::handleEvent( eq::EventICommand command )
         case eq::Event::CHANNEL_POINTER_WHEEL:
         {
 			const eq::Event& event = command.get< eq::Event >();
-            _frameData.moveCamera( -_cameraStep * event.pointerWheel.yAxis,
+            _frameData.moveCamera( -event.pointerWheel.yAxis,
                                    0.f,
-                                   _cameraStep * event.pointerWheel.xAxis );
+                                   event.pointerWheel.xAxis );
             _redraw = true;
             return true;
         }

@@ -75,9 +75,6 @@ bool rayCaster::setColor(float * c)
 				k++;
 			}
 
-			for(int p=0; p<192; p++)
-				cc[2*(NUM_COLORS+1) + p] = 0.0f;
-
 			dc = 1.0f/100.0f;
 			k=1;
 			for(int p=192; p<NUM_COLORS; p++)

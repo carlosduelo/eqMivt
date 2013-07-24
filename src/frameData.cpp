@@ -93,7 +93,22 @@ void FrameData::spinCamera( const float x, const float y )
 
 void FrameData::zoom( const float x)
 {
-	_radio += x;
+	vmml::vector<3, int> l = _center - _position;
+
+	float d = l.length()*0.1f*x;
+	d = d == 0 ? x : d;
+
+	if (d > 0)
+	{
+		if (_radio < 10000)
+			_radio += d;
+	}
+	else
+	{
+		if (_radio > -10000)
+			_radio += d;
+	}
+
 	_position.x() = _center.x() + _radio * sin(_angle);
 	_position.z() = _center.z() + _radio * cos(_angle);
     setDirty( DIRTY_CAMERA );
@@ -101,10 +116,22 @@ void FrameData::zoom( const float x)
 
 void FrameData::moveCamera( const float x, const float y, const float z )
 {
-	_angle += x;
+	vmml::vector<3, int> l = _center - _position;
+	float d = l.length();
+
+	_angle += x*d*0.00005f;
+	if (d > 0)
+	{
+		if (_position.y() < 5000)
+			_position.y() +=  d == 0 ? y : y*d*0.05f;
+	}
+	else
+	{
+		if (_position.y() > -5000)
+			_position.y() +=  d == 0 ? y : y*d*0.05f;
+	}
 
 	_position.x() = _center.x() + _radio * sin(_angle);
-	_position.y() +=  y*100.0f;
 	_position.z() = _center.z() + _radio * cos(_angle);
 
 	#if 0

@@ -49,7 +49,6 @@ namespace eqMivt
         FrameData		_frameData;
         bool			_redraw;
 		int32_t			_numFramesAA;
-		float			_cameraStep;
 		OctreeManager * _octreeManager;
 
         bool _handleKeyEvent( const eq::KeyEvent& event );
