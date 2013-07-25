@@ -128,7 +128,7 @@ __device__ float getElementInterpolateGrid(float3 pos, float * data, int3 minBox
 inline __device__ float3 getNormal(float3 pos, float * data, int3 minBox, int3 maxBox)
 {
 	return normalize(make_float3(	
-				(getElementInterpolateGrid(make_float3(pos.x-1,pos.y,pos.z),data,minBox,maxBox) - getElementInterpolateGrid(make_float3(pos.x+1.0f,pos.y,pos.z),data,minBox,maxBox))        /2.0f,
+				(getElementInterpolateGrid(make_float3(pos.x-1.0f,pos.y,pos.z),data,minBox,maxBox) - getElementInterpolateGrid(make_float3(pos.x+1.0f,pos.y,pos.z),data,minBox,maxBox))        /2.0f,
 				(getElementInterpolateGrid(make_float3(pos.x,pos.y-1,pos.z),data,minBox,maxBox) - getElementInterpolateGrid(make_float3(pos.x,pos.y+1.0f,pos.z),data,minBox,maxBox))        /2.0f,
 				(getElementInterpolateGrid(make_float3(pos.x,pos.y,pos.z-1),data,minBox,maxBox) - getElementInterpolateGrid(make_float3(pos.x,pos.y,pos.z+1.0f),data,minBox,maxBox))        /2.0f));
 }
@@ -225,11 +225,11 @@ __global__ void cuda_rayCasterGrid(float3 origin, float3  LB, float3 up, float3 
 					Xnear += ((fminf(fabs(xGrid[pos.x+1] -xGrid[pos.x]), fminf(fabs(yGrid[pos.y+1] -yGrid[pos.y]),fabs(zGrid[pos.z+1] -zGrid[pos.z])))) / 3.0f) * ray;
 
 					// Get new pos
-					while(!(xGrid[pos.x] <= Xnear.x && Xnear.x <xGrid[pos.x+1]))
+					while((minBox.x-2 <= pos.x && pos.x <= maxBox.x + 1) &&  !(xGrid[pos.x] <= Xnear.x && Xnear.x <xGrid[pos.x+1]))
 						pos.x = ray.x < 0 ? pos.x - 1 : pos.x +1;
-					while(!(yGrid[pos.y] <= Xnear.y && Xnear.y <yGrid[pos.y+1]))
+					while((minBox.y-2 <= pos.y && pos.y <= maxBox.y + 1) &&!(yGrid[pos.y] <= Xnear.y && Xnear.y <yGrid[pos.y+1]))
 						pos.y = ray.y < 0 ? pos.y - 1 : pos.y +1;
-					while(!(zGrid[pos.z] <= Xnear.z && Xnear.z <zGrid[pos.z+1]))
+					while((minBox.z-2 <= pos.z && pos.z <= maxBox.z + 1) &&!(zGrid[pos.z] <= Xnear.z && Xnear.z <zGrid[pos.z+1]))
 						pos.z = ray.z < 0 ? pos.z - 1 : pos.z +1;
 				}
 

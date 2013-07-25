@@ -206,7 +206,7 @@ float * cubeCacheGPU::push_cube(index_node_t idCube, cudaStream_t stream)
 				{
 					if (cudaSuccess != cudaMemcpyAsync((void*) cube, (void*) pCube, _offsetCube*sizeof(float), cudaMemcpyHostToDevice, stream))
 					{
-						LBERROR<<"Cache GPU: error copying to a device "<<cube<<" "<<pCube<<" "<<_offsetCube<<std::endl;
+						LBERROR<<"Cache GPU: error copying to a device "<<cube<<" "<<pCube<<" "<<_offsetCube<<"id cube "<<idCube<<std::endl;
 						throw;
 					}
 				}
