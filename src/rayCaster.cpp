@@ -86,7 +86,7 @@ bool rayCaster::setColor(float * c)
 				k++;
 			}
 		
-			#ifdef NDEBUG
+			#ifdef DEBUG
 			//BACKGROUND COLOR
 			cc[NUM_COLORS] = rand()/(float)RAND_MAX;
 			cc[2*NUM_COLORS+1] = rand()/(float)RAND_MAX;
