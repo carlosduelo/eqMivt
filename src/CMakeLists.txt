@@ -38,7 +38,7 @@ set(MIVT_CUDA_SOURCE ray-casting-sphere.cu octree_CUDA.cu rayCaster_CUDA.cu octr
 list(APPEND CUDA_NVCC_FLAGS -arch=sm_21)
 
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
-	list(APPEND CUDA_NVCC_FLAGS -G)
+#	list(APPEND CUDA_NVCC_FLAGS -G)
 	list(APPEND CUDA_NVCC_FLAGS -Xcompiler;-O0)
 	list(APPEND CUDA_NVCC_FLAGS -Xcompiler;-Wall)
 else()
@@ -75,6 +75,16 @@ target_link_libraries(printOctree ${LIBS_NEEDED})
 
 add_executable(transferFunctionCreator transferFunctionCreator.cpp) 
 target_link_libraries(transferFunctionCreator GL glut) 
+
+
+set(FILE_PERFORMANCE_SOURCE
+		fileFactory.cpp
+		hdf5File.cpp
+		memoryCheck.cpp
+)
+
+add_executable(filePerformance testHDF5.cpp ${FILE_PERFORMANCE_SOURCE})
+target_link_libraries(filePerformance  ${LIBS_NEEDED})
 
 
 cuda_include_directories(${mivt_SOURCE_DIR}/inc)
