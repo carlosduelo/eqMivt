@@ -55,7 +55,7 @@ int main(int argc, char ** argv)
 	for(int l = iL; l<=nLevels; l++)
 	{
 		int d = pow(2, nLevels - iL);
-		std::cout<<"Level "<< iL <<" dimension "<<pow(2, nLevels - iL)<<std::endl;
+		std::cout<<"Level "<< l <<" dimension "<<pow(2, nLevels - l)<<std::endl;
 		eqMivt::index_node_t idStart = eqMivt::coordinateToIndex(vmml::vector<3, int>(0,0,0), l, nLevels);
 		eqMivt::index_node_t idFinish = eqMivt::coordinateToIndex(vmml::vector<3, int>(dimension-1, dimension-1, dimension-1), l, nLevels);
 		std::cout<<"Index "<<idStart<<" to "<<idFinish<<std::endl;
@@ -65,15 +65,19 @@ int main(int argc, char ** argv)
 		med[k] = 0;
 		for(eqMivt::index_node_t id =idStart; id<=idFinish; id++)
 		{
-			lunchbox::Clock	time;
-			time.reset();
-			file->readCube(id, data, l, nLevels, vmml::vector<3, int>(d,d,d), vmml::vector<3, int>(0,0,0), vmml::vector<3, int>(d,d,d));
-			double bd = (pow(d,3)/1024.0/1024.0)/(time.getTimed()/1000.0);
-			if (bd > max[k])
-				max[k] = bd;
-			if (bd < min[k])
-				min[k] = bd;
-			med[k] += bd;
+			vmml::vector<3, int> c = eqMivt::getMinBoxIndex2(id, l, nLevels);
+			if (c.x() < realDim.x() && c.y() < realDim.y() && c.z() < realDim.z())
+			{
+				lunchbox::Clock	time;
+				time.reset();
+				file->readCube(id, data, l, nLevels, vmml::vector<3, int>(d,d,d), vmml::vector<3, int>(0,0,0), vmml::vector<3, int>(d,d,d));
+				double bd = (pow(d,3)/1024.0/1024.0)/(time.getTimed()/1000.0);
+				if (bd > max[k])
+					max[k] = bd;
+				if (bd < min[k])
+					min[k] = bd;
+				med[k] += bd;
+			}
 		}
 		med[k] = med[k]/(double)(idFinish-idStart);
 

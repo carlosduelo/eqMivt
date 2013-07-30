@@ -301,13 +301,17 @@ namespace eqMivt
 		{
 			for(int i=0; i<octrees.size(); i++)
 			{
-				octreeConstructorComputeCube(resultGPU, inc, id, isos[i], cube, nodeLevel, nLevels, dimNode, cubeDim, coorCubeStartV);
-				if (!octreeConstructorCopyResult(resultCPU, resultGPU, inc))
+				int num = (id + inc) > finish ? finish - id : inc;
+				octreeConstructorComputeCube(resultGPU, num, id, isos[i], cube, nodeLevel, nLevels, dimNode, cubeDim, coorCubeStartV);
+
+				bzero(resultCPU, inc*sizeof(index_node_t));
+
+				if (!octreeConstructorCopyResult(resultCPU, resultGPU, num))
 				{
 					std::cerr<<"Error copying structures from a cuda device"<<std::endl;
 					throw;
 				}
-				for(int j=0; j<inc; j++)
+				for(int j=0; j<num; j++)
 				{
 					if (resultCPU[j] != (index_node_t)0)
 					{
@@ -596,8 +600,8 @@ namespace eqMivt
 				#endif
 
 				vmml::vector<3, int> currentBoxCPU = getMinBoxIndex(id, levelCubeCPU, nLevels);
-				//if ((start[0] + currentBoxCPU.x()) < finish[0] && (start[1] + currentBoxCPU.y()) < finish[1] && (start[2] + currentBoxCPU.z()) < finish[2])
-				//{
+				if ((start[0] + currentBoxCPU.x()) < finish[0] && (start[1] + currentBoxCPU.y()) < finish[1] && (start[2] + currentBoxCPU.z()) < finish[2])
+				{
 					readingClock.reset();
 					file->readCube(id, dataCube, levelCubeCPU, nLevels, cubeDimCPU, cubeInc, realcubeDimCPU);
 					readingTime += readingClock.getTimed();
@@ -636,7 +640,7 @@ namespace eqMivt
 					}
 
 					computingTime += computinhClock.getTimed();
-				//}
+				}
 				#ifdef NDEBUG
 				++show_progress;
 				#endif
