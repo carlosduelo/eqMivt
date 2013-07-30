@@ -2,6 +2,10 @@
 # refer to the root source directory of the project as ${mivt_SOURCE_DIR} and 
 # to the root binary directory of the project as ${mivt_BINARY_DIR}. 
 
+
+#definitios
+add_definitions(-DDISK_TIMING)
+
 set(MIVT_SOURCE 
 		memoryCheck.cpp
 		hdf5File.cpp
@@ -31,7 +35,7 @@ set(MIVT_SOURCE
 set(MIVT_CUDA_SOURCE ray-casting-sphere.cu octree_CUDA.cu rayCaster_CUDA.cu octreeGrid_CUDA.cu rayCasterGrid_CUDA.cu)
 
 # SETTING CUDA PARAMETERS
-list(APPEND CUDA_NVCC_FLAGS -arch=sm_13)
+list(APPEND CUDA_NVCC_FLAGS -arch=sm_21)
 
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
 	list(APPEND CUDA_NVCC_FLAGS -G)
@@ -71,3 +75,7 @@ target_link_libraries(printOctree ${LIBS_NEEDED})
 
 add_executable(transferFunctionCreator transferFunctionCreator.cpp) 
 target_link_libraries(transferFunctionCreator GL glut) 
+
+
+cuda_include_directories(${mivt_SOURCE_DIR}/inc)
+cuda_add_executable(readBigBlock readBigBlock.cu)

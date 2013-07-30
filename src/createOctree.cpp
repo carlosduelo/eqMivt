@@ -322,14 +322,6 @@ int main( const int argc, char ** argv)
 	if (!checkParameters(argc, argv))
 		return 0;
 
-	#if 0
-	for (std::vector<int>::iterator it = octreesPieces.begin() ; it != octreesPieces.end(); ++it)
-	    std::cout << ' ' << *it<<std::endl;
-
-	for (std::vector<float>::iterator it = isosurfaceList.begin() ; it != isosurfaceList.end(); ++it)
-	    std::cout << ' ' << *it<<std::endl;
-	#endif
-
 	if (!eqMivt::createOctree(type_file, file_params, maxLevel, isosurfaceList, octreesPieces, startCoordinates, octreeDimension, octree_file_name, useCUDA))
 		return 0;
 

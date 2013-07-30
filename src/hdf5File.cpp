@@ -13,6 +13,10 @@ Notes:
 #include <iostream>
 #include <strings.h>
 
+#ifdef DISK_TIMING
+#include <lunchbox/clock.h>
+#endif
+
 namespace eqMivt
 {
 
@@ -384,6 +388,11 @@ void hdf5File::readCube(index_node_t index, float * cube, int levelCube, int nLe
 	if (!_isInit)
 		return;
 
+	#ifdef DISK_TIMING
+	lunchbox::Clock     timingC; 
+	timingC.reset();
+	#endif
+
 	vmml::vector<3, int> coord 	= getMinBoxIndex2(index, levelCube, nLevels);
 	// ADD offset
 	coord += _offset;
@@ -392,8 +401,16 @@ void hdf5File::readCube(index_node_t index, float * cube, int levelCube, int nLe
 
 	hsize_t dim[3] = {abs(e.x()-s.x()),abs(e.y()-s.y()),abs(e.z()-s.z())};
 
+	#ifdef DISK_TIMING
+	lunchbox::Clock     timing; 
+	timing.reset();
+	#endif
 	// Set zeros's
 	bzero(cube, dim[0]*dim[1]*dim[2]*sizeof(float));
+	#ifdef DISK_TIMING
+	double time = timing.getTimed(); 
+	std::cout<<"Inicializate cube time: "<<time/1000.0<<" seconds."<<std::endl;
+	#endif
 
 	// The data required is completly outside of the dataset
 	if (s.x() >= (int)this->_dims[0] || s.y() >= (int)this->_dims[1] || s.z() >= (int)this->_dims[2] || e.x() < 0 || e.y() < 0 || e.z() < 0)
@@ -426,6 +443,10 @@ void hdf5File::readCube(index_node_t index, float * cube, int levelCube, int nLe
 	LBINFO<<"Offset out "<<offset_out[0]<<" "<<offset_out[1]<<" "<<offset_out[2]<<std::endl;
 	#endif
     
+	#ifdef DISK_TIMING
+	timing.reset();
+	#endif
+	// Set zeros's
 	/* 
 	* Define hyperslab in the dataset. 
 	*/
@@ -433,7 +454,14 @@ void hdf5File::readCube(index_node_t index, float * cube, int levelCube, int nLe
 	{
 		LBERROR<<"hdf5: defining hyperslab in the dataset"<<std::endl;
 	}
+	#ifdef DISK_TIMING
+	time = timing.getTimed(); 
+	std::cout<<"Define hyperslab  time: "<<time/1000.0<<" seconds."<<std::endl;
+	#endif
 
+	#ifdef DISK_TIMING
+	timing.reset();
+	#endif
 	/*
 	* Define the memory dataspace.
 	*/
@@ -442,8 +470,15 @@ void hdf5File::readCube(index_node_t index, float * cube, int levelCube, int nLe
 	{
 		LBERROR<<"hdf5: defining the memory space"<<std::endl;
 	}
+	#ifdef DISK_TIMING
+	time = timing.getTimed(); 
+	std::cout<<"Define memorydataset time: "<<time/1000.0<<" seconds."<<std::endl;
+	#endif
 
 
+	#ifdef DISK_TIMING
+	timing.reset();
+	#endif
 	/* 
 	* Define memory hyperslab. 
 	*/
@@ -451,7 +486,14 @@ void hdf5File::readCube(index_node_t index, float * cube, int levelCube, int nLe
 	{
 		LBERROR<<"hdf5: defining the memory hyperslab"<<std::endl;
 	}
+	#ifdef DISK_TIMING
+	time = timing.getTimed(); 
+	std::cout<<"Define memory hyperslab time: "<<time/1000.0<<" seconds."<<std::endl;
+	#endif
 
+	#ifdef DISK_TIMING
+	timing.reset();
+	#endif
 	/*
 	* Read data from hyperslab in the file into the hyperslab in 
 	* memory and display.
@@ -460,11 +502,25 @@ void hdf5File::readCube(index_node_t index, float * cube, int levelCube, int nLe
 	{
 		LBERROR<<"hdf5: reading data from hyperslab un the file"<<std::endl;
 	}
+	#ifdef DISK_TIMING
+	time = timing.getTimed(); 
+	std::cout<<"Reading time: "<<time/1000.0<<" seconds."<<std::endl;
+	#endif
 
 
+	#ifdef DISK_TIMING
+	timing.reset();
+	#endif
 	if ((status = H5Sclose(memspace)) < 0)
 	{
 		LBERROR<<"hdf5: closing dataspace"<<std::endl;
 	}
+	#ifdef DISK_TIMING
+	time = timing.getTimed(); 
+	std::cout<<"Close dataspace time: "<<time/1000.0<<" seconds."<<std::endl;
+	double timeC = timingC.getTimed(); 
+	std::cout<<"Read in bytes: "<<(dimR[0]*dimR[1]*dimR[2]*sizeof(float)/1024.f/1024.f)<<" in "<<(timeC/1000.0f)<<" seconds."<<std::endl;
+	std::cout<<"Bandwidth: "<<(dimR[0]*dimR[1]*dimR[2]*sizeof(float)/1024.f/1024.f)/(timeC/1000.0f)<<" MB/seconds."<<std::endl;
+	#endif
 }
 }

@@ -16,6 +16,7 @@ namespace eqMivt
 	size_t	octreeConstructorGetFreeMemory();	
 	float * octreeConstructorCreateCube(int cubeDim);
 	bool	octreeConstructorCopyCube(float * cubeGPU, float * cube, int cubeDim);
+	bool	octreeConstructorCopyCube3D(float * cubeGPU, float * cube, int cubeDimC, int cubeDimG, int xoffset, int yoffset, int zoffset);
 	index_node_t * octreeConstructorCreateResult(int size);
 	bool	octreeConstructorCopyResult(index_node_t * cpuResult, index_node_t * gpuResult, int size);
 	void	octreeConstructorDestroyCube(float * cube);

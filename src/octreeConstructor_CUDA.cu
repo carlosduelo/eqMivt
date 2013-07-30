@@ -60,6 +60,24 @@ namespace eqMivt
 		}
 		return true;
 	}
+	bool	octreeConstructorCopyCube3D(float * cubeGPU, float * cube, int cubeDimC, int cubeDimG, int xoffset, int yoffset, int zoffset)
+	{
+			cudaMemcpy3DParms paramsG = {0};
+			paramsG.srcPtr = make_cudaPitchedPtr((void*)cube, cubeDimC*sizeof(float), cubeDimC, cubeDimC);
+			paramsG.dstPtr = make_cudaPitchedPtr((void*)cubeGPU, cubeDimG*sizeof(float), cubeDimG, cubeDimG);
+			paramsG.extent =  make_cudaExtent(cubeDimG*sizeof(float), cubeDimG, cubeDimG);
+			paramsG.srcPos = make_cudaPos(zoffset*sizeof(float), yoffset, xoffset);
+			paramsG.dstPos = make_cudaPos(0,0,0);
+			paramsG.kind =  cudaMemcpyHostToDevice;
+
+			if (cudaSuccess != cudaMemcpy3D(&paramsG))
+			{
+				if (cubeGPU != 0)
+					cudaFree(cubeGPU);
+				return false;
+			}
+		return true;
+	}
 
 	index_node_t * octreeConstructorCreateResult(int size)
 	{
