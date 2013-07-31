@@ -10,33 +10,7 @@ Notes:
 
 #include <iostream>
 #include <fstream>
-
-void readOctree(std::ifstream * file, int numO, int * desp, int * sizes, eqMivt::index_node_t ** octree, int maxLevel)
-{
-	file->seekg(desp[0], std::ios_base::beg);
-	for(int d=1; d<=numO; d++)
-		file->seekg(desp[d], std::ios_base::cur);
-
-	file->seekg(((2*(maxLevel+1))+1)*sizeof(int), std::ios_base::cur);
-	for(int i=0; i<=maxLevel; i++)
-	{
-		octree[i] = new eqMivt::index_node_t[sizes[i]];
-		file->read((char*)octree[i], sizes[i]*sizeof(eqMivt::index_node_t));
-	}
-	
-}
-
-void printOctree(eqMivt::index_node_t ** octree, int * sizes, int maxLevel)
-{
-	for(int i=0; i<=maxLevel; i++)
-	{
-		std::cout	<<"Level: "<<i<<std::endl;
-		for(int j=0; j<sizes[i]; j+=2)
-		{
-			std::cout << "From " <<octree[i][j]<<" to " << octree[i][j+1]<<std::endl;
-		}
-	}
-}
+#include <cmath>
 
 int main( const int argc, char ** argv)
 {
@@ -69,78 +43,115 @@ int main( const int argc, char ** argv)
 		return false;
 	}
 	
-	int nLevels = 0;
-	int maxLevel = 0;
-	int dimension = 0;
-	int realDim[3] = {0, 0, 0};
+	int realDimensionV[3] = {0, 0, 0};
 	int numOctrees = 0;
 
-	file.read((char*)&nLevels,sizeof(nLevels));
-	file.read((char*)&maxLevel,sizeof(maxLevel));
-	file.read((char*)&dimension,sizeof(dimension));
-	file.read((char*)&realDim[0],sizeof(realDim[0]));
-	file.read((char*)&realDim[1],sizeof(realDim[1]));
-	file.read((char*)&realDim[2],sizeof(realDim[2]));
 	file.read((char*)&numOctrees,sizeof(numOctrees));
+	file.read((char*)&realDimensionV[0],sizeof(realDimensionV[0]));
+	file.read((char*)&realDimensionV[1],sizeof(realDimensionV[1]));
+	file.read((char*)&realDimensionV[2],sizeof(realDimensionV[2]));
 
-	std::cout<<"Real dimension: "<<realDim[0]<<"x"<<realDim[1]<<"x"<<realDim[2]<<std::endl;
-	std::cout<<"Dimension octree: "<<dimension<<"x"<<dimension<<"x"<<dimension<<" levels "<<nLevels<<std::endl;
-	std::cout<<"Max level: "<<maxLevel<<std::endl;
 	std::cout<<"Num octrees: "<<numOctrees<<std::endl;
+	std::cout<<"Real dimension: "<<realDimensionV[0]<<"x"<<realDimensionV[1]<<"x"<<realDimensionV[2]<<std::endl;
 
-	std::cout<<"Isosurfaces availables:"<<std::endl;
-	float * isos = new float[numOctrees];
+	float * xgrid = new float[realDimensionV[0]];
+	float * ygrid = new float[realDimensionV[1]];
+	float * zgrid = new float[realDimensionV[2]];
+
+	file.read((char*)xgrid, realDimensionV[0]*sizeof(float));
+	file.read((char*)ygrid, realDimensionV[1]*sizeof(float));
+	file.read((char*)zgrid, realDimensionV[2]*sizeof(float));
+
+	int nLevels[numOctrees];
+	int maxLevel[numOctrees]; 
+	int dimension[numOctrees]; 
+	int realDim[3*numOctrees];
+	int startC[3*numOctrees];
+	int finishC[3*numOctrees]; 
+	int rest = 0;
+	while(rest < numOctrees)
+	{
+		int n = 0;
+		int nL = 0;
+		int mL = 0;
+		int s[3];
+		int f[3];
+		int d[3];
+		file.read((char*)&n,sizeof(int));
+		file.read((char*)s,3*sizeof(int));
+		file.read((char*)f,3*sizeof(int));
+		file.read((char*)&nL,sizeof(int));
+		file.read((char*)&mL,sizeof(int));
+		d[0] = f[0] - s[0];
+		d[1] = f[1] - s[1];
+		d[2] = f[2] - s[2];
+		for(int j=0; j<n; j++)
+		{
+			nLevels[rest+j] = nL;
+			maxLevel[rest+j] = mL;
+			dimension[rest+j] = exp2(nL);
+			startC[3*(rest+j)] = s[0];
+			startC[3*(rest+j)+1] = s[1];
+			startC[3*(rest+j)+2] = s[2];
+			finishC[3*(rest+j)] = f[0];
+			finishC[3*(rest+j)+1] = f[1];
+			finishC[3*(rest+j)+2] = f[2];
+			realDim[3*(rest+j)] = d[0];
+			realDim[3*(rest+j)+1] = d[1];
+			realDim[3*(rest+j)+2] = d[2];
+		}
+		rest += n;
+	}
+
+	float isos[numOctrees];
+	int	desp[numOctrees];
 	file.read((char*)isos, numOctrees*sizeof(float));
-	for(int i=0; i<numOctrees; i++)
-		std::cout<<i<<". "<<isos[i]<<std::endl; 
-
-	int * desp	= new int[numOctrees];
 	file.read((char*)desp, numOctrees*sizeof(int));
 
-	int ** numCubes = new int*[numOctrees];
-	int ** sizes = new int*[numOctrees];
-	int	* maxHeight = new int[numOctrees];
-	for(int i=0; i<numOctrees; i++)
+	bool cont = true;
+	while(cont) 
 	{
-		numCubes[i] = new int[maxLevel + 1];
-		sizes[i] = new int[maxLevel + 1];
-		file.seekg(desp[0], std::ios_base::beg);
-		for(int d=1; d<=i; d++)
-			file.seekg(desp[d], std::ios_base::cur);
-		file.read((char*)&maxHeight[i], sizeof(int));
-		file.read((char*)numCubes[i], (maxLevel+1)*sizeof(int));
-		file.read((char*)sizes[i], (maxLevel+1)*sizeof(int));
-	}
-
-	int selection = -1;
-	while(selection < 0 || selection >= numOctrees) 
-	{
-		std::cout<<"Select octree to print [0,"<<numOctrees-1<<"] ";
+		int selection = -1;
+		std::cout<<"Select octree to print [0,"<<numOctrees-1<<"]  to exit -1: ";
 		std::cin>>selection;
+		if (selection == -1)
+			cont = false;
+		else if (selection < 0 || selection >= numOctrees)
+			std::cout<<"Octree not aviable, repeat"<<std::endl;
+		else
+		{
+			int mH = 0;
+			int numCubes[maxLevel[selection]+1];
+			int sizes[maxLevel[selection]+1];
+			file.seekg(desp[0], std::ios_base::beg);
+			for(int d=1; d<=selection; d++)
+				file.seekg(desp[d], std::ios_base::cur);
+			file.read((char*)&mH, sizeof(int));
+			file.read((char*)numCubes, (maxLevel[selection]+1)*sizeof(int));
+			file.read((char*)sizes, (maxLevel[selection]+1)*sizeof(int));
+			std::cout<<std::endl;
+			std::cout<<"Octree "<<selection<<std::endl;
+			std::cout<<"nLevels "<<nLevels[selection]<<std::endl;
+			std::cout<<"maxLevel "<<maxLevel[selection]<<std::endl;
+			std::cout<<"Isosurface "<<isos[selection]<<std::endl;
+			std::cout<<"Start coordinates "<<startC[3*selection]<<" "<<startC[3*selection+1]<<" "<<startC[3*selection+2]<<std::endl;
+			std::cout<<"Finish coordinates "<<finishC[3*selection]<<" "<<finishC[3*selection+1]<<" "<<finishC[3*selection+2]<<std::endl;
+			std::cout<<"Real dimension "<<realDim[3*selection]<<" "<<realDim[3*selection+1]<<" "<<realDim[3*selection+2]<<std::endl;
+
+			std::cout<<"Levels dimension and concentration:"<<std::endl;
+			for(int k=0; k<=maxLevel[selection]; k++)
+			{
+				std::cout<<"Level "<<k<<" dimension "<<sizes[k]<<" num cubes "<<numCubes[k]<<" concentration "<<(numCubes[k]*100.0f)/(float)sizes[k]<<" %"<<std::endl;
+			}
+
+		}
 	}
 
-	eqMivt::index_node_t ** octree;
-	octree = new eqMivt::index_node_t*[maxLevel+1];
-
-	readOctree(&file, selection, desp, sizes[selection], octree, maxLevel);
-
-	printOctree(octree, sizes[selection], maxLevel);
+	delete[] xgrid;
+	delete[] ygrid;
+	delete[] zgrid;
 
 	file.close();
-	/* end reading octree from file */
-
-	delete[] isos;
-	delete[] desp;
-	delete[] maxHeight;
-	for(int i=0; i<numOctrees; i++)
-	{
-		delete[] numCubes[i];
-		delete[] sizes[i];
-	}
-	delete[] sizes;
-	delete[] numCubes;
-	for(int i=0; i<=maxLevel; i++)
-		delete[] octree[i];
-
 	return 0;
+
 }

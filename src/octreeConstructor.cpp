@@ -87,6 +87,7 @@ namespace eqMivt
 
 				_octree		= new std::vector<index_node_t>[maxLevel + 1];
 				_numCubes	= new int[maxLevel + 1];	
+				bzero(_numCubes, (maxLevel + 1)*sizeof(int));
 
 				_iso		= iso;
 				_maxLevel	= maxLevel;

@@ -244,7 +244,7 @@ int main(int argc, char ** argv)
 		std::cout<<"maxLevel "<<maxLevel1[i]<<std::endl;
 		std::cout<<"Isosurface "<<isos1[i]<<std::endl;
 		std::cout<<"Start coordinates "<<startC1[3*i]<<" "<<startC1[3*i+1]<<" "<<startC1[3*i+2]<<std::endl;
-		std::cout<<"Finish coordinates "<<finishC1[3*i]<<" "<<startC1[3*i+1]<<" "<<startC1[3*i+2]<<std::endl;
+		std::cout<<"Finish coordinates "<<finishC1[3*i]<<" "<<finishC1[3*i+1]<<" "<<finishC1[3*i+2]<<std::endl;
 		std::cout<<"Real dimension "<<realDim1[3*i]<<" "<<realDim1[3*i+1]<<" "<<realDim1[3*i+2]<<std::endl;
 		std::cout<<"Offset in file "<<desp1[i]<<std::endl;
 		std::cout<<"Checking...... ";
@@ -277,7 +277,6 @@ int main(int argc, char ** argv)
 
 		for(int j=0; j<=maxLevel1[i]; j++)
 		{
-			//std::cout<<std::endl<<sizes1[j]<<" "<<sizes2[j]<<std::endl;
 			if (sizes1[j] != sizes2[j])
 			{
 				std::cout<<" different sizes"<<std::endl<<" Fail"<<std::endl;
