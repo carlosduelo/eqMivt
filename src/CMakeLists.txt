@@ -86,6 +86,9 @@ set(FILE_PERFORMANCE_SOURCE
 add_executable(filePerformance testHDF5.cpp ${FILE_PERFORMANCE_SOURCE})
 target_link_libraries(filePerformance  ${LIBS_NEEDED})
 
+add_executable(diffOctree diffOctree.cpp)
+target_link_libraries(diffOctree  m)
+
 
 cuda_include_directories(${mivt_SOURCE_DIR}/inc)
 cuda_add_executable(readBigBlock readBigBlock.cu)
