@@ -97,22 +97,29 @@ namespace eqMivt
 	{
 		if (_status)
 		{
+			bool forceResizeGPUCache = false;
 			// Octree set Current Octree
-			if (!_octreeManager.setCurrentOctree(currentOctree, grid, renderCubes))
+			if (!_octreeManager.setCurrentOctree(currentOctree, grid, renderCubes, &forceResizeGPUCache))
 			{
 				_status = false;
 				LBERROR<<"Node: Error setting current octree"<<std::endl;
+			}
+			if (_status && forceResizeGPUCache)
+			{
+				_status = _cacheManager.forceResize(cacheHandler);
+				if (!_status)
+					LBERROR<<"Node: Error forcing resize cache gpu"<<std::endl;
 			}
 
 			Config* config = static_cast< Config* >( getConfig( ));
 			config->setOctreeManager(&_octreeManager);
 			const InitData& initData = config->getInitData();
 			// Set Size cache manager for CPU
-			int levelCube = _octreeManager.getBestCubeLevel();
+			int levelCube = _octreeManager.getMaxCubeLevel();
 			int nL = _octreeManager.getNLevels();
 			int numElements = initData.getMaxCubesCacheGPU();
 			int numElementsCPU = initData.getMaxCubesCacheCPU();
-			int levelDif  = 0; //FUTURO
+			int levelDif  = levelCube  - _octreeManager.getBestCubeLevel(); //FUTURO
 			if (_status)
 			{
 				_status =	_cacheManager.reSize(levelCube, nL, numElements, numElementsCPU, levelDif) &&

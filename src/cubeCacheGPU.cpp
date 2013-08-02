@@ -75,6 +75,22 @@ bool cubeCacheGPU::init(cubeCacheCPU * cpuCache, uint32_t device)
 	return true;
 }
 
+bool cubeCacheGPU::forceResize()
+{
+	if (_cacheData != 0)
+	{
+		if (cudaSuccess != cudaFree((void*)_cacheData))
+		{                                                                                               
+			LBERROR<<"Cache GPU: Error forcing resize gpu cache"<<std::endl;
+			return false;                                                                                  
+		}
+		_cacheData = 0;
+		_levelCube = -1;
+		_nLevels = -1;
+	}
+	return true;	
+}
+
 bool cubeCacheGPU::reSize(vmml::vector<3, int> cubeDim, int cubeInc, int levelCube, int numElements)
 {
 	if (_cpuCache->getLevelCube() > levelCube)
@@ -97,19 +113,26 @@ bool cubeCacheGPU::reSize(vmml::vector<3, int> cubeDim, int cubeInc, int levelCu
 	int d = exp2(_nLevels);
 	_maxIndex = coordinateToIndex(vmml::vector<3, int>(d-1,d-1,d-1), _levelCube, _nLevels);
 
-	if (_memorySize < 0.0f)
+	if (_cacheData != 0)
 	{
-		size_t total = 0;
-		size_t free = 0;
-
-		if (cudaSuccess != cudaMemGetInfo(&free, &total))
-		{
-			LBERROR<<"Cache GPU: Error getting memory info"<<std::endl;
-			return false;
+		if (cudaSuccess != cudaFree((void*)_cacheData))
+		{                                                                                               
+			LBERROR<<"Cache GPU: Error creating gpu cache"<<std::endl;
+			return false;                                                                                  
 		}
-
-		_memorySize = (8.0f*free)/10.0f; // Get 80% of free memory
+		_cacheData = 0;
 	}
+
+	size_t total = 0;
+	size_t free = 0;
+
+	if (cudaSuccess != cudaMemGetInfo(&free, &total))
+	{
+		LBERROR<<"Cache GPU: Error getting memory info"<<std::endl;
+		return false;
+	}
+
+	_memorySize = (8.0f*free)/10.0f; // Get 80% of free memory
 
 	if (numElements == 0)
 	{
@@ -141,7 +164,6 @@ bool cubeCacheGPU::reSize(vmml::vector<3, int> cubeDim, int cubeInc, int levelCu
 
 	if (_cacheData == 0)
 	{
-//		cudaFree(_cacheData);
 		// Allocating memory                                                                            
 		LBINFO<<"Creating cache in GPU: "<< _memorySize/1024/1024<<" MB"<<std::endl;
 		if (cudaSuccess != cudaMalloc((void**)&_cacheData, _memorySize))
@@ -206,36 +228,30 @@ float * cubeCacheGPU::push_cube(index_node_t idCube, cudaStream_t stream)
 				{
 					if (cudaSuccess != cudaMemcpyAsync((void*) cube, (void*) pCube, _offsetCube*sizeof(float), cudaMemcpyHostToDevice, stream))
 					{
-						LBERROR<<"Cache GPU: error copying to a device "<<cube<<" "<<pCube<<" "<<_offsetCube<<"id cube "<<idCube<<std::endl;
+						LBERROR<<"Cache GPU: error copying to a device: "<<cudaGetErrorString(cudaGetLastError()) <<" "<<cube<<" "<<pCube<<" "<<_offsetCube<<std::endl;
 						throw;
 					}
 				}
 				else
 				{
-					#if 0
 					vmml::vector<3, int> coord = getMinBoxIndex2(idCube, _levelCube, _nLevels);
-					vmml::vector<3, int> coordC = getMinBoxIndex2(idCubeCPU, _cpuCache->getLevelCube(), _nLevels) - _cpuCache->getCubeInc();
+					vmml::vector<3, int> coordC = getMinBoxIndex2(idCubeCPU, _cpuCache->getLevelCube(), _nLevels);
 					coord -= coordC;
 					vmml::vector<3, int> realDimCPU = _cpuCache->getRealCubeDim();
 
 					cudaMemcpy3DParms myParms = {0};
-					myParms.srcPos = make_cudaPos(coord.x(), coord.y(), coord.z());
 					myParms.srcPtr = make_cudaPitchedPtr((void*)pCube, realDimCPU.z()*sizeof(float), realDimCPU.x(), realDimCPU.y()); 
-					myParms.dstPos = make_cudaPos(0,0,0);
 					myParms.dstPtr = make_cudaPitchedPtr((void*)cube, _realcubeDim.z()*sizeof(float), _realcubeDim.x(), _realcubeDim.y()); 
-					myParms.extent = make_cudaExtent(_realcubeDim.x()*sizeof(float),_realcubeDim.y()*sizeof(float),_realcubeDim.z()*sizeof(float));
+					myParms.extent = make_cudaExtent(_realcubeDim.x()*sizeof(float), _realcubeDim.y(), _realcubeDim.z());
+					myParms.dstPos = make_cudaPos(0,0,0);
+					myParms.srcPos = make_cudaPos(coord.z()*sizeof(float), coord.y(), coord.x());
 					myParms.kind = cudaMemcpyHostToDevice;
 
 					if (cudaSuccess != cudaMemcpy3DAsync(&myParms, stream))
 					{
-						LBERROR<<"Cache GPU: error copying to a device "<<cube<<" "<<pCube<<" "<<_offsetCube<<std::endl;
+						LBERROR<<"Cache GPU: error copying to a device: "<<cudaGetErrorString(cudaGetLastError()) <<" "<<cube<<" "<<pCube<<" "<<_offsetCube<<std::endl;
 						throw;
 					}
-					#endif
-					// Not implemented
-					std::cerr<<"NOT IMPLEMENTED"<<std::endl;
-					throw;
-
 				}
 
 				// Unlock the cube on cpu cache

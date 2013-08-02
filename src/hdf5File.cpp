@@ -519,7 +519,7 @@ void hdf5File::readCube(index_node_t index, float * cube, int levelCube, int nLe
 	time = timing.getTimed(); 
 	std::cout<<"Close dataspace time: "<<time/1000.0<<" seconds."<<std::endl;
 	double timeC = timingC.getTimed(); 
-	std::cout<<"Read in bytes: "<<(dimR[0]*dimR[1]*dimR[2]*sizeof(float)/1024.f/1024.f)<<" in "<<(timeC/1000.0f)<<" seconds."<<std::endl;
+	std::cout<<"Read in MB: "<<(dimR[0]*dimR[1]*dimR[2]*sizeof(float)/1024.f/1024.f)<<" in "<<(timeC/1000.0f)<<" seconds."<<std::endl;
 	std::cout<<"Bandwidth: "<<(dimR[0]*dimR[1]*dimR[2]*sizeof(float)/1024.f/1024.f)/(timeC/1000.0f)<<" MB/seconds."<<std::endl;
 	#endif
 }

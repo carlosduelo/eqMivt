@@ -24,6 +24,11 @@ bool cubeCache::init(cubeCacheCPU * cpuCache, int numWorkers, uint32_t device)
 
 }
 
+bool cubeCache::forceResize()
+{
+	return _cache.forceResize();
+}
+
 bool cubeCache::reSize(vmml::vector<3, int> cubeDim, int cubeInc, int levelCube, int numElements)
 {
 	return _cache.reSize(cubeDim, cubeInc, levelCube, numElements);

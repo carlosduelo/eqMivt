@@ -81,18 +81,26 @@ bool cubeCacheCPU::reSize(vmml::vector<3, int> cubeDim, int cubeInc, int levelCu
 	int d = exp2(_nLevels);
 	_maxIndex = coordinateToIndex(vmml::vector<3, int>(d-1,d-1,d-1), _levelCube, _nLevels);
 
-	if (_memoryCPU < 0.0)
+	if (_cacheData != 0)
 	{
-		_memoryCPU = getMemorySize();
-		if (_memoryCPU == 0)
+		if (cudaSuccess != cudaFreeHost((void*)_cacheData))
 		{
-			LBERROR<<"Not possible, check memory aviable (the call failed due to OS limitations)"<<std::endl;
-			_memoryCPU = MAX_SIZE; 
+			LBERROR<<"Cache CPU: Error creating cpu cache: "<<cudaGetErrorString(cudaGetLastError())<<std::endl;	
+			return false;
+		
 		}
-		else
-		{
-			_memoryCPU /= 2;
-		}
+		_cacheData = 0;
+	}
+
+	_memoryCPU = getMemorySize();
+	if (_memoryCPU == 0)
+	{
+		LBERROR<<"Not possible, check memory aviable (the call failed due to OS limitations)"<<std::endl;
+		_memoryCPU = MAX_SIZE; 
+	}
+	else
+	{
+		_memoryCPU *= 0.8;
 	}
 
 	double cd = _offsetCube;

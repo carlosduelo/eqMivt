@@ -80,12 +80,13 @@ class OctreeManager
 		float getCurretIsosurface() { return _isosurfaces[_currentOctree]; }
 		int	getMaxHeight();
 		int getBestCubeLevel(){ return _cubeCacheLevel[_currentOctree]; }
+		int getMaxCubeLevel(){ return _maxLevel[_currentOctree]; }
 		float * getxGrid();
 		float * getyGrid();
 		float * getzGrid();
 		vmml::vector<3, int> getCurrentOffset(){ return _startC[_currentOctree]; }
 
-		bool setCurrentOctree(int currentOctree, bool grid, bool renderCubes);
+		bool setCurrentOctree(int currentOctree, bool grid, bool renderCubes, bool * octreeChange);
 		bool checkStatus(uint32_t device);
 
 		Octree * getOctree(uint32_t device);

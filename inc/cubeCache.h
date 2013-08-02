@@ -37,6 +37,8 @@ class cubeCache
 
 		bool reSize(vmml::vector<3, int> cubeDim, int cubeInc, int levelCube, int numElements);
 
+		bool forceResize();
+
 		int getCacheLevel() {return _cache.getLevelCube(); }
 
 		vmml::vector<3, int> getCubeDim(){ return _cache.getCubeDim(); }
@@ -69,6 +71,13 @@ class CacheHandler
 		int getCacheLevel() {return _cache->getCacheLevel(); }
 		vmml::vector<3, int> getCubeDim(){ return _cache->getCubeDim(); }
 		vmml::vector<3, int> getCubeInc(){ return _cache->getCubeInc(); } 
+
+
+		bool forceResize()
+		{
+			return _cache->forceResize();
+		}
+
 		bool reSize(vmml::vector<3, int> cubeDim, int cubeInc, int levelCube, int numElements)
 		{
 			return _cache->reSize(cubeDim, cubeInc, levelCube, numElements);

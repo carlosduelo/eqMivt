@@ -270,14 +270,14 @@ void OctreeManager::_setBestCubeLevel()
 {
 	for(int i=0; i<_numOctrees; i++)
 	{
-		int mL = _nLevels[i] - 9 + 1; 
+		int mL = _nLevels[i] - 9 ; 
 		if (mL <= 0)
-			mL = 1;
+			mL = 0;
 		_cubeCacheLevel[i] = mL;
 	}
 }
 
-bool OctreeManager::setCurrentOctree(int currentOctree, bool grid, bool renderCubes)
+bool OctreeManager::setCurrentOctree(int currentOctree, bool grid, bool renderCubes, bool * octreeChange)
 {
 	_lock.set();
 	
@@ -289,6 +289,7 @@ bool OctreeManager::setCurrentOctree(int currentOctree, bool grid, bool renderCu
 	if (currentOctree != _currentOctree)
 	{
 		_currentOctree = currentOctree;
+		*octreeChange = true;
 
 		try
 		{
@@ -300,6 +301,9 @@ bool OctreeManager::setCurrentOctree(int currentOctree, bool grid, bool renderCu
 			result = false;
 		}
 	}
+	else
+		*octreeChange = false;
+
 
 	_lock.unset();
 
@@ -392,7 +396,8 @@ bool OctreeManager::checkStatus(uint32_t device)
 	}
 	else
 	{
-		result = it->second->setCurrentOctree(_realDim[_currentOctree], _dimension[_currentOctree], _nLevels[_currentOctree], _maxLevel[_currentOctree], _renderCubes ? _maxLevel[_currentOctree] : _cubeCacheLevel[_currentOctree], _isosurfaces[_currentOctree],  getMaxHeight(), _octreeData, _sizes[_currentOctree], _xGrid, _yGrid, _zGrid, _startC[_currentOctree], _realDimensionVolume, _lastLevel, _grid);
+		result = it->second->setCurrentOctree(_realDim[_currentOctree], _dimension[_currentOctree], _nLevels[_currentOctree], _maxLevel[_currentOctree], _maxLevel[_currentOctree], _isosurfaces[_currentOctree],  getMaxHeight(), _octreeData, _sizes[_currentOctree], _xGrid, _yGrid, _zGrid, _startC[_currentOctree], _realDimensionVolume, _lastLevel, _grid);
+		//result = it->second->setCurrentOctree(_realDim[_currentOctree], _dimension[_currentOctree], _nLevels[_currentOctree], _maxLevel[_currentOctree], _renderCubes ? _maxLevel[_currentOctree] : _cubeCacheLevel[_currentOctree], _isosurfaces[_currentOctree],  getMaxHeight(), _octreeData, _sizes[_currentOctree], _xGrid, _yGrid, _zGrid, _startC[_currentOctree], _realDimensionVolume, _lastLevel, _grid);
 	}
 
 	_lock.unset();

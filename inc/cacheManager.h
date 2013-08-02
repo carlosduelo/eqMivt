@@ -44,6 +44,7 @@ class CacheManager
 		bool reSize(int levelCube, int nLevels, int numElements, int numElementsCPU, int levelDif);	
 		bool setOffset(vmml::vector<3, int> offset);
 		bool checkStatus(CacheHandler * cacheHandler);
+		bool forceResize(CacheHandler * cacheHandler);
 		bool getCache(uint32_t device, CacheHandler * cacheHandler );
 };
 }

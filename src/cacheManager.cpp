@@ -78,6 +78,14 @@ bool CacheManager::setOffset(vmml::vector<3, int> offset)
 	return _cubeCacheCPU->setOffset(offset);
 }
 
+bool CacheManager::forceResize(CacheHandler * cacheHandler)
+{
+	_lock.set();
+	bool result = cacheHandler->forceResize();	
+	_lock.unset();
+	return result; 
+}
+
 bool CacheManager::checkStatus(CacheHandler * cacheHandler)
 {
 	_lock.set();

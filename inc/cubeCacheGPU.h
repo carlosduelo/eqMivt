@@ -54,6 +54,8 @@ class cubeCacheGPU
 
 		bool init(cubeCacheCPU * cpuCache, uint32_t device);
 
+		bool forceResize();
+
 		bool reSize(vmml::vector<3, int> cubeDim, int cubeInc, int levelCube, int numElements);
 
 		float * push_cube(index_node_t idCube, cudaStream_t stream);
