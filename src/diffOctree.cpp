@@ -15,6 +15,7 @@ int main(int argc, char ** argv)
 	catch(...)
 	{
 		std::cerr<<"Octree: error opening octree file "<<argv[1]<<std::endl;
+		std::cerr<<"Usage: ./diffOctree octree1 octree2"<<std::endl;
 		return -1;
 	}
 
@@ -25,6 +26,7 @@ int main(int argc, char ** argv)
 	if (magicWord != 919278872)
 	{
 		std::cerr<<"Octree: error invalid file format "<<argv[1]<<std::endl;
+		std::cerr<<"Usage: ./diffOctree octree1 octree2"<<std::endl;
 		return -1;
 	}
 
@@ -35,6 +37,7 @@ int main(int argc, char ** argv)
 	catch(...)
 	{
 		std::cerr<<"Octree: error opening octree file "<<argv[2]<<std::endl;
+		std::cerr<<"Usage: ./diffOctree octree1 octree2"<<std::endl;
 		return -1;
 	}
 
@@ -45,6 +48,7 @@ int main(int argc, char ** argv)
 	if (magicWord != 919278872)
 	{
 		std::cerr<<"Octree: error invalid file format "<<argv[2]<<std::endl;
+		std::cerr<<"Usage: ./diffOctree octree1 octree2"<<std::endl;
 		return -1;
 	}
 

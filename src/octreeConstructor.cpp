@@ -302,7 +302,7 @@ namespace eqMivt
 		{
 			for(int i=0; i<octrees.size(); i++)
 			{
-				int num = (id + inc) > finish ? finish - id : inc;
+				int num = (id + inc) > finish ? finish - id  + 1: inc;
 				octreeConstructorComputeCube(resultGPU, num, id, isos[i], cube, nodeLevel, nLevels, dimNode, cubeDim, coorCubeStartV);
 
 				bzero(resultCPU, inc*sizeof(index_node_t));
