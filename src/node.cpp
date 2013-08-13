@@ -115,14 +115,14 @@ namespace eqMivt
 			config->setOctreeManager(&_octreeManager);
 			const InitData& initData = config->getInitData();
 			// Set Size cache manager for CPU
-			int levelCube = _octreeManager.getMaxCubeLevel();
+			int levelCube = _octreeManager.getBestCubeLevel();
 			int nL = _octreeManager.getNLevels();
 			int numElements = initData.getMaxCubesCacheGPU();
 			int numElementsCPU = initData.getMaxCubesCacheCPU();
-			int levelDif  = levelCube  - _octreeManager.getBestCubeLevel(); //FUTURO
+			int levelCubeCPU  = _octreeManager.getBestCubeLevelCPU();
 			if (_status)
 			{
-				_status =	_cacheManager.reSize(levelCube, nL, numElements, numElementsCPU, levelDif) &&
+				_status =	_cacheManager.reSize(levelCube, nL, numElements, numElementsCPU, levelCubeCPU) &&
 							_cacheManager.setOffset(_octreeManager.getCurrentOffset());
 				if (!_status)
 					LBERROR<<"Node: Error resizing cache cpu"<<std::endl;

@@ -32,7 +32,7 @@ class CacheManager
 		int	_cubeInc;
 		int	_levelCube;
 		int	_nLevels;
-		int _levelDif;
+		int _levelCubeCPU;
 		int _numElements;
 
 	public:
@@ -41,7 +41,7 @@ class CacheManager
 		~CacheManager();
 		
 		bool init(std::string type_file, std::vector<std::string> file_params, int cubeInc);
-		bool reSize(int levelCube, int nLevels, int numElements, int numElementsCPU, int levelDif);	
+		bool reSize(int levelCube, int nLevels, int numElements, int numElementsCPU, int levelCubeCPU);	
 		bool setOffset(vmml::vector<3, int> offset);
 		bool checkStatus(CacheHandler * cacheHandler);
 		bool forceResize(CacheHandler * cacheHandler);

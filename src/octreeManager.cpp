@@ -34,6 +34,8 @@ OctreeManager::OctreeManager()
 	_maxHeight = 0;
 	_desp = 0;
 	_cubeCacheLevel = 0;
+	_cubeCacheLevelCPU = 0;
+	_octreeLevel = 0;
 	_octreeData = 0;
 	_currentOctree = -1;
 }
@@ -62,8 +64,12 @@ OctreeManager::~OctreeManager()
 		delete[] _isosurfaces;
 	if (_desp!=0)
 		delete[] _desp;
+	if (_cubeCacheLevelCPU!=0)
+		delete[] _cubeCacheLevelCPU;
 	if (_cubeCacheLevel!=0)
 		delete[] _cubeCacheLevel;
+	if (_octreeLevel != 0)
+		delete[] _octreeLevel;
 	if (_sizes!=0)
 	{
 		for(int i=0; i<_numOctrees; i++)
@@ -248,6 +254,8 @@ bool OctreeManager::init(std::string file_name)
 	_sizes = new int*[_numOctrees];
 	_maxHeight = new int[_numOctrees];
 	_cubeCacheLevel = new int[_numOctrees];
+	_cubeCacheLevelCPU = new int[_numOctrees];
+	_octreeLevel = new int[_numOctrees];
 	for(int i=0; i<_numOctrees; i++)
 	{
 		_numCubes[i] = new int[_maxLevel[i] + 1];
@@ -273,7 +281,21 @@ void OctreeManager::_setBestCubeLevel()
 		int mL = _nLevels[i] - 9 ; 
 		if (mL <= 0)
 			mL = 0;
-		_cubeCacheLevel[i] = mL;
+		if (_maxLevel[i] < mL)
+			mL = _maxLevel[i];
+		_cubeCacheLevelCPU[i] = mL;
+		int nL = _nLevels[i] - 6;
+		if (nL <= 0)
+			nL = 0;
+		if (_maxLevel[i] < nL)
+			nL = _maxLevel[i];
+		_cubeCacheLevel[i] = nL; 
+		int oL = _nLevels[i] - 5;
+		if (oL <= 0)
+			oL = 0;
+		if (_maxLevel[i] < oL)
+			oL = _maxLevel[i];
+		_octreeLevel[i] = oL; 
 	}
 }
 
@@ -396,8 +418,7 @@ bool OctreeManager::checkStatus(uint32_t device)
 	}
 	else
 	{
-		result = it->second->setCurrentOctree(_realDim[_currentOctree], _dimension[_currentOctree], _nLevels[_currentOctree], _maxLevel[_currentOctree], _maxLevel[_currentOctree], _isosurfaces[_currentOctree],  getMaxHeight(), _octreeData, _sizes[_currentOctree], _xGrid, _yGrid, _zGrid, _startC[_currentOctree], _realDimensionVolume, _lastLevel, _grid);
-		//result = it->second->setCurrentOctree(_realDim[_currentOctree], _dimension[_currentOctree], _nLevels[_currentOctree], _maxLevel[_currentOctree], _renderCubes ? _maxLevel[_currentOctree] : _cubeCacheLevel[_currentOctree], _isosurfaces[_currentOctree],  getMaxHeight(), _octreeData, _sizes[_currentOctree], _xGrid, _yGrid, _zGrid, _startC[_currentOctree], _realDimensionVolume, _lastLevel, _grid);
+		result = it->second->setCurrentOctree(_realDim[_currentOctree], _dimension[_currentOctree], _nLevels[_currentOctree], _maxLevel[_currentOctree], _renderCubes ? _maxLevel[_currentOctree] : _octreeLevel[_currentOctree], _isosurfaces[_currentOctree],  getMaxHeight(), _octreeData, _sizes[_currentOctree], _xGrid, _yGrid, _zGrid, _startC[_currentOctree], _realDimensionVolume, _lastLevel, _grid);
 	}
 
 	_lock.unset();

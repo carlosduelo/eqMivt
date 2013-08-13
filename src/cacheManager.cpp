@@ -18,7 +18,7 @@ CacheManager::CacheManager()
 	_levelCube = -1;
 	_nLevels = 0;
 	_numElements = 0;
-	_levelDif = -1;
+	_levelCubeCPU = -1;
 }
 
 CacheManager::~CacheManager()
@@ -50,20 +50,19 @@ bool CacheManager::init(std::string type_file, std::vector<std::string> file_par
 }
 
 
-bool CacheManager::reSize(int levelCube, int nLevels, int numElements, int numElementsCPU, int levelDif)
+bool CacheManager::reSize(int levelCube, int nLevels, int numElements, int numElementsCPU, int levelCubeCPU)
 {
 	bool result = true;
 	_lock.set();
-	if (_levelCube != levelCube || levelDif != _levelDif || nLevels != _nLevels)
+	if (_levelCube != levelCube || levelCubeCPU != _levelCubeCPU || nLevels != _nLevels)
 	{
-		int levelCubeCPU = levelCube - levelDif; 
 		int dimC = exp2(nLevels - levelCubeCPU);
 		vmml::vector<3, int> cubeDimCPU(dimC, dimC, dimC);
 		result = _cubeCacheCPU->reSize(cubeDimCPU, _cubeInc, levelCubeCPU, nLevels, numElementsCPU);
 
 		_nLevels = nLevels;
 		_levelCube = levelCube;
-		_levelDif = levelDif;
+		_levelCubeCPU = levelCubeCPU;
 		int d = exp2(_nLevels - levelCube);
 		_cubeDim.set(d,d,d);
 		_numElements = numElements;

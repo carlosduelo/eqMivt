@@ -50,6 +50,8 @@ class OctreeManager
 		int ** _numCubes;
 		int * _maxHeight;
 		int * _cubeCacheLevel;
+		int * _cubeCacheLevelCPU;
+		int * _octreeLevel;
 		index_node_t ** _octreeData;
 		int _currentOctree;
 
@@ -80,6 +82,8 @@ class OctreeManager
 		float getCurretIsosurface() { return _isosurfaces[_currentOctree]; }
 		int	getMaxHeight();
 		int getBestCubeLevel(){ return _cubeCacheLevel[_currentOctree]; }
+		int getBestCubeLevelCPU(){ return _cubeCacheLevelCPU[_currentOctree]; }
+		int getBestOctreeLevel(){ return _octreeLevel[_currentOctree]; }
 		int getMaxCubeLevel(){ return _maxLevel[_currentOctree]; }
 		float * getxGrid();
 		float * getyGrid();
