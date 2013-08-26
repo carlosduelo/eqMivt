@@ -108,7 +108,8 @@ void OctreeManager::_readCurrentOctree()
 	std::cout<<"Real Dim "<<_realDim[_currentOctree]<<std::endl;
 	std::cout<<"Volume Dim "<<_realDimensionVolume<<std::endl;
 	std::cout<<"Max Height "<<_maxHeight[_currentOctree]<<std::endl;
-	std::cout<<"Best Cube cache level "<<_cubeCacheLevel[_currentOctree]<<std::endl;;
+	std::cout<<"Best Cube cache level CPU "<<_cubeCacheLevelCPU[_currentOctree]<<std::endl;;
+	std::cout<<"Best Cube cache level GPU "<<_cubeCacheLevel[_currentOctree]<<std::endl;;
 	std::cout<<"Coordinates from "<<_startC[_currentOctree]<<" to "<<_finishC[_currentOctree]<<std::endl;
 
 
@@ -278,13 +279,20 @@ void OctreeManager::_setBestCubeLevel()
 {
 	for(int i=0; i<_numOctrees; i++)
 	{
-		int mL = _nLevels[i] - 9 ; 
+ 		float aux = logf(_maxHeight[i])/logf(2.0);
+		float aux2 = aux - floorf(aux);
+		int mL = aux2>0.0 ? aux+1 : aux;
+		mL = _nLevels[i] - mL;
+		if (_nLevels[i] - 9 > 0)
+			mL = mL < _nLevels[i] - 9 ? _nLevels[i] - 9 : mL; 
 		if (mL <= 0)
 			mL = 0;
 		if (_maxLevel[i] < mL)
 			mL = _maxLevel[i];
 		_cubeCacheLevelCPU[i] = mL;
-		int nL = _nLevels[i] - 6;
+		int nL = 0;
+		if (_nLevels[i] - 6 > 0)
+			nL = mL < _nLevels[i] - 6 ? _nLevels[i] - 6 : mL;
 		if (nL <= 0)
 			nL = 0;
 		if (_maxLevel[i] < nL)
