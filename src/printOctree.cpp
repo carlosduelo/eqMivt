@@ -139,9 +139,11 @@ int main( const int argc, char ** argv)
 			std::cout<<"Real dimension "<<realDim[3*selection]<<" "<<realDim[3*selection+1]<<" "<<realDim[3*selection+2]<<std::endl;
 
 			std::cout<<"Levels dimension and concentration:"<<std::endl;
+			float s = 0;
 			for(int k=0; k<=maxLevel[selection]; k++)
 			{
-				std::cout<<"Level "<<k<<" dimension "<<sizes[k]<<" num cubes "<<numCubes[k]<<" concentration "<<(numCubes[k]*100.0f)/(float)sizes[k]<<" %"<<std::endl;
+				s += sizes[k]*sizeof(eqMivt::index_node_t)/1024.f/1024.f;
+				std::cout<<"Level "<<k<<" dimension "<<sizes[k]<<" num cubes "<<numCubes[k]<<" concentration "<<(numCubes[k]*100.0f)/(float)sizes[k]<<" %"<<" size: "<<s<<" MB"<<std::endl;
 			}
 
 		}
