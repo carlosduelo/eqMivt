@@ -405,12 +405,29 @@ vmml::vector<3, float> OctreeManager::getCurrentFinishCoord(int octree, bool gri
 		return vmml::vector<3, float>(_finishC[octree][0], _startC[octree][1]+ _maxHeight[octree], _finishC[octree][2]);
 }
 
+vmml::vector<3, int> OctreeManager::getStartCoord(int octree)
+{
+		return _startC[octree];
+}
+vmml::vector<3, int> OctreeManager::getFinishCoord(int octree)
+{
+		return _finishC[octree];
+}
+
 int	OctreeManager::getMaxHeight()
 { 
 	if (_grid)
 		return _yGrid[2 + _maxHeight[_currentOctree]+_startC[_currentOctree][1]];	
 	else
 		return _startC[_currentOctree][1] + _maxHeight[_currentOctree];
+}
+
+int	OctreeManager::getMaxHeight(int octree)
+{ 
+	if (_grid)
+		return _yGrid[2 + _maxHeight[octree]+_startC[octree][1]];	
+	else
+		return _startC[octree][1] + _maxHeight[octree];
 }
 
 bool OctreeManager::checkStatus(uint32_t device)

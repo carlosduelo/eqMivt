@@ -32,6 +32,7 @@ typedef struct
 #define NUM_COLORS 256
 #define COLOR_INC 0.00390625f
 
+#define CUBE_INC 2
 
 }
 #endif /* EQ_MIVT_TYPEDEF_H */

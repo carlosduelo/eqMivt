@@ -78,8 +78,11 @@ class OctreeManager
 		vmml::vector<3, float> getRealDimVolume() ;
 		vmml::vector<3, float> getCurrentStartCoord();
 		vmml::vector<3, float> getCurrentFinishCoord();
+		vmml::vector<3, int> getStartCoord(int octree);
+		vmml::vector<3, int> getFinishCoord(int octree);
 		int getNumOctrees() { return _numOctrees; }
 		float getCurretIsosurface() { return _isosurfaces[_currentOctree]; }
+		int getNLevels(int octree) { return _nLevels[octree]; }
 		int	getMaxHeight();
 		int getBestCubeLevel(){ return _cubeCacheLevel[_currentOctree]; }
 		int getBestCubeLevelCPU(){ return _cubeCacheLevelCPU[_currentOctree]; }
@@ -89,6 +92,14 @@ class OctreeManager
 		float * getyGrid();
 		float * getzGrid();
 		vmml::vector<3, int> getCurrentOffset(){ return _startC[_currentOctree]; }
+
+		float getIsosurface(int octree) { return _isosurfaces[octree]; }
+		int	getMaxHeight(int octree);
+		int getBestCubeLevel(int octree){ return _cubeCacheLevel[octree]; }
+		int getBestCubeLevelCPU(int octree){ return _cubeCacheLevelCPU[octree]; }
+		int getBestOctreeLevel(int octree){ return _octreeLevel[octree]; }
+		int getMaxCubeLevel(int octree){ return _maxLevel[octree]; }
+		vmml::vector<3, int> getCurrentOffset(int octree){ return _startC[octree]; }
 
 		bool setCurrentOctree(int currentOctree, bool grid, bool renderCubes, bool * octreeChange);
 		bool checkStatus(uint32_t device);

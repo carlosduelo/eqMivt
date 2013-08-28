@@ -12,7 +12,6 @@ Notes:
 #include "error.h"
 
 #define MAX_WORKERS 32
-#define CUBE_INC 2
 
 namespace eqMivt
 {

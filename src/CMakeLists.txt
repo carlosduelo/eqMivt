@@ -86,6 +86,16 @@ set(FILE_PERFORMANCE_SOURCE
 add_executable(filePerformance testHDF5.cpp ${FILE_PERFORMANCE_SOURCE})
 target_link_libraries(filePerformance  ${LIBS_NEEDED})
 
+set(CREATE_MIVT_FILE
+		fileFactory.cpp
+		hdf5File.cpp
+		octree.cpp
+		octreeManager.cpp
+		memoryCheck.cpp
+)
+add_executable(createMivtFile createMivt.cpp ${CREATE_MIVT_FILE} ${MIVT_CUDA_OBJECTS} )
+target_link_libraries(createMivtFile ${LIBS_NEEDED})
+
 add_executable(diffOctree diffOctree.cpp)
 target_link_libraries(diffOctree  m)
 
