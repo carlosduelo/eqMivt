@@ -18,11 +18,76 @@ Notes:
 #include <typedef.h>
 #include <mortonCodeUtil_CPU.h>
 
+#include <openssl/md5.h>
+#include <cstdio>
+
 // Files
 std::string					output_name;
 std::string					octree_name;
 std::string					type_file;
 std::vector<std::string>	file_params;
+
+std::vector<eqMivt::index_node_t> nodes;
+std::vector<int> offsets;
+
+
+int getMD5(const char * filename, unsigned char ** md5sum)
+{
+	FILE * inFile = fopen (filename, "rb");
+	*md5sum = new unsigned char[MD5_DIGEST_LENGTH];
+	MD5_CTX mdContext;
+	int bytes;
+	unsigned char data[1024];
+	MD5_Init (&mdContext);
+	while ((bytes = fread (data, 1, 1024, inFile)) != 0)
+		MD5_Update (&mdContext, data, bytes);
+	MD5_Final(*md5sum, &mdContext);
+	for(int i = 0; i < MD5_DIGEST_LENGTH; i++) printf("%02x", (*md5sum)[i]);
+	printf (" %s\n", filename);
+	fclose (inFile);
+	return 0;
+}
+
+bool addElement(eqMivt::index_node_t id)
+{
+	int size = nodes.size();
+
+	try
+	{
+		// Firts
+		if (size == 0)
+		{
+			nodes.push_back(id);
+			nodes.push_back(id);
+		}
+		else if (nodes.back() == (id - (eqMivt::index_node_t)1))
+		{
+			nodes[size-1] = id;
+		}
+		else if(nodes.back() == id)
+		{
+			//std::cout<<"repetido in level "<<level<<" "<< id <<std::endl;
+			return true;
+		}
+		else if(nodes.back() > id)
+		{
+			std::cout<<"=======>   ERROR: insert index in order "<< id <<" last inserted "<<nodes.back()<<std::endl;
+			throw;
+		}
+		else
+		{
+			nodes.push_back(id);
+			nodes.push_back(id);
+		}
+	}
+	catch (...)
+	{
+		std::cerr<<"No enough memory aviable"<<std::endl;
+		throw;
+	}
+
+	return false;
+}
 
 bool checkParameters(const int argc, char ** argv)
 {
@@ -122,25 +187,26 @@ int main( const int argc, char ** argv)
 
 	for(int i=0; i<octree.getNumOctrees(); i++)
 	{
-		std::cout<<startC<<" - "<<octree.getStartCoord(i)<<" ==> ";
-		if (octree.getStartCoord(i) < startC)
-			startC = octree.getStartCoord(i);
-		std::cout<<startC<<std::endl;
+		vmml::vector<3, int> currentStartC= octree.getStartCoord(i);
+		//std::cout<<startC<<" - "<<currentStartC<<" ==> ";
+		if (currentStartC[0] < startC[0] && currentStartC[1] < startC[1] && currentStartC[2] < startC[2])
+			startC = currentStartC;
+		//std::cout<<startC<<std::endl;
 
 		vmml::vector<3, int> currentFinishC = octree.getFinishCoord(i);
 		currentFinishC[1] = octree.getMaxHeight(i);
-		std::cout<<finishC<<" - "<<currentFinishC<<" ==> ";
-		if (currentFinishC > finishC)
+		//std::cout<<finishC<<" - "<<currentFinishC<<" ==> ";
+		if (currentFinishC[0] > finishC[0] && currentFinishC[1] > finishC[1] && currentFinishC[2] > finishC[2])
 			finishC = currentFinishC;
-		std::cout<<finishC<<std::endl;
+		//std::cout<<finishC<<std::endl;
 
 		int currentDim = exp2(octree.getNLevels(i) - octree.getBestCubeLevelCPU(i));
-		std::cout<<currentDim<<" - "<<dimCube<<" ==> ";
+		//std::cout<<currentDim<<" - "<<dimCube<<" ==> ";
 		if (dimCube < currentDim)
 			dimCube = currentDim;
-		std::cout<<dimCube<<std::endl;
+		//std::cout<<dimCube<<std::endl;
 
-		std::cout<<std::endl;
+		//std::cout<<std::endl;
 	}
 
 	std::cout<<"Selecting Start and finish coordinates...."<<std::endl;
@@ -182,7 +248,64 @@ int main( const int argc, char ** argv)
 	eqMivt::index_node_t idStart = eqMivt::coordinateToIndex(vmml::vector<3, int>(0,0,0), levelCube, nLevels);
 	eqMivt::index_node_t idFinish = eqMivt::coordinateToIndex(vmml::vector<3, int>(dimension-1, dimension-1, dimension-1), levelCube, nLevels);
 
+	for(eqMivt::index_node_t id = idStart; id <= idFinish; id++)
+	{
+		vmml::vector<3, int> currentSC = eqMivt::getMinBoxIndex2(id, levelCube, nLevels);
+		vmml::vector<3, int> currentFC = currentSC + cubeDim; 
+		
+		if (startC[0] <= currentSC[0] && startC[1] <= currentSC[1] && startC[2] <= currentSC[2] &&
+			finishC[0] >= currentFC[0] && finishC[1] >= currentFC[1] && finishC[2] >= currentFC[2])
+		{
+			addElement(id);
+		}
+	}
+
+	// set offsets
+	int offset = 0;
+	for(int i=0; i<nodes.size(); i+=2)
+	{
+		offsets.push_back(offset);
+		offset += nodes[i+1] - nodes[i] + 1;
+	}
+	#if 0
+	for(int i=0; i<nodes.size(); i+=2)
+		std::cout<<nodes[i]<<" "<<nodes[i+1]<<" offset "<<offsets[i/2]<<std::endl;
+	#endif
+
+	unsigned char * md5sum = 0;
+	getMD5(octree_name.c_str(), &md5sum);
+
+	std::ofstream output_file(output_name.c_str(), std::ofstream::binary);
+
+	output_file.write((char*) md5sum, MD5_DIGEST_LENGTH*sizeof(unsigned char));
+	output_file.write((char*) realDimVolume.array, 3*sizeof(int));
+	output_file.write((char*) &nLevels, sizeof(int));
+	output_file.write((char*) &levelCube, sizeof(int));
+	output_file.write((char*) startC.array, 3*sizeof(int));
+	output_file.write((char*) finishC.array, 3*sizeof(int));
+
+	int sA = nodes.size();
+	output_file.write((char*) &sA, sizeof(int));
+	output_file.write((char*) nodes.data(), sA*sizeof(int));
+	output_file.write((char*) offsets.data(), (sA/2)*sizeof(int));
+
+	int cS = realCubeDim.x()*realCubeDim.y()*realCubeDim.z();
+	float * cube = new float[cS];
+
+	for(int i=0; i<sA; i+=2)
+		for(eqMivt::index_node_t id = nodes[i]; id <=nodes[i+1]; id++)
+		{
+			std::cout<<id<<std::endl;
+			file->readCube(id, cube, levelCube, nLevels, cubeDim, cubeInc, realCubeDim);
+			output_file.write((char*)cube, cS*sizeof(float));
+		}
+
+
+	output_file.close();
+
 	delete file;
+	delete[] cube;
+	delete[] md5sum;
 
 	return 0;
 }

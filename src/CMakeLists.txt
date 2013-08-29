@@ -94,7 +94,7 @@ set(CREATE_MIVT_FILE
 		memoryCheck.cpp
 )
 add_executable(createMivtFile createMivt.cpp ${CREATE_MIVT_FILE} ${MIVT_CUDA_OBJECTS} )
-target_link_libraries(createMivtFile ${LIBS_NEEDED})
+target_link_libraries(createMivtFile ${LIBS_NEEDED} ssl crypto)
 
 add_executable(diffOctree diffOctree.cpp)
 target_link_libraries(diffOctree  m)

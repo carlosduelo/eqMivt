@@ -409,7 +409,7 @@ void hdf5File::readCube(index_node_t index, float * cube, int levelCube, int nLe
 	bzero(cube, dim[0]*dim[1]*dim[2]*sizeof(float));
 	#ifdef DISK_TIMING
 	double time = timing.getTimed(); 
-	std::cout<<"Inicializate cube time: "<<time/1000.0<<" seconds."<<std::endl;
+	std::cerr<<"Inicializate cube time: "<<time/1000.0<<" seconds."<<std::endl;
 	#endif
 
 	// The data required is completly outside of the dataset
@@ -456,7 +456,7 @@ void hdf5File::readCube(index_node_t index, float * cube, int levelCube, int nLe
 	}
 	#ifdef DISK_TIMING
 	time = timing.getTimed(); 
-	std::cout<<"Define hyperslab  time: "<<time/1000.0<<" seconds."<<std::endl;
+	std::cerr<<"Define hyperslab  time: "<<time/1000.0<<" seconds."<<std::endl;
 	#endif
 
 	#ifdef DISK_TIMING
@@ -472,7 +472,7 @@ void hdf5File::readCube(index_node_t index, float * cube, int levelCube, int nLe
 	}
 	#ifdef DISK_TIMING
 	time = timing.getTimed(); 
-	std::cout<<"Define memorydataset time: "<<time/1000.0<<" seconds."<<std::endl;
+	std::cerr<<"Define memorydataset time: "<<time/1000.0<<" seconds."<<std::endl;
 	#endif
 
 
@@ -488,7 +488,7 @@ void hdf5File::readCube(index_node_t index, float * cube, int levelCube, int nLe
 	}
 	#ifdef DISK_TIMING
 	time = timing.getTimed(); 
-	std::cout<<"Define memory hyperslab time: "<<time/1000.0<<" seconds."<<std::endl;
+	std::cerr<<"Define memory hyperslab time: "<<time/1000.0<<" seconds."<<std::endl;
 	#endif
 
 	#ifdef DISK_TIMING
@@ -504,7 +504,7 @@ void hdf5File::readCube(index_node_t index, float * cube, int levelCube, int nLe
 	}
 	#ifdef DISK_TIMING
 	time = timing.getTimed(); 
-	std::cout<<"Reading time: "<<time/1000.0<<" seconds."<<std::endl;
+	std::cerr<<"Reading time: "<<time/1000.0<<" seconds."<<std::endl;
 	#endif
 
 
@@ -517,10 +517,10 @@ void hdf5File::readCube(index_node_t index, float * cube, int levelCube, int nLe
 	}
 	#ifdef DISK_TIMING
 	time = timing.getTimed(); 
-	std::cout<<"Close dataspace time: "<<time/1000.0<<" seconds."<<std::endl;
+	std::cerr<<"Close dataspace time: "<<time/1000.0<<" seconds."<<std::endl;
 	double timeC = timingC.getTimed(); 
-	std::cout<<"Read in MB: "<<(dimR[0]*dimR[1]*dimR[2]*sizeof(float)/1024.f/1024.f)<<" in "<<(timeC/1000.0f)<<" seconds."<<std::endl;
-	std::cout<<"Bandwidth: "<<(dimR[0]*dimR[1]*dimR[2]*sizeof(float)/1024.f/1024.f)/(timeC/1000.0f)<<" MB/seconds."<<std::endl;
+	std::cerr<<"Read in MB: "<<(dimR[0]*dimR[1]*dimR[2]*sizeof(float)/1024.f/1024.f)<<" in "<<(timeC/1000.0f)<<" seconds."<<std::endl;
+	std::cerr<<"Bandwidth: "<<(dimR[0]*dimR[1]*dimR[2]*sizeof(float)/1024.f/1024.f)/(timeC/1000.0f)<<" MB/seconds."<<std::endl;
 	#endif
 }
 }
