@@ -40,7 +40,7 @@ class CacheManager
 
 		~CacheManager();
 		
-		bool init(std::string type_file, std::vector<std::string> file_params, int cubeInc);
+		bool init(std::string type_file, std::vector<std::string> file_params, std::string octree_file_name, int cubeInc);
 		bool reSize(int levelCube, int nLevels, int numElements, int numElementsCPU, int levelCubeCPU);	
 		bool setOffset(vmml::vector<3, int> offset);
 		bool checkStatus(CacheHandler * cacheHandler);

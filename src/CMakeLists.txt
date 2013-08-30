@@ -9,6 +9,7 @@ add_definitions(-DDISK_TIMING)
 set(MIVT_SOURCE 
 		memoryCheck.cpp
 		hdf5File.cpp
+		mivtFile.cpp
 		fileFactory.cpp
 		linkedList.cpp
 		cubeCacheCPU.cpp
@@ -51,7 +52,7 @@ endif()
 cuda_compile(MIVT_CUDA_OBJECTS ${MIVT_CUDA_SOURCE})
 #message(STATUS ${MIVT_CUDA_OBJECTS})
 
-set(LIBS_NEEDED ${EQUALIZER_LIBRARIES} ${CUDA_LIBRARIES} ${Boost_LIBRARIES} ${HDF5_LIBRARIES} ${FREEIMAGE_LIBRARIES} ${OPENGL_gl_LIBRARY} dl GL) 
+set(LIBS_NEEDED ${EQUALIZER_LIBRARIES} ${CUDA_LIBRARIES} ${Boost_LIBRARIES} ${HDF5_LIBRARIES} ${FREEIMAGE_LIBRARIES} ${OPENGL_gl_LIBRARY} dl GL ssl crypto) 
 
 add_executable(mivt ${MIVT_SOURCE} ${MIVT_CUDA_OBJECTS} main.cpp) 
 target_link_libraries(mivt ${LIBS_NEEDED}) 
@@ -59,6 +60,7 @@ target_link_libraries(mivt ${LIBS_NEEDED})
 
 set(OCTREE_CONSTRUCTOR_SOURCE 
 		fileFactory.cpp
+		mivtFile.cpp
 		hdf5File.cpp
 		octreeConstructor.cpp
 		memoryCheck.cpp
@@ -79,6 +81,7 @@ target_link_libraries(transferFunctionCreator GL glut)
 
 set(FILE_PERFORMANCE_SOURCE
 		fileFactory.cpp
+		mivtFile.cpp
 		hdf5File.cpp
 		memoryCheck.cpp
 )
@@ -88,13 +91,14 @@ target_link_libraries(filePerformance  ${LIBS_NEEDED})
 
 set(CREATE_MIVT_FILE
 		fileFactory.cpp
+		mivtFile.cpp
 		hdf5File.cpp
 		octree.cpp
 		octreeManager.cpp
 		memoryCheck.cpp
 )
 add_executable(createMivtFile createMivt.cpp ${CREATE_MIVT_FILE} ${MIVT_CUDA_OBJECTS} )
-target_link_libraries(createMivtFile ${LIBS_NEEDED} ssl crypto)
+target_link_libraries(createMivtFile ${LIBS_NEEDED})
 
 add_executable(diffOctree diffOctree.cpp)
 target_link_libraries(diffOctree  m)

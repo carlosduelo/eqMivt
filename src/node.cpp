@@ -43,7 +43,7 @@ namespace eqMivt
 		}
 		else
 		{
-			_status = _cacheManager.init(initData.getDataTypeFile(), initData.getDataFilename(), CUBE_INC); 
+			_status = _cacheManager.init(initData.getDataTypeFile(), initData.getDataFilename(), initData.getOctreeFilename(), CUBE_INC); 
 			if (!_status)
 				LBERROR<<"Node: error creating cache manager"<<std::endl;
 		}

@@ -29,7 +29,7 @@ CacheManager::~CacheManager()
 		delete it->second;
 }
 
-bool CacheManager::init(std::string type_file, std::vector<std::string> file_params, int cubeInc)
+bool CacheManager::init(std::string type_file, std::vector<std::string> file_params, std::string octree_file_name, int cubeInc)
 {
 	_lock.set();
 	bool result = true;
@@ -41,7 +41,7 @@ bool CacheManager::init(std::string type_file, std::vector<std::string> file_par
 	else
 	{
 		_cubeCacheCPU = new cubeCacheCPU();
-		result = _cubeCacheCPU->init(type_file, file_params);
+		result = _cubeCacheCPU->init(type_file, file_params, octree_file_name);
 		_cubeInc = cubeInc;
 	}
 	_lock.unset();

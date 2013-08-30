@@ -67,6 +67,8 @@ class OctreeManager
 
 		static int readNumOctreesFromFile(std::string file_name);
 
+		static vmml::vector<3,int> getRealDimensionVolumeFromFile(std::string file_name);
+
 		bool init(std::string file_name);
 
 		int getNLevels() { return _nLevels[_currentOctree]; }

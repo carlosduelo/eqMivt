@@ -70,6 +70,11 @@ bool hdf5File::init(std::vector<std::string> file_params)
 	return true;
 }
 
+bool hdf5File::checkInit(std::string octree_file_name)
+{
+	return true;
+}
+
 hdf5File::~hdf5File()
 {
 	herr_t      status;

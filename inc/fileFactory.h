@@ -9,6 +9,7 @@ Notes:
 #ifndef EQ_MIVT_FILE_FACTORY_H
 #define EQ_MIVT_FILE_FACTORY_H
 
+#include <mivtFile.h>
 #include <hdf5File.h>
 #include <vector>
 

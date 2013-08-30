@@ -34,6 +34,8 @@ class FileManager
 
 		virtual bool init(std::vector<std::string> file_params) = 0;
 
+		virtual bool checkInit(std::string octree_file_name) = 0;
+
 		virtual bool getxGrid(double ** xGrid) = 0;
 		virtual bool getyGrid(double ** yGrid) = 0;
 		virtual bool getzGrid(double ** zGrid) = 0;

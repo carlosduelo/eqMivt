@@ -17,6 +17,12 @@ FileManager * CreateFileManage(std::string type_file, std::vector<std::string> f
 		FileManager * hdf5 = new hdf5File();
 		return hdf5->init(file_params) ? hdf5 : 0;
 	}
+	else if (type_file.compare("mivt_file") == 0)
+	{
+		FileManager * mivtF = new mivtFile();
+		return mivtF->init(file_params) ? mivtF : 0;
+	}
+
 	else
 	{
 		LBERROR<<"Error: wrong file option"<<std::endl;

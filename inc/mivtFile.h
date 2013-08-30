@@ -6,29 +6,33 @@ Notes:
 
  */
 
-#ifndef EQ_MIVT_HDF5_FILE_H
-#define EQ_MIVT_HDF5_FILE_H
+#ifndef EQ_MIVT_MIVT_FILE_H
+#define EQ_MIVT_MIVT_FILE_H
 
 #include <FileManager.h>
 
-#include <hdf5.h>
+#include <openssl/md5.h>
 
 namespace eqMivt
 {
-class hdf5File : public FileManager
+class mivtFile : public FileManager
 {
 	private:
-		// HDF5 stuff
-		hid_t           _file_id;
-		hid_t           _dataset_id;
-		hid_t           _spaceid;
-		int             _ndim;
-		hsize_t         _dims[3];
-		hid_t			_datatype;
+		unsigned char			_md5sum[MD5_DIGEST_LENGTH];
+		vmml::vector<3, int>	_realDimVolume;
+		vmml::vector<3, int>	_startC;
+		vmml::vector<3, int>	_finishC;
+		int						_nLevels;
+		int						_levelCube;
+		int						_dimCube;
+		int						_sizeCube;	
 
-		std::string		_xGrid;
-		std::string		_yGrid;
-		std::string		_zGrid;
+		std::ifstream			_file;
+
+		int						_sizeNodes;
+		index_node_t	*		_nodes;
+		int				*		_offsets;
+		int						_startOffset;
 
 	public:
 
@@ -36,7 +40,7 @@ class hdf5File : public FileManager
 
 		virtual bool checkInit(std::string octree_file_name);
 
-		~hdf5File();
+		~mivtFile();
 
 		virtual bool getxGrid(double ** xGrid);
 		virtual bool getyGrid(double ** yGrid);
@@ -48,4 +52,4 @@ class hdf5File : public FileManager
 };
 }
 
-#endif /* EQ_MIVT_HDF5_FILE */
+#endif /* EQ_MIVT_MIVT_FILE_H */

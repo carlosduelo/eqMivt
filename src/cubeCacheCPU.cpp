@@ -49,7 +49,7 @@ cubeCacheCPU::~cubeCacheCPU()
 		cudaFreeHost(_cacheData);
 }
 
-bool cubeCacheCPU::init(std::string type_file, std::vector<std::string> file_params)
+bool cubeCacheCPU::init(std::string type_file, std::vector<std::string> file_params, std::string octree_file_name)
 {
 	if (_fileManager != 0)
 		return false;
@@ -62,7 +62,7 @@ bool cubeCacheCPU::init(std::string type_file, std::vector<std::string> file_par
 		return false;
 	}
 
-	return true;
+	return _fileManager->checkInit(octree_file_name);
 }
 
 bool cubeCacheCPU::reSize(vmml::vector<3, int> cubeDim, int cubeInc, int levelCube, int nLevels, int numElements)

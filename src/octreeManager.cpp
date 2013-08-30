@@ -164,6 +164,38 @@ int OctreeManager::readNumOctreesFromFile(std::string file_name)
 	return numOctrees;
 }
 
+vmml::vector<3,int> getRealDimensionVolumeFromFile(std::string file_name)
+{
+	std::ifstream file;
+	vmml::vector<3, int> rD(0,0,0);
+
+	try
+	{
+		file.open(file_name.c_str(), std::ifstream::binary);
+	}
+	catch(...)
+	{
+		std::cerr<<"Octree: error opening octree file"<<std::endl;
+		return rD;
+	}
+
+	int magicWord;
+
+	file.read((char*)&magicWord, sizeof(magicWord));
+
+	if (magicWord != 919278872)
+	{
+		std::cerr<<"Octree: error invalid file format "<<magicWord<<std::endl;
+		return rD;
+	}
+
+	int nO;
+	file.read((char*)&nO,sizeof(int));
+	file.read((char*)rD.array,3*sizeof(int));
+
+	return rD;
+}
+
 bool OctreeManager::init(std::string file_name)
 {
 	try

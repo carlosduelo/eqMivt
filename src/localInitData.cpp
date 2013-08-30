@@ -50,7 +50,7 @@ bool LocalInitData::parseArguments( const int argc, char** argv )
     ("eq-config", "Select equalizer configuration file")
     ("eq-layout", "Select equalizer layout in configuration file")
     ("octree-file,o", boost::program_options::value< std::vector<std::string> >()->multitoken(), "octree-file-path")
-    ("data-file,d", boost::program_options::value< std::vector<std::string> >()->multitoken(), "type-data-file data-file-path\nType file supported: hdf5_file file-path:data-set-name")
+    ("data-file,d", boost::program_options::value< std::vector<std::string> >()->multitoken(), "type-data-file data-file-path\nType file supported: hdf5_file file-path:data-set-name\n mivt_file file-path")
 	("max-elements-cpu,c", boost::program_options::value<int>(), "set cpu cache, optional")
 	("max-elements-gpu,g", boost::program_options::value<int>(), "set gpu cache, optional")
     ("transfer-function,t", boost::program_options::value< std::vector<std::string> >()->multitoken(), "transfer function color path")
@@ -142,6 +142,8 @@ bool LocalInitData::parseArguments( const int argc, char** argv )
 			}
 
 			if (dataParam[0] == "hdf5_file" && fileParams.size() != 2)
+				printHelp = true;
+			if (dataParam[0] == "mivt_file" && fileParams.size() != 1)
 				printHelp = true;
 			else
 				setDataFilename(fileParams);

@@ -48,7 +48,7 @@ class cubeCacheCPU
 		cubeCacheCPU();
 		~cubeCacheCPU();
 
-		bool init(std::string type_file, std::vector<std::string> file_params);
+		bool init(std::string type_file, std::vector<std::string> file_params, std::string octree_file_name);
 		
 		bool reSize(vmml::vector<3, int> cubeDim, int cubeInc, int levelCube, int nLevels, int numElements );
 

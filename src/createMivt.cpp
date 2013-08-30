@@ -286,7 +286,7 @@ int main( const int argc, char ** argv)
 
 	int sA = nodes.size();
 	output_file.write((char*) &sA, sizeof(int));
-	output_file.write((char*) nodes.data(), sA*sizeof(int));
+	output_file.write((char*) nodes.data(), sA*sizeof(eqMivt::index_node_t));
 	output_file.write((char*) offsets.data(), (sA/2)*sizeof(int));
 
 	int cS = realCubeDim.x()*realCubeDim.y()*realCubeDim.z();
