@@ -34,6 +34,8 @@ class mivtFile : public FileManager
 		int				*		_offsets;
 		int						_startOffset;
 
+		int getOffset(index_node_t index);
+
 	public:
 
 		virtual bool init(std::vector<std::string> file_params);

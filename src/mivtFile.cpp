@@ -61,6 +61,15 @@ bool mivtFile::init(std::vector<std::string> file_params)
 
 	_dimCube = exp2(_nLevels - _levelCube);
 	_sizeCube = powf(_dimCube + 2 * CUBE_INC, 3);
+	
+
+	std::cout<<"Real Volume size:" <<_realDimVolume<<std::endl;
+	std::cout<<"nLevels "<<_nLevels<<std::endl;
+	std::cout<<"Level cube "<<_levelCube<<" size "<<_dimCube<<std::endl;
+	std::cout<<"Start coordinate: "<<_startC<<std::endl;
+	std::cout<<"Finish coordinate: "<<_finishC<<std::endl;
+
+	_isInit = true;
 
 	return true;
 }
@@ -114,9 +123,95 @@ bool mivtFile::getzGrid(double ** zGrid)
 	return false;
 }
 
+inline bool checkRange(index_node_t * elements, index_node_t index, int min, int max)
+{
+	return  index == elements[min] 	|| 
+		index == elements[max]	||
+		(elements[min] < index && elements[max] > index);
+}
+
+int mivtFile::getOffset(index_node_t index)
+{
+	bool end = false;
+	bool found = false;
+	int middle = 0;
+	int min = 0;
+	int max = _sizeNodes - 1;
+
+	while(!end && !found)
+	{
+		int diff 	= max-min;
+		middle	= min + (diff / 2);
+		if (middle % 2 == 1) middle--;
+
+		end 		= diff <= 1;
+		found 		=  checkRange(_nodes, index, middle, middle+1);
+		if (index < _nodes[middle])
+			max = middle-1;
+		else //(index > elements[middle+1])
+			min = middle + 2;
+	}
+
+	if (found)
+	{
+		middle /= 2;
+		return _offsets[middle];
+	}
+	else
+		return -1;
+}
 
 void mivtFile::readCube(index_node_t index, float * cube, int levelCube, int nLevels, vmml::vector<3, int>    cubeDim, vmml::vector<3, int> cubeInc, vmml::vector<3, int> realCubeDim)
 {
+	if (!_isInit)
+		return;
+
+	vmml::vector<3, int> coord 	= getMinBoxIndex2(index, levelCube, nLevels);
+	coord += _offset;
+	vmml::vector<3, int> s 		= coord - cubeInc;
+	vmml::vector<3, int> e 		= s + realCubeDim;
+
+	int dim[3] = {abs(e.x()-s.x()),abs(e.y()-s.y()),abs(e.z()-s.z())};
+
+	#ifdef DISK_TIMING
+	lunchbox::Clock     timing; 
+	timing.reset();
+	#endif
+	// Set zeros's
+	bzero(cube, dim[0]*dim[1]*dim[2]*sizeof(float));
+	#ifdef DISK_TIMING
+	double time = timing.getTimed(); 
+	std::cerr<<"Inicializate cube time: "<<time/1000.0<<" seconds."<<std::endl;
+	#endif
+
+	if (exp2(nLevels - levelCube) == exp2(_nLevels - _levelCube))
+	{
+		std::cerr<<"Equal dimension"<<std::endl;
+		if (coord[0] % 2 == 0 && coord[1] % 2== 0 && coord[2] % 2 == 0)
+		{
+			std::cerr<<"Not implemented: cube aliegned"<<std::endl;
+			index_node_t idSearch = coordinateToIndex(coord, _levelCube, _nLevels); 
+			
+			if (getOffset(idSearch) != -1)
+				std::cout<<getOffset(idSearch)<<std::endl;
+		}
+		else
+		{
+			std::cerr<<"Not implemented: cube not aliegned"<<std::endl;
+		}
+	}
+	else if (exp2(nLevels - levelCube) < exp2(_nLevels - levelCube))
+	{
+		std::cerr<<"requested cube dimension < stored cube dimension"<<std::endl;
+	}
+	else // if (exp2(nLevels - levelCube) < exp2(_nLevels - levelCube))
+	{
+		// NOT IMPLEMENTED
+		std::cerr<<"Not implemented requested cube dimension > stored cube dimension"<<std::endl;
+	}
+
+
+
 	return;
 }
 
