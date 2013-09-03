@@ -68,6 +68,7 @@ bool mivtFile::init(std::vector<std::string> file_params)
 	std::cout<<"Level cube "<<_levelCube<<" size "<<_dimCube<<std::endl;
 	std::cout<<"Start coordinate: "<<_startC<<std::endl;
 	std::cout<<"Finish coordinate: "<<_finishC<<std::endl;
+	std::cout<<"Real cubes size: "<<_sizeCube<<std::endl;
 
 	_isInit = true;
 
@@ -154,8 +155,8 @@ int mivtFile::getOffset(index_node_t index)
 
 	if (found)
 	{
-		middle /= 2;
-		return _offsets[middle];
+		std::cout<<"==>"<<middle<<" "<<_nodes[middle]<<" "<<_nodes[middle+1]<<" "<<_offsets[middle/2]<<std::endl;
+		return _offsets[middle/2] + (index - _nodes[middle]);
 	}
 	else
 		return -1;
@@ -173,15 +174,16 @@ void mivtFile::readCube(index_node_t index, float * cube, int levelCube, int nLe
 
 	int dim[3] = {abs(e.x()-s.x()),abs(e.y()-s.y()),abs(e.z()-s.z())};
 
-	#ifdef DISK_TIMING
+	#ifdef DISK_TIMING 
 	lunchbox::Clock     timing; 
 	timing.reset();
 	#endif
 	// Set zeros's
 	bzero(cube, dim[0]*dim[1]*dim[2]*sizeof(float));
-	#ifdef DISK_TIMING
+	#ifdef DISK_TIMING 
 	double time = timing.getTimed(); 
 	std::cerr<<"Inicializate cube time: "<<time/1000.0<<" seconds."<<std::endl;
+	timing.reset();
 	#endif
 
 	if (exp2(nLevels - levelCube) == exp2(_nLevels - _levelCube))
@@ -189,11 +191,22 @@ void mivtFile::readCube(index_node_t index, float * cube, int levelCube, int nLe
 		std::cerr<<"Equal dimension"<<std::endl;
 		if (coord[0] % 2 == 0 && coord[1] % 2== 0 && coord[2] % 2 == 0)
 		{
-			std::cerr<<"Not implemented: cube aliegned"<<std::endl;
 			index_node_t idSearch = coordinateToIndex(coord, _levelCube, _nLevels); 
 			
-			if (getOffset(idSearch) != -1)
-				std::cout<<getOffset(idSearch)<<std::endl;
+//			if ( != -1)
+			int offset = getOffset(idSearch);
+
+			std::cout<<index<<" "<<idSearch<<" "<<coord<<" "<<offset<<" "<<_startOffset + _sizeCube*offset*sizeof(float)<<std::endl;
+
+			_file.seekg(_startOffset + _sizeCube*offset*sizeof(float), std::ios_base::beg);
+			_file.read((char*) cube, _sizeCube*sizeof(float));
+
+			#ifndef DEBUG
+			if (_file)
+				std::cout << "all characters read successfully.";
+		    else
+			      std::cout << "error: only " << _file.gcount() << " could be read";
+			#endif
 		}
 		else
 		{
@@ -210,6 +223,11 @@ void mivtFile::readCube(index_node_t index, float * cube, int levelCube, int nLe
 		std::cerr<<"Not implemented requested cube dimension > stored cube dimension"<<std::endl;
 	}
 
+	#ifdef DISK_TIMING
+	time = timing.getTimed(); 
+	std::cerr<<"Read in MB: "<<(dim[0]*dim[1]*dim[2]*sizeof(float)/1024.f/1024.f)<<" in "<<(time/1000.0f)<<" seconds."<<std::endl;
+	std::cerr<<"Bandwidth: "<<(dim[0]*dim[1]*dim[2]*sizeof(float)/1024.f/1024.f)/(time/1000.0f)<<" MB/seconds."<<std::endl;
+	#endif
 
 
 	return;
