@@ -17,6 +17,8 @@ Notes:
 #include <lunchbox/clock.h>
 #endif
 
+#define posToIndex(i,j,k,d) ((k)+(j)*(d)+(i)*(d)*(d))
+
 namespace eqMivt
 {
 bool mivtFile::init(std::vector<std::string> file_params)
@@ -189,11 +191,10 @@ void mivtFile::readCube(index_node_t index, float * cube, int levelCube, int nLe
 	if (exp2(nLevels - levelCube) == exp2(_nLevels - _levelCube))
 	{
 		std::cerr<<"Equal dimension"<<std::endl;
-		if (coord[0] % 2 == 0 && coord[1] % 2== 0 && coord[2] % 2 == 0)
+		if (coord[0] % _dimCube == 0 && coord[1] % _dimCube == 0 && coord[2] % _dimCube == 0)
 		{
 			index_node_t idSearch = coordinateToIndex(coord, _levelCube, _nLevels); 
 			
-//			if ( != -1)
 			int offset = getOffset(idSearch);
 
 			std::cout<<index<<" "<<idSearch<<" "<<coord<<" "<<offset<<" "<<_startOffset + _sizeCube*offset*sizeof(float)<<std::endl;
@@ -215,7 +216,39 @@ void mivtFile::readCube(index_node_t index, float * cube, int levelCube, int nLe
 	}
 	else if (exp2(nLevels - levelCube) < exp2(_nLevels - levelCube))
 	{
-		std::cerr<<"requested cube dimension < stored cube dimension"<<std::endl;
+		std::cerr<<"Requested cube dimension < stored cube dimension"<<std::endl;
+		if ( (coord[0] & (coord[0] -1 )) == 0 && (coord[1] & (coord[1] - 1 )) == 0 && (coord[2] & (coord[2] - 1 )) == 0)
+		{
+			index_node_t idSearch = coordinateToIndex(coord, _levelCube, _nLevels); 
+			
+			int offset = getOffset(idSearch);
+
+			std::cout<<index<<" "<<idSearch<<" "<<coord<<" "<<offset<<" "<<_startOffset + _sizeCube*offset*sizeof(float)<<std::endl;
+			
+			float * auxCube = new float[_sizeCube];
+			_file.seekg(_startOffset + _sizeCube*offset*sizeof(float), std::ios_base::beg);
+			_file.read((char*) auxCube, _sizeCube*sizeof(float));
+
+			#ifndef DEBUG
+			if (_file)
+				std::cout << "all characters read successfully.";
+		    else
+			      std::cout << "error: only " << _file.gcount() << " could be read";
+			#endif
+
+			int s = _dimCube + 2 * CUBE_INC;
+			for(int i=0; i<realCubeDim.x(); i++)
+				for(int j=0; j<realCubeDim.y(); j++)
+					memcpy((void*) &cube[posToIndex(i, j, 0, realCubeDim.x())], (void*) &auxCube[posToIndex(coord[0]+i, coord[1]+j, coord[2], s)], realCubeDim.z()*sizeof(float));
+
+			delete[] auxCube;
+
+			std::cerr<<"Not implemented: cube aliegned"<<std::endl;
+		}
+		else
+		{
+			std::cerr<<"Not implemented: cube not aliegned"<<std::endl;
+		}
 	}
 	else // if (exp2(nLevels - levelCube) < exp2(_nLevels - levelCube))
 	{
