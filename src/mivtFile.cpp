@@ -65,12 +65,14 @@ bool mivtFile::init(std::vector<std::string> file_params)
 	_sizeCube = powf(_dimCube + 2 * CUBE_INC, 3);
 	
 
+	#ifndef DEBUG
 	std::cout<<"Real Volume size:" <<_realDimVolume<<std::endl;
 	std::cout<<"nLevels "<<_nLevels<<std::endl;
 	std::cout<<"Level cube "<<_levelCube<<" size "<<_dimCube<<std::endl;
 	std::cout<<"Start coordinate: "<<_startC<<std::endl;
 	std::cout<<"Finish coordinate: "<<_finishC<<std::endl;
 	std::cout<<"Real cubes size: "<<_sizeCube<<std::endl;
+	#endif
 
 	_isInit = true;
 
@@ -157,7 +159,6 @@ int mivtFile::getOffset(index_node_t index)
 
 	if (found)
 	{
-		std::cout<<"==>"<<middle<<" "<<_nodes[middle]<<" "<<_nodes[middle+1]<<" "<<_offsets[middle/2]<<std::endl;
 		return _offsets[middle/2] + (index - _nodes[middle]);
 	}
 	else
@@ -190,19 +191,18 @@ void mivtFile::readCube(index_node_t index, float * cube, int levelCube, int nLe
 
 	if (exp2(nLevels - levelCube) == exp2(_nLevels - _levelCube))
 	{
-		std::cerr<<"Equal dimension"<<std::endl;
 		if (coord[0] % _dimCube == 0 && coord[1] % _dimCube == 0 && coord[2] % _dimCube == 0)
 		{
 			index_node_t idSearch = coordinateToIndex(coord, _levelCube, _nLevels); 
 			
 			int offset = getOffset(idSearch);
 
-			std::cout<<index<<" "<<idSearch<<" "<<coord<<" "<<offset<<" "<<_startOffset + _sizeCube*offset*sizeof(float)<<std::endl;
-
 			_file.seekg(_startOffset + _sizeCube*offset*sizeof(float), std::ios_base::beg);
 			_file.read((char*) cube, _sizeCube*sizeof(float));
 
 			#ifndef DEBUG
+			std::cout<<index<<" "<<idSearch<<" "<<coord<<" "<<offset<<" "<<_startOffset + _sizeCube*offset*sizeof(float)<<std::endl;
+
 			if (_file)
 				std::cout << "all characters read successfully.";
 		    else
@@ -216,20 +216,19 @@ void mivtFile::readCube(index_node_t index, float * cube, int levelCube, int nLe
 	}
 	else if (exp2(nLevels - levelCube) < exp2(_nLevels - levelCube))
 	{
-		std::cerr<<"Requested cube dimension < stored cube dimension"<<std::endl;
 		if ( (coord[0] & (coord[0] -1 )) == 0 && (coord[1] & (coord[1] - 1 )) == 0 && (coord[2] & (coord[2] - 1 )) == 0)
 		{
 			index_node_t idSearch = coordinateToIndex(coord, _levelCube, _nLevels); 
 			
 			int offset = getOffset(idSearch);
 
-			std::cout<<index<<" "<<idSearch<<" "<<coord<<" "<<offset<<" "<<_startOffset + _sizeCube*offset*sizeof(float)<<std::endl;
-			
 			float * auxCube = new float[_sizeCube];
 			_file.seekg(_startOffset + _sizeCube*offset*sizeof(float), std::ios_base::beg);
 			_file.read((char*) auxCube, _sizeCube*sizeof(float));
 
 			#ifndef DEBUG
+			std::cout<<index<<" "<<idSearch<<" "<<coord<<" "<<offset<<" "<<_startOffset + _sizeCube*offset*sizeof(float)<<std::endl;
+			
 			if (_file)
 				std::cout << "all characters read successfully.";
 		    else
@@ -242,8 +241,6 @@ void mivtFile::readCube(index_node_t index, float * cube, int levelCube, int nLe
 					memcpy((void*) &cube[posToIndex(i, j, 0, realCubeDim.x())], (void*) &auxCube[posToIndex(coord[0]+i, coord[1]+j, coord[2], s)], realCubeDim.z()*sizeof(float));
 
 			delete[] auxCube;
-
-			std::cerr<<"Not implemented: cube aliegned"<<std::endl;
 		}
 		else
 		{
@@ -261,7 +258,6 @@ void mivtFile::readCube(index_node_t index, float * cube, int levelCube, int nLe
 	std::cerr<<"Read in MB: "<<(dim[0]*dim[1]*dim[2]*sizeof(float)/1024.f/1024.f)<<" in "<<(time/1000.0f)<<" seconds."<<std::endl;
 	std::cerr<<"Bandwidth: "<<(dim[0]*dim[1]*dim[2]*sizeof(float)/1024.f/1024.f)/(time/1000.0f)<<" MB/seconds."<<std::endl;
 	#endif
-
 
 	return;
 }
