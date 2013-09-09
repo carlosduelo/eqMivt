@@ -15,6 +15,7 @@ Notes:
 
 #include <omp.h>
 #include <algorithm>
+#include <iterator>
 #include <lunchbox/clock.h>
 #include <lunchbox/lock.h>
 #include <boost/progress.hpp>
@@ -23,176 +24,9 @@ Notes:
 
 #define posToIndex(i,j,k,d) ((k)+(j)*(d)+(i)*(d)*(d))
 
+
 namespace eqMivt
 {
-	class octree
-	{
-		private: 
-			lunchbox::Lock				_lock;
-			std::vector<index_node_t> 	_lastLevel;
-			std::vector<index_node_t> *	_octree;
-			int		*					_numCubes;
-			int							_maxHeight;
-			int							_maxLevel;
-			int							_nLevels;
-			float						_iso;
-
-			bool _addElement(index_node_t id, int level)
-			{
-				int size = _octree[level].size();
-
-				try
-				{
-					// Firts
-					if (size == 0)
-					{
-						_numCubes[level] = 1;
-						_octree[level].push_back(id);
-						_octree[level].push_back(id);
-					}
-					else if (_octree[level].back() == (id - (index_node_t)1))
-					{
-						_numCubes[level] += 1;
-						_octree[level][size-1] = id;
-					}
-					else if(_octree[level].back() == id)
-					{
-						//std::cout<<"repetido in level "<<level<<" "<< id <<std::endl;
-						return true;
-					}
-					else if(_octree[level].back() > id)
-					{
-						std::cout<<"=======>   ERROR: insert index in order "<< id <<" (in level "<<level<<") last inserted "<<_octree[level].back()<<std::endl;
-						throw;
-					}
-					else
-					{
-						_numCubes[level] += 1;
-						_octree[level].push_back(id);
-						_octree[level].push_back(id);
-					}
-				}
-				catch (...)
-				{
-					std::cerr<<"No enough memory aviable"<<std::endl;
-					throw;
-				}
-
-				return false;
-			}
-
-		public:
-			octree(int nLevels, int maxLevel, float iso)
-			{
-
-				_octree		= new std::vector<index_node_t>[maxLevel + 1];
-				_numCubes	= new int[maxLevel + 1];	
-				bzero(_numCubes, (maxLevel + 1)*sizeof(int));
-
-				_iso		= iso;
-				_maxLevel	= maxLevel;
-				_nLevels	= nLevels;
-				_maxHeight	= 0;
-			}
-
-			~octree()
-			{
-				delete[] _octree;
-				delete[] _numCubes;
-			}
-
-			void addVoxel(index_node_t id)
-			{
-				try
-				{
-					_lock.set();
-					_lastLevel.push_back(id);
-					_lock.unset();
-				}
-				catch (...)
-				{
-					std::cerr<<"No enough memory aviable"<<std::endl;
-					throw;
-				}
-			}
-
-			void completeOctree()
-			{
-				std::sort(_lastLevel.begin(), _lastLevel.end());
-				for (std::vector<index_node_t>::iterator it=_lastLevel.begin(); it!=_lastLevel.end(); ++it)
-				{
-					index_node_t id = *it;
-					for(int i=_maxLevel; i>=0; i--)
-					{
-						if (_addElement(id, i))
-							break;
-						id >>= 3;
-					}
-				}
-				_lastLevel.clear();
-			}
-
-			void reportHeight(int height)
-			{
-				if (_maxHeight < height)
-					_maxHeight = height;
-			}
-
-			float getIso()
-			{
-				return _iso;
-			}
-
-			int getMaxHeight()
-			{
-				return _maxHeight; 
-			}
-
-			int getSize()
-			{
-				int size = (2*(_maxLevel+1) + 1)*sizeof(int);
-
-				for(int i=0; i<=_maxLevel; i++)
-					size +=_octree[i].size()*sizeof(index_node_t); 
-
-				return size;
-			}
-
-			void writeToFile(std::ofstream * file)
-			{
-				file->write((char*)&_maxHeight, sizeof(int));
-				file->write((char*)_numCubes, (_maxLevel+1)*sizeof(int));
-				for(int i=0; i<=_maxLevel; i++)
-				{
-					int s = _octree[i].size();
-					file->write((char*)&s, sizeof(int));
-				}
-
-				for(int i=0; i<=_maxLevel; i++)
-				{
-					file->write((char*)_octree[i].data(), _octree[i].size()*sizeof(index_node_t));
-				}
-			}
-
-			void printTree()
-			{
-				std::cout<<"Isosurface "<<_iso<<std::endl;
-				std::cout<<"Maximum height "<<_maxHeight<<std::endl;
-				for(int i=_maxLevel; i>=0; i--)
-				{
-					std::vector<index_node_t>::iterator it;
-
-					std::cout	<<"Level: "<<i<<" num cubes "<<_numCubes[i]<<" size "<<_octree[i].size()<<" porcentaje "<<100.0f - ((_octree[i].size()*100.0f)/(float)_numCubes[i])
-								<<" cube dimension "<<pow(2,_nLevels-i)<<"^3 "<<" memory needed for level "<< (_numCubes[i]*pow(pow(2,_nLevels-i),3)*sizeof(float))/1024.0f/1024.0f<<" MB"<<std::endl;
-					for ( it=_octree[i].begin() ; it != _octree[i].end(); it++ )
-					{
-						std::cout << "From " << *it;
-						it++;
-						std::cout << " to " << *it<<std::endl;
-					}
-				}
-			}
-	};
 
 	inline index_node_t dilateInteger(index_node_t x)
 	{
@@ -249,6 +83,204 @@ namespace eqMivt
 		return minBox;
 
 	}
+
+	class octree
+	{
+		private: 
+			lunchbox::Lock				_lock;
+			std::vector<index_node_t> *	_octree;
+			int		*					_numCubes;
+			int							_maxHeight;
+			int							_maxLevel;
+			int							_nLevels;
+			float						_iso;
+			int							_numElements;
+			std::string					_nameFile;
+			std::ofstream				_tempFile;
+
+			bool _addElement(index_node_t id, int level)
+			{
+				int size = _octree[level].size();
+
+				try
+				{
+					// Firts
+					if (size == 0)
+					{
+						_numCubes[level] = 1;
+						_octree[level].push_back(id);
+						_octree[level].push_back(id);
+					}
+					else if (_octree[level].back() == (id - (index_node_t)1))
+					{
+						_numCubes[level] += 1;
+						_octree[level][size-1] = id;
+					}
+					else if(_octree[level].back() == id)
+					{
+						//std::cout<<"repetido in level "<<level<<" "<< id <<std::endl;
+						return true;
+					}
+					else if(_octree[level].back() > id)
+					{
+						std::cout<<"=======>   ERROR: insert index in order "<< id <<" (in level "<<level<<") last inserted "<<_octree[level].back()<<std::endl;
+						throw;
+					}
+					else
+					{
+						_numCubes[level] += 1;
+						_octree[level].push_back(id);
+						_octree[level].push_back(id);
+					}
+				}
+				catch (...)
+				{
+					std::cerr<<"No enough memory aviable"<<std::endl;
+					throw;
+				}
+
+				return false;
+			}
+
+
+		public:
+			octree(int nLevels, int maxLevel, float iso)
+			{
+
+				_octree		= new std::vector<index_node_t>[maxLevel + 1];
+				_numCubes	= new int[maxLevel + 1];	
+				bzero(_numCubes, (maxLevel + 1)*sizeof(int));
+				_numElements = 0;
+
+				_iso		= iso;
+				_maxLevel	= maxLevel;
+				_nLevels	= nLevels;
+				_maxHeight	= 0;
+
+				std::ostringstream convert;
+				convert <<rand() <<nLevels << maxLevel << iso << ".tmp";
+				_nameFile = convert.str();
+
+				_tempFile.open(_nameFile.c_str(), std::ofstream::binary | std::ofstream::trunc);
+			}
+
+			~octree()
+			{
+				remove(_nameFile.c_str());
+				if (_octree != 0)
+					delete[] _octree;
+				if (_numCubes != 0)
+					delete[] _numCubes;
+			}
+
+			void completeOctree()
+			{
+				try
+				{
+					_tempFile.close();
+					std::vector<index_node_t> lastLevel;
+					std::ifstream File(_nameFile.c_str(), std::ifstream::binary);
+
+					int dim = exp2(_nLevels - _maxLevel);
+
+					for(int i=0; i< _numElements; i++)
+					{
+						index_node_t a = 0;
+						File.read((char*) &a, sizeof(index_node_t));
+						lastLevel.push_back(a);
+					}
+
+					std::sort(lastLevel.begin(), lastLevel.end());
+					for (std::vector<index_node_t>::iterator it=lastLevel.begin(); it!=lastLevel.end(); ++it)
+					{
+						index_node_t id = *it;
+
+						vmml::vector<3, int> coorFinishStart = getMinBoxIndex(id, _maxLevel, _nLevels) + (vmml::vector<3, int>(1,1,1)*dim);
+						if (coorFinishStart.y() > _maxHeight)
+							_maxHeight = coorFinishStart.y();
+						//std::cout<<coorFinishStart.y()<<" "<<_maxHeight<<std::endl;
+
+						for(int i=_maxLevel; i>=0; i--)
+						{
+							if (_addElement(id, i))
+								break;
+							id >>= 3;
+						}
+					}
+					lastLevel.clear();
+
+				}
+				catch (...)
+				{
+					std::cerr<<"Not enough memory aviable"<<std::endl;
+					throw;
+				}
+			}
+
+			void addVoxel(index_node_t id)
+			{
+				_lock.set();
+				_numElements++;
+				_tempFile.write((char*)&id, sizeof(index_node_t));
+				_lock.unset();
+			}
+
+			float getIso()
+			{
+				return _iso;
+			}
+
+			int getSize()
+			{
+				int size = (2*(_maxLevel+1) + 1)*sizeof(int);
+
+				for(int i=0; i<=_maxLevel; i++)
+					size +=_octree[i].size()*sizeof(index_node_t); 
+
+				return size;
+			}
+
+			void writeToFile(std::ofstream * file)
+			{
+
+				file->write((char*)&_maxHeight, sizeof(int));
+				file->write((char*)_numCubes, (_maxLevel+1)*sizeof(int));
+				for(int i=0; i<=_maxLevel; i++)
+				{
+					int s = _octree[i].size();
+					file->write((char*)&s, sizeof(int));
+				}
+
+				for(int i=0; i<=_maxLevel; i++)
+				{
+					file->write((char*)_octree[i].data(), _octree[i].size()*sizeof(index_node_t));
+				}
+				remove(_nameFile.c_str());
+				delete[] _octree; _octree = 0;
+				delete[] _numCubes; _numCubes = 0;
+
+			}
+
+			void printTree()
+			{
+				std::cout<<"Isosurface "<<_iso<<std::endl;
+				std::cout<<"Maximum height "<<_maxHeight<<std::endl;
+				for(int i=_maxLevel; i>=0; i--)
+				{
+					std::vector<index_node_t>::iterator it;
+
+					std::cout	<<"Level: "<<i<<" num cubes "<<_numCubes[i]<<" size "<<_octree[i].size()<<" porcentaje "<<100.0f - ((_octree[i].size()*100.0f)/(float)_numCubes[i])
+								<<" cube dimension "<<pow(2,_nLevels-i)<<"^3 "<<" memory needed for level "<< (_numCubes[i]*pow(pow(2,_nLevels-i),3)*sizeof(float))/1024.0f/1024.0f<<" MB"<<std::endl;
+					for ( it=_octree[i].begin() ; it != _octree[i].end(); it++ )
+					{
+						std::cout << "From " << *it;
+						it++;
+						std::cout << " to " << *it<<std::endl;
+					}
+				}
+			}
+	};
+
 
 	bool _checkIsosurface(int x, int y, int z, int dim, float * cube, float isosurface)
 	{
@@ -319,7 +351,6 @@ namespace eqMivt
 						vmml::vector<3, int> coorNodeStart = getMinBoxIndex(resultCPU[j], nodeLevel, nLevels);
 						vmml::vector<3, int> coorNodeFinish = coorNodeStart + dimNode - 1;
 						octrees[i]->addVoxel(resultCPU[j]);
-						octrees[i]->reportHeight(coorNodeFinish.y());
 					}
 				}
 			}
@@ -376,7 +407,6 @@ namespace eqMivt
 								checkNode[i] = false;
 								nodesToCheck--;
 								octrees[i]->addVoxel(id);
-								octrees[i]->reportHeight(coorNodeFinish.y());
 							}
 						}
 					}
@@ -421,19 +451,33 @@ namespace eqMivt
 		}
 
 		// offset from start
-		int desp =	5*sizeof(int) + realDim[0]*sizeof(float) + realDim[1]*sizeof(float) + realDim[2]*sizeof(float) +
-					numOctrees.size() * 9 *sizeof(int) + numO * sizeof(float) + numO*sizeof(int);
-		for(int i =0; i<numO; i++)
-		{
-			file.write((char*)&desp,sizeof(desp));
-			desp = octrees[i]->getSize(); 
-		}
+		int initDesp =	5*sizeof(int) + realDim[0]*sizeof(float) + realDim[1]*sizeof(float) + realDim[2]*sizeof(float) +
+					numOctrees.size() * 9 *sizeof(int) + numO * sizeof(float);
 
-		for(int i =0; i<numO; i++)
+		int desp	= 5*sizeof(int) + realDim[0]*sizeof(float) + realDim[1]*sizeof(float) + realDim[2]*sizeof(float) +
+						numOctrees.size() * 9 *sizeof(int) + numO * sizeof(float) + numO*sizeof(int);
+
+		int offsets[numO];
+		offsets[0] = desp;
+
+		for(int i=0; i<numO; i++)
 		{
+			file.seekp(initDesp, std::ios_base::beg);
+			file.write((char*)&desp, sizeof(desp));
+			initDesp += sizeof(int);
+
+			octrees[i]->completeOctree();	
+			desp = octrees[i]->getSize();
+			if (i < numO-1)
+				offsets[i+1] = desp;
+
+			file.seekp(offsets[0], std::ios_base::beg);
+			for(int d=1; d<=i; d++)
+				file.seekp(offsets[d], std::ios_base::cur);
+
 			octrees[i]->writeToFile(&file);
 		}
-
+	
 		file.close();	
 
 		return;
@@ -651,17 +695,11 @@ namespace eqMivt
 			if (useCUDA)
 				octreeConstructorDestroyCube(dataCubeGPU);
 
-			computinhClock.reset();
-			#pragma omp parallel for
-			for(int i=0; i<_octrees.size(); i++)
-				_octrees[i]->completeOctree();
-			double completeTime = computinhClock.getTimed();
-
 			for(int j=0;j<nO; j++)
 				octrees.push_back(_octrees[j]);
 
 			std::cout<<"Hard disk reading time: "<<readingTime/1000.0<<" seconds."<<std::endl;
-			std::cout<<"Computing time: "<<computingTime/1000.0<<" seconds, "<<"time in complete octree "<<completeTime/1000.0<<" seconds."<<std::endl;
+			std::cout<<"Computing time: "<<computingTime/1000.0<<" seconds"<<std::endl;
 		}
 
 		std::cout<<"Creating octree in file "<<octree_file<<std::endl;
