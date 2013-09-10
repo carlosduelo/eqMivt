@@ -44,6 +44,12 @@ class hdf5File : public FileManager
 
 		virtual void readCube(index_node_t index, float * cube, int levelCube, int nLevels, vmml::vector<3, int>    cubeDim, vmml::vector<3, int> cubeInc, vmml::vector<3, int> realCubeDim);
 
+		virtual void read(vmml::vector<3, int> start, vmml::vector<3, int> end, float * data);
+
+		virtual void addCubeToBuffer(index_node_t index, float * cube, int levelCube, int nLevels, vmml::vector<3, int>    cubeDim, vmml::vector<3, int> cubeInc, vmml::vector<3, int> realCubeDim);
+
+		virtual void readBufferedCubes();
+
 		virtual vmml::vector<3, int> getRealDimension();
 };
 }

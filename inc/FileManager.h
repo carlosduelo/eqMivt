@@ -39,8 +39,14 @@ class FileManager
 		virtual bool getxGrid(double ** xGrid) = 0;
 		virtual bool getyGrid(double ** yGrid) = 0;
 		virtual bool getzGrid(double ** zGrid) = 0;
+
+		virtual void addCubeToBuffer(index_node_t index, float * cube, int levelCube, int nLevels, vmml::vector<3, int>    cubeDim, vmml::vector<3, int> cubeInc, vmml::vector<3, int> realCubeDim) = 0;
+
+		virtual void readBufferedCubes() = 0;
 		
 		virtual void readCube(index_node_t index, float * cube, int levelCube, int nLevels, vmml::vector<3, int>    cubeDim, vmml::vector<3, int> cubeInc, vmml::vector<3, int> realCubeDim) = 0;
+
+		virtual void read(vmml::vector<3, int> start, vmml::vector<3, int> end, float * data) = 0;
 
 		virtual vmml::vector<3, int> getRealDimension() = 0;
 

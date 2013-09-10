@@ -265,7 +265,11 @@ int main( const int argc, char ** argv)
 	for(int i=0; i<nodes.size(); i+=2)
 	{
 		offsets.push_back(offset);
+		#if 1
+		offset = nodes[i+1] - nodes[i] + 1;
+		#else
 		offset += nodes[i+1] - nodes[i] + 1;
+		#endif
 	}
 	#if 0
 	for(int i=0; i<nodes.size(); i+=2)

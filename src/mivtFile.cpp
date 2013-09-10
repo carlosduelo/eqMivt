@@ -128,6 +128,15 @@ bool mivtFile::getzGrid(double ** zGrid)
 	return false;
 }
 
+void mivtFile::read(vmml::vector<3, int> start, vmml::vector<3, int> end, float * data)
+{
+	int dim[3] = {abs(start.x()-end.x()),abs(start.y()-end.y()),abs(start.z()-end.z())};
+
+	bzero(data, dim[0]*dim[1]*dim[2]*sizeof(float));
+
+	std::cerr<<"Not implemented"<<std::endl;
+}
+
 inline bool checkRange(index_node_t * elements, index_node_t index, int min, int max)
 {
 	return  index == elements[min] 	|| 
@@ -135,7 +144,7 @@ inline bool checkRange(index_node_t * elements, index_node_t index, int min, int
 		(elements[min] < index && elements[max] > index);
 }
 
-int mivtFile::getOffset(index_node_t index)
+int mivtFile::seekFile(index_node_t index)
 {
 	bool end = false;
 	bool found = false;
@@ -159,7 +168,19 @@ int mivtFile::getOffset(index_node_t index)
 
 	if (found)
 	{
-		return _offsets[middle/2] + (index - _nodes[middle]);
+#if 1
+		_file.seekg(_startOffset, std::ios_base::beg);
+
+		for(int i=1; i<=(middle/2); i++)
+			_file.seekg(_sizeCube*_offsets[i]*sizeof(float), std::ios_base::cur);
+
+		_file.seekg(_sizeCube*(index - _nodes[middle])*sizeof(float), std::ios_base::cur);
+#else
+		int offset = _offsets[middle/2] + (index - _nodes[middle]);
+		_file.seekg(_startOffset + offset*_sizeCube*sizeof(float), std::ios_base::beg);
+#endif
+
+		return 0;
 	}
 	else
 		return -1;
@@ -195,9 +216,8 @@ void mivtFile::readCube(index_node_t index, float * cube, int levelCube, int nLe
 		{
 			index_node_t idSearch = coordinateToIndex(coord, _levelCube, _nLevels); 
 			
-			int offset = getOffset(idSearch);
+			int offset = seekFile(idSearch);
 
-			_file.seekg(_startOffset + _sizeCube*offset*sizeof(float), std::ios_base::beg);
 			_file.read((char*) cube, _sizeCube*sizeof(float));
 
 			#ifndef DEBUG
@@ -220,10 +240,9 @@ void mivtFile::readCube(index_node_t index, float * cube, int levelCube, int nLe
 		{
 			index_node_t idSearch = coordinateToIndex(coord, _levelCube, _nLevels); 
 			
-			int offset = getOffset(idSearch);
+			int offset = seekFile(idSearch);
 
 			float * auxCube = new float[_sizeCube];
-			_file.seekg(_startOffset + _sizeCube*offset*sizeof(float), std::ios_base::beg);
 			_file.read((char*) auxCube, _sizeCube*sizeof(float));
 
 			#ifndef DEBUG
@@ -265,5 +284,29 @@ void mivtFile::readCube(index_node_t index, float * cube, int levelCube, int nLe
 vmml::vector<3, int> mivtFile::getRealDimension()
 {
 	return _realDimVolume; 
+}
+
+void mivtFile::addCubeToBuffer(index_node_t index, float * cube, int levelCube, int nLevels, vmml::vector<3, int>    cubeDim, vmml::vector<3, int> cubeInc, vmml::vector<3, int> realCubeDim)
+{
+	cubeBuffer_t c = {};
+	c.cube = cube;
+	c.nLevels = nLevels;
+	c.levelCube = levelCube;
+	c.id = index;
+	c.cubeDim = cubeDim;
+	c.cubeInc = cubeInc;
+	c.realCubeDim = realCubeDim;
+	
+	_buffer.push_back(c);
+}
+
+void mivtFile::readBufferedCubes()
+{
+	for (std::vector<cubeBuffer_t>::iterator it = _buffer.begin() ; it != _buffer.end(); ++it)
+	{
+		readCube(it->id, it->cube, it->levelCube, it->nLevels, it->cubeDim, it->cubeInc, it->realCubeDim);
+	}
+
+	_buffer.clear();
 }
 }

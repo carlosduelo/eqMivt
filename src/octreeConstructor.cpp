@@ -90,10 +90,13 @@ namespace eqMivt
 			lunchbox::Lock				_lock;
 			std::vector<index_node_t> *	_octree;
 			int		*					_numCubes;
+			int							_dim;
 			int							_maxHeight;
 			int							_maxLevel;
 			int							_nLevels;
 			float						_iso;
+			vmml::vector<3, int>		_start;
+			vmml::vector<3, int>		_finish;
 			int							_numElements;
 			std::string					_nameFile;
 			std::ofstream				_tempFile;
@@ -144,7 +147,7 @@ namespace eqMivt
 
 
 		public:
-			octree(int nLevels, int maxLevel, float iso)
+			octree(int nLevels, int maxLevel, float iso, vmml::vector<3, int> start, vmml::vector<3, int> finish)
 			{
 
 				_octree		= new std::vector<index_node_t>[maxLevel + 1];
@@ -156,6 +159,10 @@ namespace eqMivt
 				_maxLevel	= maxLevel;
 				_nLevels	= nLevels;
 				_maxHeight	= 0;
+				_dim = exp2(_nLevels - _maxLevel);
+
+				_start = start;
+				_finish = finish;
 
 				std::ostringstream convert;
 				convert <<rand() <<nLevels << maxLevel << iso << ".tmp";
@@ -181,8 +188,6 @@ namespace eqMivt
 					std::vector<index_node_t> lastLevel;
 					std::ifstream File(_nameFile.c_str(), std::ifstream::binary);
 
-					int dim = exp2(_nLevels - _maxLevel);
-
 					for(int i=0; i< _numElements; i++)
 					{
 						index_node_t a = 0;
@@ -191,14 +196,14 @@ namespace eqMivt
 					}
 
 					std::sort(lastLevel.begin(), lastLevel.end());
+					lastLevel.erase( std::unique( lastLevel.begin(), lastLevel.end() ), lastLevel.end() );
 					for (std::vector<index_node_t>::iterator it=lastLevel.begin(); it!=lastLevel.end(); ++it)
 					{
 						index_node_t id = *it;
 
-						vmml::vector<3, int> coorFinishStart = getMinBoxIndex(id, _maxLevel, _nLevels) + (vmml::vector<3, int>(1,1,1)*dim);
+						vmml::vector<3, int> coorFinishStart = getMinBoxIndex(id, _maxLevel, _nLevels) + (vmml::vector<3, int>(1,1,1)*_dim);
 						if (coorFinishStart.y() > _maxHeight)
 							_maxHeight = coorFinishStart.y();
-						//std::cout<<coorFinishStart.y()<<" "<<_maxHeight<<std::endl;
 
 						for(int i=_maxLevel; i>=0; i--)
 						{
@@ -606,7 +611,7 @@ namespace eqMivt
 
 			for(int j=0;j<nO; j++)
 			{
-				_octrees[j] = new octree(nLevels, mxLevel, isos[j]);
+				_octrees[j] = new octree(nLevels, mxLevel, isos[j], start, finish);
 				std::cout<<isos[j]<<" ";
 			}
 			std::cout<<std::endl;

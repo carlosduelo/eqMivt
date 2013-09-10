@@ -17,6 +17,18 @@ namespace eqMivt
 {
 class mivtFile : public FileManager
 {
+	typedef struct
+	{
+		float *			cube;
+		int				nLevels;
+		int				levelCube;
+		vmml::vector<3, int>    cubeDim;
+		vmml::vector<3, int>	cubeInc;
+		vmml::vector<3, int>	realCubeDim;
+		index_node_t	id;
+
+	} cubeBuffer_t;
+
 	private:
 		unsigned char			_md5sum[MD5_DIGEST_LENGTH];
 		vmml::vector<3, int>	_realDimVolume;
@@ -34,7 +46,9 @@ class mivtFile : public FileManager
 		int				*		_offsets;
 		int						_startOffset;
 
-		int getOffset(index_node_t index);
+		std::vector<cubeBuffer_t>		_buffer;
+
+		int seekFile(index_node_t index);
 
 	public:
 
@@ -49,6 +63,12 @@ class mivtFile : public FileManager
 		virtual bool getzGrid(double ** zGrid);
 
 		virtual void readCube(index_node_t index, float * cube, int levelCube, int nLevels, vmml::vector<3, int>    cubeDim, vmml::vector<3, int> cubeInc, vmml::vector<3, int> realCubeDim);
+
+		virtual void read(vmml::vector<3, int> start, vmml::vector<3, int> end, float * data);
+
+		virtual void addCubeToBuffer(index_node_t index, float * cube, int levelCube, int nLevels, vmml::vector<3, int>    cubeDim, vmml::vector<3, int> cubeInc, vmml::vector<3, int> realCubeDim);
+
+		virtual void readBufferedCubes();
 
 		virtual vmml::vector<3, int> getRealDimension();
 };
