@@ -54,7 +54,7 @@ bool cubeCache::push(visibleCube_t * visibleCubes, int *indexCube, int * num, in
 				it = _insertedCubes[threadID].find(idCube);
 				if (it == _insertedCubes[threadID].end()) // If does not exist, do not push again
 				{
-					float * cubeData = _cache.push_cube(idCube, stream);
+					float * cubeData = _cache.push_cubeBuffer(idCube, stream);
 
 					visibleCubes[index].cubeID  = idCube;
 					visibleCubes[index].state   = cubeData == 0 ? NOCACHED : CACHED;
@@ -80,6 +80,8 @@ bool cubeCache::push(visibleCube_t * visibleCubes, int *indexCube, int * num, in
 			nextIndex++;
 		}
 	}
+
+	_cache.readBufferCubes(stream);
 
 	*num = nextIndex;
 	return nextIndex != 0;

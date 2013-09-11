@@ -40,6 +40,8 @@ class cubeCacheCPU
 		int				_maxElements;
 		float		*	_cacheData;
 
+		std::vector<index_node_t> _pendingCubes;
+
 		// Acces to file
 		FileManager	*	_fileManager;
 
@@ -61,6 +63,12 @@ class cubeCacheCPU
 		int						getnLevels(){ return _nLevels; }
 
 		float *  push_cube(index_node_t  idCube);
+
+		float *  push_cubeBuffered(index_node_t  idCube, bool * pending);
+
+		float * getPointerCube(index_node_t  idCube);
+
+		void	readBufferCubes();
 
 		void pop_cube(index_node_t idCube);
 };

@@ -229,4 +229,90 @@ void cubeCacheCPU::pop_cube(index_node_t idCube)
 	}
 	_lock.unset();
 }
+
+float * cubeCacheCPU::getPointerCube(index_node_t  idCube)
+{
+	_lock.set();
+
+	float * d = 0;
+	boost::unordered_map<index_node_t, NodeLinkedList *>::iterator it;
+	// Find the cube in the CPU cache
+	it = _indexStored.find(idCube);
+	if ( it != _indexStored.end() ) // If exist
+		d =  _cacheData + it->second->element*_offsetCube;
+
+	_lock.unset();
+	return d;
+}
+
+
+float *  cubeCacheCPU::push_cubeBuffered(index_node_t  idCube, bool * pending)
+{
+	boost::unordered_map<index_node_t, NodeLinkedList *>::iterator it;
+
+	if (idCube < _minIndex || idCube > _maxIndex)
+	{
+		LBERROR<<"Cache CPU: Trying to push a worng index cube "<<idCube<<std::endl;
+		return 0;
+	}
+
+	_lock.set();
+
+	// Find the cube in the CPU cache
+	it = _indexStored.find(idCube);
+	if ( it != _indexStored.end() ) // If exist
+	{
+		NodeLinkedList * node = it->second;
+
+		_queuePositions->moveToLastPosition(node);
+		_queuePositions->addReference(node);
+
+		if (std::find(_pendingCubes.begin(), _pendingCubes.end(), idCube) != _pendingCubes.end())
+			*pending = true;
+		else
+			*pending = false;
+
+		_lock.unset();
+		return _cacheData + it->second->element*_offsetCube;
+			
+	}
+	else // If not exists
+	{
+		index_node_t 	 removedCube = (index_node_t)0;
+		NodeLinkedList * node = _queuePositions->getFirstFreePosition(idCube, &removedCube);
+
+		if (node != 0)
+		{
+			_indexStored.insert(std::pair<int, NodeLinkedList *>(idCube, node));
+			if (removedCube!= (index_node_t)0)
+				_indexStored.erase(_indexStored.find(removedCube));
+
+			unsigned pos   = node->element;
+
+			_queuePositions->moveToLastPosition(node);
+			_queuePositions->addReference(node);
+
+			_fileManager->addCubeToBuffer(idCube, _cacheData+ pos*_offsetCube, _levelCube, _nLevels, _cubeDim, _cubeInc, _realcubeDim);
+
+			_pendingCubes.push_back(idCube);
+			*pending = true;
+			_lock.unset();
+			return _cacheData+ pos*_offsetCube;
+		}
+		else // there is no free slot
+		{
+			_lock.unset();
+			return 0; 
+		}
+	}
+}
+
+void	cubeCacheCPU::readBufferCubes()
+{
+	_lock.set();
+	_fileManager->readBufferedCubes();
+	_pendingCubes.clear();
+	_lock.unset();
+}
+
 }

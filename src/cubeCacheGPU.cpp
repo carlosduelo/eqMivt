@@ -295,4 +295,198 @@ void  cubeCacheGPU::pop_cube(index_node_t idCube)
 
 	_lock.unset();
 }
+
+float * cubeCacheGPU::push_cubeBuffer(index_node_t idCube, cudaStream_t stream)
+{
+	boost::unordered_map<index_node_t, NodeLinkedList *>::iterator it;
+	if (idCube < _minIndex || idCube > _maxIndex)
+	{
+		LBERROR<<"Cache GPU: Trying to push a worng index cube "<<idCube<<std::endl;
+		return 0;
+	}
+
+	_lock.set();
+
+	float * cube = 0;
+
+	// Find the cube in the GPU cache
+	it = _indexStored.find(idCube);
+	if ( it != _indexStored.end() ) // If exist
+	{
+		NodeLinkedList * node = it->second;
+
+		unsigned pos    = node->element;
+		cube    = _cacheData + pos*_offsetCube;
+
+		_queuePositions->moveToLastPosition(node);
+		_queuePositions->addReference(node);
+	}
+	else // If not exists
+	{
+		index_node_t     removedCube = (index_node_t)0;
+		NodeLinkedList * node = _queuePositions->getFirstFreePosition(idCube, &removedCube);
+
+		if (node != 0)
+		{
+			index_node_t idCubeCPU = idCube >> 3*(_levelCube - _cpuCache->getLevelCube()); 
+			// Search in cpu cache and check as locked
+			bool pending = true;
+			float * pCube = _cpuCache->push_cubeBuffered(idCubeCPU, &pending);
+
+			// search on CPU cache
+			if (pCube != 0)
+			{
+				_indexStored.insert(std::pair<int, NodeLinkedList *>(idCube, node));
+				if (removedCube!= (index_node_t)0)
+					_indexStored.erase(_indexStored.find(removedCube));
+
+				_queuePositions->moveToLastPosition(node);
+				_queuePositions->addReference(node);
+
+				if (pending)
+				{
+					_pendingCubes.push_back(idCube);
+				}
+				else
+				{
+					
+					unsigned pos   = node->element;
+					cube    = _cacheData + pos*_offsetCube;
+					if (idCube == idCubeCPU)
+					{
+						if (cudaSuccess != cudaMemcpyAsync((void*) cube, (void*) pCube, _offsetCube*sizeof(float), cudaMemcpyHostToDevice, stream))
+						{
+							LBERROR<<"Cache GPU: error copying to a device: "<<cudaGetErrorString(cudaGetLastError()) <<" "<<cube<<" "<<pCube<<" "<<_offsetCube<<std::endl;
+							throw;
+						}
+					}
+					else
+					{
+						vmml::vector<3, int> coord = getMinBoxIndex2(idCube, _levelCube, _nLevels);
+						vmml::vector<3, int> coordC = getMinBoxIndex2(idCubeCPU, _cpuCache->getLevelCube(), _nLevels);
+						coord -= coordC;
+						vmml::vector<3, int> realDimCPU = _cpuCache->getRealCubeDim();
+
+						cudaMemcpy3DParms myParms = {0};
+						myParms.srcPtr = make_cudaPitchedPtr((void*)pCube, realDimCPU.z()*sizeof(float), realDimCPU.x(), realDimCPU.y()); 
+						myParms.dstPtr = make_cudaPitchedPtr((void*)cube, _realcubeDim.z()*sizeof(float), _realcubeDim.x(), _realcubeDim.y()); 
+						myParms.extent = make_cudaExtent(_realcubeDim.x()*sizeof(float), _realcubeDim.y(), _realcubeDim.z());
+						myParms.dstPos = make_cudaPos(0,0,0);
+						myParms.srcPos = make_cudaPos(coord.z()*sizeof(float), coord.y(), coord.x());
+						myParms.kind = cudaMemcpyHostToDevice;
+
+						if (cudaSuccess != cudaMemcpy3DAsync(&myParms, stream))
+						{
+							LBERROR<<"Cache GPU: error copying to a device: "<<cudaGetErrorString(cudaGetLastError()) <<" "<<cube<<" "<<pCube<<" "<<_offsetCube<<std::endl;
+							throw;
+						}
+					}
+
+					// Unlock the cube on cpu cache
+					callback_struct_t * callBackData = new callback_struct_t;
+					callBackData->cpuCache = _cpuCache;
+					callBackData->idCube = idCubeCPU;
+
+					if ( cudaSuccess != cudaStreamAddCallback(stream, unLockCPUCube, (void*)callBackData, 0))
+					{
+						LBERROR<<"Error making cudaCallback"<<std::endl;
+						throw;
+					}
+				}
+
+			}
+		}
+	}
+
+	_lock.unset();
+
+	return cube;
+}
+
+void	cubeCacheGPU::readBufferCubes(cudaStream_t stream)
+{
+	_lock.set();
+
+	_cpuCache->readBufferCubes();
+
+	for (std::vector<index_node_t>::iterator it =_pendingCubes.begin() ; it != _pendingCubes.end(); ++it)
+	{
+		index_node_t idCube = *it;
+		index_node_t idCubeCPU = idCube >> 3*(_levelCube - _cpuCache->getLevelCube());
+
+		float * cube = 0;
+
+		boost::unordered_map<index_node_t, NodeLinkedList *>::iterator itC;
+		itC = _indexStored.find(idCube);
+		if ( itC != _indexStored.end() ) // If exist
+		{
+			NodeLinkedList * node = itC->second;
+
+			unsigned pos    = node->element;
+			cube    = _cacheData + pos*_offsetCube;
+		}
+		else // If not exists
+		{
+			std::cerr<<"Error: reading buffer cubes error"<<std::endl;
+			throw;
+		}
+
+		//std::cout<<idCube<<" "<<cube<<std::endl;
+
+		float * pCube = _cpuCache->getPointerCube(idCubeCPU);
+
+		if (pCube != 0)
+		{
+				if (idCube == idCubeCPU)
+				{
+					if (cudaSuccess != cudaMemcpyAsync((void*) cube, (void*) pCube, _offsetCube*sizeof(float), cudaMemcpyHostToDevice, stream))
+					{
+						LBERROR<<"Cache GPU: error copying to a device: "<<cudaGetErrorString(cudaGetLastError()) <<" "<<cube<<" "<<pCube<<" "<<_offsetCube<<std::endl;
+						throw;
+					}
+				}
+				else
+				{
+					vmml::vector<3, int> coord = getMinBoxIndex2(idCube, _levelCube, _nLevels);
+					vmml::vector<3, int> coordC = getMinBoxIndex2(idCubeCPU, _cpuCache->getLevelCube(), _nLevels);
+					coord -= coordC;
+					vmml::vector<3, int> realDimCPU = _cpuCache->getRealCubeDim();
+
+					cudaMemcpy3DParms myParms = {0};
+					myParms.srcPtr = make_cudaPitchedPtr((void*)pCube, realDimCPU.z()*sizeof(float), realDimCPU.x(), realDimCPU.y()); 
+					myParms.dstPtr = make_cudaPitchedPtr((void*)cube, _realcubeDim.z()*sizeof(float), _realcubeDim.x(), _realcubeDim.y()); 
+					myParms.extent = make_cudaExtent(_realcubeDim.x()*sizeof(float), _realcubeDim.y(), _realcubeDim.z());
+					myParms.dstPos = make_cudaPos(0,0,0);
+					myParms.srcPos = make_cudaPos(coord.z()*sizeof(float), coord.y(), coord.x());
+					myParms.kind = cudaMemcpyHostToDevice;
+
+					if (cudaSuccess != cudaMemcpy3DAsync(&myParms, stream))
+					{
+						LBERROR<<"Cache GPU: error copying to a device: "<<cudaGetErrorString(cudaGetLastError()) <<" "<<cube<<" "<<pCube<<" "<<_offsetCube<<std::endl;
+						throw;
+					}
+				}
+
+				// Unlock the cube on cpu cache
+				callback_struct_t * callBackData = new callback_struct_t;
+				callBackData->cpuCache = _cpuCache;
+				callBackData->idCube = idCubeCPU;
+
+				if ( cudaSuccess != cudaStreamAddCallback(stream, unLockCPUCube, (void*)callBackData, 0))
+				{
+					LBERROR<<"Error making cudaCallback"<<std::endl;
+					throw;
+				}
+		}
+		else
+		{
+			std::cerr<<"Error: reading buffer cubes error"<<std::endl;
+			throw;
+		}
+	}
+
+	_pendingCubes.clear();
+
+	_lock.unset();
+}
 }

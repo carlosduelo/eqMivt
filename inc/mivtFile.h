@@ -17,7 +17,7 @@ namespace eqMivt
 {
 class mivtFile : public FileManager
 {
-	typedef struct
+	struct cubeBuffer_t 
 	{
 		float *			cube;
 		int				nLevels;
@@ -27,7 +27,11 @@ class mivtFile : public FileManager
 		vmml::vector<3, int>	realCubeDim;
 		index_node_t	id;
 
-	} cubeBuffer_t;
+		bool operator < (const cubeBuffer_t& str) const
+		{
+			return id < str.id;
+		}
+	};
 
 	private:
 		unsigned char			_md5sum[MD5_DIGEST_LENGTH];

@@ -302,6 +302,8 @@ void mivtFile::addCubeToBuffer(index_node_t index, float * cube, int levelCube, 
 
 void mivtFile::readBufferedCubes()
 {
+
+	std::sort(_buffer.begin(), _buffer.end());
 	for (std::vector<cubeBuffer_t>::iterator it = _buffer.begin() ; it != _buffer.end(); ++it)
 	{
 		readCube(it->id, it->cube, it->levelCube, it->nLevels, it->cubeDim, it->cubeInc, it->realCubeDim);

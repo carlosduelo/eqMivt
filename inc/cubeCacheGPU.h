@@ -38,6 +38,8 @@ class cubeCacheGPU
 
 		LinkedList      *       _queuePositions;
 
+		std::vector<index_node_t> _pendingCubes;
+
 		uint32_t				_device;
 		int                     _maxElements;
 		float           *       _cacheData;
@@ -59,6 +61,10 @@ class cubeCacheGPU
 		bool reSize(vmml::vector<3, int> cubeDim, int cubeInc, int levelCube, int numElements);
 
 		float * push_cube(index_node_t idCube, cudaStream_t stream);
+
+		float * push_cubeBuffer(index_node_t idCube, cudaStream_t stream);
+
+		void	readBufferCubes(cudaStream_t stream);
 
 		void  pop_cube(index_node_t idCube);
 };
