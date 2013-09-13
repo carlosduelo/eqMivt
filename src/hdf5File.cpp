@@ -663,13 +663,34 @@ void hdf5File::read(vmml::vector<3, int> start, vmml::vector<3, int> end, float 
 	#endif
 }
 
+void hdf5File::cubeBuffer_t::copy()
+{
+}
+
 void hdf5File::addCubeToBuffer(index_node_t index, float * cube, int levelCube, int nLevels, vmml::vector<3, int>    cubeDim, vmml::vector<3, int> cubeInc, vmml::vector<3, int> realCubeDim)
 {
+	cubeBuffer_t c = {};
+	c.cube = cube;
+	c.nLevels = nLevels;
+	c.levelCube = levelCube;
+	c.id = index;
+	c.cubeDim = cubeDim;
+	c.cubeInc = cubeInc;
+	c.realCubeDim = realCubeDim;
+	
+	_buffer.push_back(c);
 	return;
 }
 
 void hdf5File::readBufferedCubes()
 {
+	std::sort(_buffer.begin(), _buffer.end());
+	for (std::vector<cubeBuffer_t>::iterator it = _buffer.begin() ; it != _buffer.end(); ++it)
+	{
+		readCube(it->id, it->cube, it->levelCube, it->nLevels, it->cubeDim, it->cubeInc, it->realCubeDim);
+	}
+
+	_buffer.clear();
 	return;
 }
 

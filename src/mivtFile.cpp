@@ -246,7 +246,7 @@ void mivtFile::readCube(index_node_t index, float * cube, int levelCube, int nLe
 			_file.read((char*) auxCube, _sizeCube*sizeof(float));
 
 			#ifndef DEBUG
-			std::cout<<index<<" "<<idSearch<<" "<<coord<<" "<<offset<<" "<<_startOffset + _sizeCube*offset*sizeof(float)<<std::endl;
+			std::cout<<index<<" "<<idSearch<<" "<<coord<<std::endl;
 			
 			if (_file)
 				std::cout << "all characters read successfully.";

@@ -199,7 +199,7 @@ float * cubeCacheGPU::push_cube(index_node_t idCube, cudaStream_t stream)
 		cube    = _cacheData + pos*_offsetCube;
 
 		_queuePositions->moveToLastPosition(node);
-		_queuePositions->addReference(node);
+		_queuePositions->addReference(node, idCube);
 	}
 	else // If not exists
 	{
@@ -220,7 +220,7 @@ float * cubeCacheGPU::push_cube(index_node_t idCube, cudaStream_t stream)
 					_indexStored.erase(_indexStored.find(removedCube));
 
 				_queuePositions->moveToLastPosition(node);
-				_queuePositions->addReference(node);
+				_queuePositions->addReference(node, idCube);
 
 				unsigned pos   = node->element;
 				cube    = _cacheData + pos*_offsetCube;
@@ -319,7 +319,7 @@ float * cubeCacheGPU::push_cubeBuffer(index_node_t idCube, cudaStream_t stream)
 		cube    = _cacheData + pos*_offsetCube;
 
 		_queuePositions->moveToLastPosition(node);
-		_queuePositions->addReference(node);
+		_queuePositions->addReference(node, idCube);
 	}
 	else // If not exists
 	{
@@ -341,7 +341,9 @@ float * cubeCacheGPU::push_cubeBuffer(index_node_t idCube, cudaStream_t stream)
 					_indexStored.erase(_indexStored.find(removedCube));
 
 				_queuePositions->moveToLastPosition(node);
-				_queuePositions->addReference(node);
+				_queuePositions->addReference(node, idCube);
+				unsigned pos   = node->element;
+				cube    = _cacheData + pos*_offsetCube;
 
 				if (pending)
 				{
@@ -350,8 +352,6 @@ float * cubeCacheGPU::push_cubeBuffer(index_node_t idCube, cudaStream_t stream)
 				else
 				{
 					
-					unsigned pos   = node->element;
-					cube    = _cacheData + pos*_offsetCube;
 					if (idCube == idCubeCPU)
 					{
 						if (cudaSuccess != cudaMemcpyAsync((void*) cube, (void*) pCube, _offsetCube*sizeof(float), cudaMemcpyHostToDevice, stream))

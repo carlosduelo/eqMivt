@@ -41,7 +41,7 @@ class LinkedList
 		NodeLinkedList * 	moveToLastPosition(NodeLinkedList * node);	
 
 		void 			removeReference(NodeLinkedList * node);
-		void 			addReference(NodeLinkedList * node);
+		void 			addReference(NodeLinkedList * node, index_node_t idCube);
 };
 }
 #endif /*EQ_MIVT_LINKED_LIST_H*/

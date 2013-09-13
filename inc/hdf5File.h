@@ -17,6 +17,24 @@ namespace eqMivt
 {
 class hdf5File : public FileManager
 {
+	struct cubeBuffer_t 
+	{
+		float *			cube;
+		int				nLevels;
+		int				levelCube;
+		vmml::vector<3, int>    cubeDim;
+		vmml::vector<3, int>	cubeInc;
+		vmml::vector<3, int>	realCubeDim;
+		index_node_t	id;
+
+		void copy();
+
+		bool operator < (const cubeBuffer_t& str) const
+		{
+			return id < str.id;
+		}
+	};
+
 	private:
 		// HDF5 stuff
 		hid_t           _file_id;
@@ -30,6 +48,7 @@ class hdf5File : public FileManager
 		std::string		_yGrid;
 		std::string		_zGrid;
 
+		std::vector<cubeBuffer_t>		_buffer;
 	public:
 
 		virtual bool init(std::vector<std::string> file_params);

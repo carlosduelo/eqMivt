@@ -8,6 +8,7 @@ Notes:
 
 #include <linkedList.h>
 
+#include <iostream>
 
 namespace eqMivt
 {
@@ -60,23 +61,17 @@ NodeLinkedList * LinkedList::getFirstFreePosition(index_node_t newIDcube, index_
 		NodeLinkedList * first = list;
 
 		// Search first free position
-		while(first->references != 0)
+		while(list->references != 0)
 		{
-			moveToLastPosition(first);
-			first = list;
+			moveToLastPosition(list);
+			if (first == list)
+			{
+				std::cerr<<"Error cache is unistable"<<std::endl;
+				throw;
+			}
 		}
 
-		list = first->after;
-		list->before = 0;
-		
-		first->after  = 0;
-		first->before = last;
-		
-		last->after = first;
-		
-		last = first;
-		*removedIDcube = last->cubeID;
-		last->cubeID = newIDcube;
+		*removedIDcube = list->cubeID;
 
 		return first;
 	}
@@ -86,7 +81,7 @@ NodeLinkedList * LinkedList::getFirstFreePosition(index_node_t newIDcube, index_
 
 NodeLinkedList * LinkedList::moveToLastPosition(NodeLinkedList * node)
 {
-	if (node->before == 0)
+	if (node == list)
 	{
 		NodeLinkedList * first = list;
 
@@ -102,7 +97,7 @@ NodeLinkedList * LinkedList::moveToLastPosition(NodeLinkedList * node)
 
 		return first;
 	}
-	else if (node->after == 0)
+	else if (node == last)
 	{
 		return node;
 	}
@@ -132,10 +127,13 @@ void	LinkedList::removeReference(NodeLinkedList * node)
 	}
 }
 
-void 	LinkedList::addReference(NodeLinkedList * node)
+void 	LinkedList::addReference(NodeLinkedList * node, index_node_t idCube)
 {
 	if (node->references == 0)
+	{
 		freePositions--;
+		node->cubeID = idCube;
+	}
 
 	node->references++;// |= ref;
 }
