@@ -136,5 +136,6 @@ void 	LinkedList::addReference(NodeLinkedList * node, index_node_t idCube)
 	}
 
 	node->references++;// |= ref;
+	moveToLastPosition(node);
 }
 }

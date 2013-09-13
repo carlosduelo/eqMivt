@@ -171,7 +171,6 @@ float * cubeCacheCPU::push_cube(index_node_t idCube)
 	{
 		NodeLinkedList * node = it->second;
 
-		_queuePositions->moveToLastPosition(node);
 		_queuePositions->addReference(node, idCube);
 
 		_lock.unset();
@@ -191,7 +190,6 @@ float * cubeCacheCPU::push_cube(index_node_t idCube)
 
 			unsigned pos   = node->element;
 
-			_queuePositions->moveToLastPosition(node);
 			_queuePositions->addReference(node, idCube);
 
 			_fileManager->readCube(idCube, _cacheData+ pos*_offsetCube, _levelCube, _nLevels, _cubeDim, _cubeInc, _realcubeDim);
@@ -264,7 +262,6 @@ float *  cubeCacheCPU::push_cubeBuffered(index_node_t  idCube, bool * pending)
 	{
 		NodeLinkedList * node = it->second;
 
-		_queuePositions->moveToLastPosition(node);
 		_queuePositions->addReference(node, idCube);
 
 		if (std::find(_pendingCubes.begin(), _pendingCubes.end(), idCube) != _pendingCubes.end())
@@ -289,7 +286,6 @@ float *  cubeCacheCPU::push_cubeBuffered(index_node_t  idCube, bool * pending)
 
 			unsigned pos   = node->element;
 
-			_queuePositions->moveToLastPosition(node);
 			_queuePositions->addReference(node, idCube);
 
 			_fileManager->addCubeToBuffer(idCube, _cacheData+ pos*_offsetCube, _levelCube, _nLevels, _cubeDim, _cubeInc, _realcubeDim);

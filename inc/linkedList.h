@@ -31,6 +31,8 @@ class LinkedList
 		NodeLinkedList * 	last;
 		NodeLinkedList * 	memoryList;
 		int			freePositions;
+
+		NodeLinkedList * 	moveToLastPosition(NodeLinkedList * node);	
 	public:
 		LinkedList(int size);
 		~LinkedList();
@@ -38,7 +40,6 @@ class LinkedList
 		/* pop_front and push_last */
 		NodeLinkedList * 	getFirstFreePosition(index_node_t newIDcube, index_node_t * removedIDcube);
 
-		NodeLinkedList * 	moveToLastPosition(NodeLinkedList * node);	
 
 		void 			removeReference(NodeLinkedList * node);
 		void 			addReference(NodeLinkedList * node, index_node_t idCube);
